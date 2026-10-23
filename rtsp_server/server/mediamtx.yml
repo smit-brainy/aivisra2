@@ -1,0 +1,139 @@
+# AIVISRA Enterprise Virtual NVR Configuration
+rtsp: yes
+rtspAddress: :8554
+rtspTransports: [tcp]
+
+rtmp: no
+hls: no
+srt: no
+
+api: yes
+apiAddress: 127.0.0.1:9997
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+webrtcAdditionalHosts: [192.168.1.9]
+
+paths:
+  src001:
+  cam001:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam002:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam003:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam004:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam005:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam006:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam007:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam008:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam009:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam010:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam011:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam012:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam013:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam014:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam015:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam016:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam017:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam018:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam019:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam020:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam021:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam022:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam023:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam024:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam025:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam026:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam027:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam028:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam029:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam030:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam031:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam032:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam033:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam034:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam035:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam036:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam037:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam038:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam039:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
+  cam040:
+    source: rtsp://127.0.0.1:8554/src001
+    sourceOnDemand: yes
