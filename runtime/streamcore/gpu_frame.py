@@ -2,7 +2,7 @@
 
 import ctypes
 import logging
-from time import monotonic, monotonic_ns
+from time import monotonic, monotonic_ns, time
 from typing import Any
 
 import torch
@@ -148,6 +148,7 @@ def extract_gpu_frame(
         pts = buf.pts if hasattr(buf, "pts") else None
         now_ns = monotonic_ns()
         now_mono = monotonic()
+        now_wall = time()
 
         # Unmap function closes GstVideoFrame
         unmapped = False
@@ -198,6 +199,7 @@ def extract_gpu_frame(
             release_callback=release,
             y_ptr=y_ptr,
             uv_ptr=uv_ptr,
+            timestamp=now_wall,
         )
     except Exception as exc:
         logger.warning("Failed to extract GPU frame for %s: %s", camera_id, exc, exc_info=True)
@@ -331,7 +333,7 @@ class GpuPreprocessor:
                 FrameMeta(
                     camera_id=gf.camera_id,
                     sequence=gf.sequence,
-                    timestamp=gf.received_monotonic,
+                    timestamp=gf.timestamp if gf.timestamp > 1_000_000_000 else time(),
                     received_monotonic=gf.received_monotonic,
                     width=gf.source_width,
                     height=gf.source_height,

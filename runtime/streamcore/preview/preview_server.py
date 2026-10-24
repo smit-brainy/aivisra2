@@ -559,9 +559,9 @@ footer { margin-top: 20px; color: #8b949e; font-size: .82rem; display: flex; jus
       <form id="clip-query-form" onsubmit="return queryClip(event)">
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:16px;">
           <div class="form-group">
-            <label class="form-label">Camera ID <span style="color:#f85149;">*</span></label>
-            <select id="query-camera-id" class="form-select" required>
-              <option value="">-- Select Camera --</option>
+            <label class="form-label">Camera ID (Optional)</label>
+            <select id="query-camera-id" class="form-select">
+              <option value="">-- All Cameras --</option>
             </select>
           </div>
           <div class="form-group">
@@ -575,7 +575,8 @@ footer { margin-top: 20px; color: #8b949e; font-size: .82rem; display: flex; jus
           <div class="form-group">
             <label class="form-label">Class (Optional)</label>
             <select id="query-class" class="form-select">
-              <option value="person">person</option>
+              <option value="">All Classes</option>
+              <option value="person" selected>person</option>
               <option value="car">car</option>
               <option value="truck">truck</option>
               <option value="bus">bus</option>
@@ -865,23 +866,23 @@ async function populateQueryCameraFilter() {
     const res = await fetch('/api/cameras');
     if (res.ok) {
       const cams = await res.json();
-      select.innerHTML = '<option value="">-- Select Camera --</option>' +
+      select.innerHTML = '<option value="">-- All Cameras --</option>' +
         cams.map(c => `<option value="${c.camera_id}">${c.camera_id}</option>`).join('');
     }
   } catch (e) {}
 }
 
 // Convert IST (naive or +05:30) to UTC for API query
-function istToUtc(istStr) {
-  if (!istStr) return null;
+function istToUtc(val) {
+  if (!val) return null;
   try {
-    const istTzOffset = 5.5 * 60 * 60 * 1000; // 5:30 hours in ms
-    let dt = new Date(istStr);
-    if (isNaN(dt.getTime())) return null;
-    // If no timezone info, assume IST
-    if (istStr.indexOf('Z') === -1 && istStr.indexOf('+') === -1 && istStr.indexOf('-', 10) === -1) {
-      dt = new Date(dt.getTime() - istTzOffset);
+    let s = val.trim();
+    if (s.indexOf('Z') === -1 && s.indexOf('+') === -1 && s.lastIndexOf('-') <= 10) {
+      if (s.length === 16) s += ':00';
+      s += '+05:30';
     }
+    const dt = new Date(s);
+    if (isNaN(dt.getTime())) return null;
     return dt.toISOString().replace('.000Z', 'Z');
   } catch (e) {
     return null;
@@ -900,14 +901,14 @@ async function queryClip(event) {
   const resultDiv = document.getElementById('query-result');
   const contentDiv = document.getElementById('result-content');
 
-  if (!cameraId || !startTime || !endTime) {
-    alert('Please fill in Camera ID, Start Time, and End Time');
+  if (!startTime || !endTime) {
+    alert('Please fill in Start Time and End Time');
     return false;
   }
 
   // Show loading
   resultDiv.style.display = 'block';
-  contentDiv.innerHTML = '<div style="color:#79c0ff; text-align:center; padding:20px;">🔍 Searching for clip...</div>';
+  contentDiv.innerHTML = '<div style="color:#79c0ff; text-align:center; padding:20px;">🔍 Searching for clips...</div>';
 
   try {
     // Convert IST to UTC
@@ -918,70 +919,84 @@ async function queryClip(event) {
       throw new Error('Invalid time format');
     }
 
-    // Query events with 1 extra to detect if there are more
     const params = new URLSearchParams({
-      camera_id: cameraId,
       start: startUtc,
       end: endUtc,
-      class: objClass,
-      limit: '5',  // Get a few to find one with clip
+      clip_only: '1',
+      limit: '50',
       offset: '0'
     });
+    if (cameraId) {
+      params.set('camera_id', cameraId);
+    }
+    if (objClass) {
+      params.set('class', objClass);
+    }
 
     const res = await fetch('/api/events?' + params.toString());
     if (!res.ok) throw new Error('Failed to query events');
     const data = await res.json();
 
-    // Find first event with a clip in the time range
-    const eventWithClip = data.events?.find(ev => ev.clip_recorded && ev.clip_path);
+    const eventsWithClips = data.events?.filter(ev => ev.clip_recorded && ev.clip_path) || [];
 
-    if (eventWithClip) {
-      const clipUrl = `/api/clips/${eventWithClip.clip_path}`;
-      const started = new Date(eventWithClip.started_at_utc.replace('Z', '+00:00'));
-      const ended = eventWithClip.ended_at_utc ? new Date(eventWithClip.ended_at_utc.replace('Z', '+00:00')) : null;
-      const duration = eventWithClip.duration_seconds ? formatDuration(eventWithClip.duration_seconds) : (ended ? formatDuration((ended - started) / 1000) : 'Ongoing');
-
+    if (eventsWithClips.length > 0) {
+      const targetLabel = cameraId ? `Camera <strong>${cameraId}</strong>` : '<strong>All Cameras</strong>';
       contentDiv.innerHTML = `
-        <div style="background:#0d1117; border:1px solid #30363d; border-radius:8px; overflow:hidden;">
-          <div style="padding:12px 16px; background:#1c2128; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <span style="font-weight:600; color:#58a6ff;">${eventWithClip.camera_id}</span>
-              <span style="margin-left:8px; font-size:.75rem; color:#8b949e;">${eventWithClip.track_id}</span>
-            </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <span class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950;">${eventWithClip.object_class}</span>
-              <span class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950;">📹 Clip Found</span>
-            </div>
-          </div>
-          <div style="padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; font-size:.85rem;">
-            <div><span style="color:#8b949e;">Camera</span><br><strong>${eventWithClip.camera_id}</strong></div>
-            <div><span style="color:#8b949e;">Track</span><br><strong>${eventWithClip.track_id}</strong></div>
-            <div><span style="color:#8b949e;">Started</span><br><strong>${new Date(eventWithClip.started_at_utc.replace('Z', '+00:00')).toLocaleString()}</strong></div>
-            <div><span style="color:#8b949e;">Ended</span><br><strong>${eventWithClip.ended_at_utc ? new Date(eventWithClip.ended_at_utc.replace('Z', '+00:00')).toLocaleString() : 'Active'}</strong></div>
-            <div><span style="color:#8b949e;">Duration</span><br><strong>${duration}</strong></div>
-            <div><span style="color:#8b949e;">Max Confidence</span><br><strong style="color:#79c0ff;">${(eventWithClip.max_confidence * 100).toFixed(1)}%</strong></div>
-          </div>
-          <div style="padding:0 16px 16px;">
-            <video controls style="width:100%; max-height:400px; background:#000; border-radius:4px; border:1px solid #30363d;" preload="metadata">
-              <source src="/api/clips/${eventWithClip.clip_path}" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
-            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-              <a href="/api/clips/${eventWithClip.clip_path}" target="_blank" class="btn" style="text-decoration:none; padding:8px 16px;">🔗 Open in New Tab</a>
-              <button class="btn" onclick="downloadClip('/api/clips/${eventWithClip.clip_path}', '${eventWithClip.event_id}.mp4')" style="padding:8px 16px;">⬇ Download Clip</button>
-            </div>
-          </div>
+        <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:600; color:#e6edf3;">Found ${eventsWithClips.length} video clip(s) for ${targetLabel}</span>
+          <span class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950;">${eventsWithClips.length} Clip(s)</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          ${eventsWithClips.map((ev, idx) => {
+            const clipUrl = `/api/clips/${ev.clip_path}`;
+            const started = new Date(ev.started_at_utc.replace('Z', '+00:00'));
+            const ended = ev.ended_at_utc ? new Date(ev.ended_at_utc.replace('Z', '+00:00')) : null;
+            const duration = ev.duration_seconds ? formatDuration(ev.duration_seconds) : (ended ? formatDuration((ended - started) / 1000) : 'Ongoing');
+            return `
+              <div style="background:#0d1117; border:1px solid #30363d; border-radius:8px; overflow:hidden;">
+                <div style="padding:12px 16px; background:#1c2128; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <span style="font-weight:600; color:#58a6ff; font-size:1.05rem;">${ev.camera_id}</span>
+                    <span style="margin-left:8px; font-size:.8rem; color:#8b949e;">Track ${ev.track_id} · Event ${ev.event_id}</span>
+                  </div>
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <span class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950;">${ev.object_class}</span>
+                    <span class="badge" style="background:#1f6feb22; border:1px solid #1f6feb; color:#58a6ff;">📹 Clip #${idx + 1}</span>
+                  </div>
+                </div>
+                <div style="padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; font-size:.85rem;">
+                  <div><span style="color:#8b949e;">Camera</span><br><strong>${ev.camera_id}</strong></div>
+                  <div><span style="color:#8b949e;">Track ID</span><br><strong>${ev.track_id}</strong></div>
+                  <div><span style="color:#8b949e;">Started (IST)</span><br><strong>${started.toLocaleString()}</strong></div>
+                  <div><span style="color:#8b949e;">Ended (IST)</span><br><strong>${ended ? ended.toLocaleString() : 'Active'}</strong></div>
+                  <div><span style="color:#8b949e;">Duration</span><br><strong>${duration}</strong></div>
+                  <div><span style="color:#8b949e;">Confidence</span><br><strong style="color:#79c0ff;">${(ev.max_confidence * 100).toFixed(1)}%</strong></div>
+                </div>
+                <div style="padding:0 16px 16px;">
+                  <video controls style="width:100%; max-height:420px; background:#000; border-radius:4px; border:1px solid #30363d;" preload="metadata">
+                    <source src="${clipUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                  </video>
+                  <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+                    <a href="${clipUrl}" target="_blank" class="btn" style="text-decoration:none; padding:8px 16px;">🔗 Open in New Tab</a>
+                    <button class="btn" onclick="downloadClip('${clipUrl}', '${ev.camera_id}_${ev.event_id}.mp4')" style="padding:8px 16px;">⬇ Download Clip</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       `;
     } else {
+      const targetLabel = cameraId ? `<strong>${cameraId}</strong>` : '<strong>any camera</strong>';
       contentDiv.innerHTML = `
         <div style="background:#1c2128; border:1px solid #30363d; border-radius:8px; padding:32px; text-align:center;">
           <div style="font-size:2.5rem; margin-bottom:12px;">📭</div>
           <div style="font-size:1.1rem; font-weight:600; color:#e6edf3; margin-bottom:8px;">No Video Clip Found</div>
           <div style="color:#8b949e; font-size:.9rem;">
-            No clip recorded for <strong>${cameraId}</strong> between<br>
+            No clip recorded for ${targetLabel} between<br>
             <strong>${startTime}</strong> and <strong>${endTime}</strong> (IST)
-            ${objClass !== 'person' ? ` for class <strong>${objClass}</strong>` : ''}
+            ${objClass ? ` for class <strong>${objClass}</strong>` : ''}
           </div>
         </div>
       `;
@@ -2817,32 +2832,33 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                 from datetime import datetime, timezone, timedelta
                 query = urlsplit(self.path).query
                 params = parse_qs(query)
-                camera_id = params.get("camera_id", [None])[0]
-                start_ist = params.get("start", [None])[0]
-                end_ist = params.get("end", [None])[0]
-                obj_class = params.get("class", ["person"])[0]
-                limit = int(params.get("limit", ["2"])[0])
+                camera_id = params.get("camera_id", [None])[0] or None
+                start_ist = params.get("start", [None])[0] or None
+                end_ist = params.get("end", [None])[0] or None
+                obj_class = params.get("class", [None])[0] or None
+                clip_only = params.get("clip_only", ["0"])[0] in ("1", "true", "True")
+                limit = int(params.get("limit", ["50"])[0])
                 offset = int(params.get("offset", ["0"])[0])
 
-                # Convert IST (UTC+5:30) to UTC for database query
+                # Convert IST to UTC for database query
                 ist_tz = timezone(timedelta(hours=5, minutes=30))
-                def ist_to_utc(ist_str: str | None) -> str | None:
-                    if not ist_str:
+                def parse_to_utc(s: str | None) -> str | None:
+                    if not s:
                         return None
                     try:
-                        # Parse as IST (assume naive datetime is IST)
-                        dt = datetime.fromisoformat(ist_str.replace('Z', '+00:00'))
-                        if dt.tzinfo is None:
-                            dt = dt.replace(tzinfo=ist_tz)
+                        s = s.strip()
+                        if s.endswith("Z"):
+                            dt = datetime.fromisoformat(s[:-1] + "+00:00")
+                        elif "+" in s or (s.rfind("-") > 10):
+                            dt = datetime.fromisoformat(s)
                         else:
-                            dt = dt.astimezone(ist_tz)
-                        # Convert to UTC
+                            dt = datetime.fromisoformat(s).replace(tzinfo=ist_tz)
                         return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                     except Exception:
                         return None
 
-                start_utc = ist_to_utc(start_ist)
-                end_utc = ist_to_utc(end_ist)
+                start_utc = parse_to_utc(start_ist)
+                end_utc = parse_to_utc(end_ist)
 
                 event_db = getattr(engine, "event_db", None)
                 if event_db:
@@ -2851,6 +2867,7 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                         start_utc=start_utc,
                         end_utc=end_utc,
                         object_class=obj_class,
+                        clip_only=clip_only,
                         limit=limit,
                         offset=offset,
                     )
@@ -2898,6 +2915,14 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     from pathlib import Path
                     clips_dir = Path(event_db.config.clip_storage_dir)
                     file_path = clips_dir / clip_path
+                    if not file_path.is_file():
+                        file_path = clips_dir.parent / clip_path
+                    if not file_path.is_file():
+                        file_path = clips_dir / Path(clip_path).name
+                    if not file_path.is_file():
+                        matches = list(clips_dir.glob(f"**/{Path(clip_path).name}"))
+                        if matches:
+                            file_path = matches[0]
                     if file_path.is_file():
                         range_header = self.headers.get("Range")
                         self.respond_file(200, "video/mp4", file_path, range_header)

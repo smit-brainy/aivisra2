@@ -1,5 +1,7 @@
 import logging
+import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Event, Lock, Thread
 from time import monotonic
@@ -176,6 +178,8 @@ class StreamCore:
                 self.metrics.register_camera(camera_id)
             if hasattr(self.scheduler, "register_camera"):
                 self.scheduler.register_camera(camera_id, self.config.ai.target_fps)
+            if getattr(self, "clip_recorder", None) is not None:
+                self.clip_recorder.camera_urls[camera_id] = uri
 
             # If engine is actively running and readers started, start reader for the newly added camera
             if hasattr(self, "_active_readers") and not self.stop_event.is_set() and self._readers_started_at is not None:
@@ -425,33 +429,28 @@ class StreamCore:
             return
 
         from ..tracking.types import TrackState
-        from datetime import datetime, timezone
 
         for result in results:
             camera_id = result.camera_id
-            if not result.detections:
-                continue
 
             try:
                 tracker = self.tracker_manager.get_or_create_tracker(camera_id)
                 tracks = tracker.get_tracks()
 
                 for track in tracks:
-                    # Only process person tracks that are confirmed
-                    if track.class_name != "person":
+                    # Only process person tracks
+                    if str(getattr(track, "class_name", "")).lower() != "person":
                         continue
 
-                    # Check if track just became CONFIRMED (first time)
-                    min_hits = getattr(self.config.tracking, "min_hits_to_confirm", 3)
-                    if track.state == TrackState.CONFIRMED and track.hit_count == min_hits:
-                        if not hasattr(track, "_event_created"):
-                            track._event_created = True
-                            self._create_track_event(track, result, camera_id)
+                    # Check if track is CONFIRMED and event not created yet
+                    if track.state == TrackState.CONFIRMED and not getattr(track, "_event_created", False):
+                        self._create_track_event(track, result, camera_id)
+                        track._event_created = True
 
-                    # Check if track ended
+                    # Check if track ended and event not closed yet
                     if track.state == TrackState.ENDED and not getattr(track, "_event_closed", False):
-                        track._event_closed = True
                         self._close_track_event(track, camera_id)
+                        track._event_closed = True
 
             except Exception as exc:
                 logger.error("track_event_processing_failed", extra={"camera_id": camera_id, "reason": str(exc)})
@@ -459,22 +458,31 @@ class StreamCore:
     def _create_track_event(self, track: Any, result: DetectionResult, camera_id: str) -> None:
         """Create a new track lifecycle event and trigger clip recording."""
         event_id = f"evt-{uuid.uuid4().hex[:12]}"
-        started_at = datetime.fromtimestamp(result.timestamp, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        track._event_id = event_id
+        ts = result.timestamp if (result.timestamp and result.timestamp > 1_000_000_000) else time.time()
+        started_at = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # Find max confidence from detections for this track
-        track_dets = [d for d in result.detections if d.track_id == track.global_track_id]
-        max_conf = max((d.confidence for d in track_dets), default=track.confidence)
+        track_dets = [d for d in result.detections if getattr(d, "track_id", None) == track.global_track_id]
+        max_conf = max((d.confidence for d in track_dets), default=getattr(track, "confidence", 0.5))
 
         metadata = {
-            "bbox": list(track.bbox_xyxy),
+            "bbox": list(track.bbox_xyxy) if hasattr(track, "bbox_xyxy") else [],
             "class": "person",
             "track_state": str(track.state),
         }
 
+        track_session = "default"
+        if getattr(self, "spatial_manager", None) is not None:
+            try:
+                track_session = self.spatial_manager.get_camera_session(camera_id)
+            except Exception:
+                pass
+
         self.event_db.create_track_event(
             event_id=event_id,
             track_id=track.global_track_id,
-            track_session_id=self.spatial_manager.get_camera_session(camera_id) if self.spatial_manager else "default",
+            track_session_id=track_session,
             camera_id=camera_id,
             started_at_utc=started_at,
             max_confidence=max_conf,
@@ -482,25 +490,39 @@ class StreamCore:
         )
 
         # Trigger clip recording
-        if self.clip_recorder is not None:
+        if self.clip_recorder is not None and getattr(self.config.events, "record_on_track_confirmed", True):
             def on_clip_done(clip_path: str):
                 self.event_db.update_track_event(
                     event_id=event_id,
                     clip_path=clip_path,
                     clip_recorded=True,
                 )
-            self.clip_recorder.record_clip(camera_id, event_id, result.timestamp, on_complete=on_clip_done)
+            self.clip_recorder.record_clip(camera_id, event_id, ts, on_complete=on_clip_done)
 
     def _close_track_event(self, track: Any, camera_id: str) -> None:
         """Close a track lifecycle event when track ends."""
-        event = self.event_db.get_event_by_track(
-            track.global_track_id,
-            self.spatial_manager.get_camera_session(camera_id) if self.spatial_manager else "default"
-        )
+        event = None
+        event_id = getattr(track, "_event_id", None)
+        if event_id:
+            event = self.event_db.get_event(event_id)
+        if event is None:
+            track_session = None
+            if getattr(self, "spatial_manager", None) is not None:
+                try:
+                    track_session = self.spatial_manager.get_camera_session(camera_id)
+                except Exception:
+                    pass
+            event = self.event_db.get_event_by_track(track.global_track_id, track_session)
+
         if event and event.ended_at_utc is None:
             ended_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            duration = (datetime.fromisoformat(ended_at.replace('Z', '+00:00')) -
-                       datetime.fromisoformat(event.started_at_utc.replace('Z', '+00:00'))).total_seconds()
+            try:
+                start_dt = datetime.fromisoformat(event.started_at_utc.replace('Z', '+00:00'))
+                end_dt = datetime.fromisoformat(ended_at.replace('Z', '+00:00'))
+                duration = max(0.0, (end_dt - start_dt).total_seconds())
+            except Exception:
+                duration = 0.0
+
             self.event_db.update_track_event(
                 event_id=event.event_id,
                 ended_at_utc=ended_at,
@@ -680,6 +702,10 @@ class StreamCore:
             if self.clip_recorder is not None:
                 self.clip_recorder.shutdown()
             if self.event_db is not None:
+                try:
+                    self.event_db.close_active_events()
+                except Exception:
+                    pass
                 self.event_db.cleanup_old_events()
                 self.event_db.close_all_connections()
 

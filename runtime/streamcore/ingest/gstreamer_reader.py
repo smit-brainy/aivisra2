@@ -341,6 +341,7 @@ class GStreamerReader(Thread):
                 release_callback=None,
                 y_ptr=gframe.y_ptr,
                 uv_ptr=gframe.uv_ptr,
+                timestamp=gframe.timestamp,
             )
             self.store.put(alias_gframe)
 

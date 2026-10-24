@@ -197,19 +197,20 @@ class EventDatabase:
     def update_track_event(
         self,
         event_id: str,
-        ended_at_utc: str,
-        duration_seconds: float,
+        ended_at_utc: str | None = None,
+        duration_seconds: float | None = None,
         avg_confidence: float | None = None,
         clip_path: str | None = None,
-        clip_recorded: bool = False,
+        clip_recorded: bool | None = None,
     ) -> bool:
         with self._lock:
             with self._connect() as conn:
+                recorded_val = int(clip_recorded) if clip_recorded is not None else None
                 cursor = conn.execute(
                     """
                     UPDATE track_events
-                    SET ended_at_utc = ?,
-                        duration_seconds = ?,
+                    SET ended_at_utc = COALESCE(?, ended_at_utc),
+                        duration_seconds = COALESCE(?, duration_seconds),
                         avg_confidence = COALESCE(?, avg_confidence),
                         clip_path = COALESCE(?, clip_path),
                         clip_recorded = COALESCE(?, clip_recorded),
@@ -221,7 +222,7 @@ class EventDatabase:
                         duration_seconds,
                         avg_confidence,
                         clip_path,
-                        clip_recorded,
+                        recorded_val,
                         time.time(),
                         event_id,
                     ),
@@ -238,18 +239,28 @@ class EventDatabase:
                 return TrackEvent.from_row(row) if row else None
 
     def get_event_by_track(
-        self, track_id: str, track_session_id: str
+        self, track_id: str, track_session_id: str | None = None
     ) -> TrackEvent | None:
         with self._lock:
             with self._connect() as conn:
-                row = conn.execute(
-                    """
-                    SELECT * FROM track_events
-                    WHERE track_id = ? AND track_session_id = ?
-                    ORDER BY created_at DESC LIMIT 1
-                    """,
-                    (track_id, track_session_id),
-                ).fetchone()
+                if track_session_id is not None:
+                    row = conn.execute(
+                        """
+                        SELECT * FROM track_events
+                        WHERE track_id = ? AND track_session_id = ?
+                        ORDER BY created_at DESC LIMIT 1
+                        """,
+                        (track_id, track_session_id),
+                    ).fetchone()
+                else:
+                    row = conn.execute(
+                        """
+                        SELECT * FROM track_events
+                        WHERE track_id = ?
+                        ORDER BY created_at DESC LIMIT 1
+                        """,
+                        (track_id,),
+                    ).fetchone()
                 return TrackEvent.from_row(row) if row else None
 
     def query_events(
@@ -258,7 +269,8 @@ class EventDatabase:
         start_utc: str | None = None,
         end_utc: str | None = None,
         object_class: str | None = None,
-        limit: int = 2,
+        clip_only: bool = False,
+        limit: int = 50,
         offset: int = 0,
     ) -> list[TrackEvent]:
         conditions = []
@@ -276,6 +288,8 @@ class EventDatabase:
         if object_class:
             conditions.append("object_class = ?")
             params.append(object_class)
+        if clip_only:
+            conditions.append("clip_recorded = 1")
 
         where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
 
@@ -311,6 +325,25 @@ class EventDatabase:
                 ).fetchall()
                 return [TrackEvent.from_row(row) for row in rows]
 
+    def close_active_events(self) -> int:
+        """Mark active events without end times as ended."""
+        now = time.time()
+        now_utc = datetime.fromtimestamp(now, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        with self._lock:
+            with self._connect() as conn:
+                cursor = conn.execute(
+                    """
+                    UPDATE track_events
+                    SET ended_at_utc = ?,
+                        duration_seconds = MAX(0.0, ? - created_at),
+                        updated_at = ?
+                    WHERE ended_at_utc IS NULL
+                    """,
+                    (now_utc, now, now),
+                )
+                conn.commit()
+                return cursor.rowcount
+
     def cleanup_old_events(self, retention_days: int | None = None) -> int:
         if retention_days is None:
             retention_days = self.config.retention_days
@@ -340,6 +373,12 @@ class EventDatabase:
         for clip_path in clip_paths:
             try:
                 full_path = clips_dir.parent / clip_path
+                if not full_path.exists():
+                    full_path = clips_dir / clip_path
+                if not full_path.exists():
+                    matches = list(clips_dir.glob(f"**/{Path(clip_path).name}"))
+                    if matches:
+                        full_path = matches[0]
                 if full_path.exists():
                     full_path.unlink()
             except Exception as exc:

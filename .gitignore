@@ -184,3 +184,6 @@ runtime/**/benchmark_*.py
 # Logs
 *.log
 logs/
+
+# misc
+*.mp4

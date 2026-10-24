@@ -88,10 +88,7 @@ class GpuFrame:
     release_callback: Any = None
     y_ptr: int | None = None
     uv_ptr: int | None = None
-
-    @property
-    def timestamp(self) -> float:
-        return self.received_monotonic
+    timestamp: float = 0.0
 
     def to_bgr_cpu(self) -> Any:
         """Explicit CPU download only for diagnostic preview, evidence snapshot, or debugging."""
