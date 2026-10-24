@@ -1,0 +1,1 @@
+/home/april/miniconda3/envs/nvr/bin/python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765
