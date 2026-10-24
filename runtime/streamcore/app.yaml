@@ -79,11 +79,11 @@ events:
   retention_days: 1
   max_concurrent_recordings: 2
   record_on_track_confirmed: true
+  top_k: 2 # Top K matching video clips returned for natural language vector queries
 
 monitoring:
   print_interval_seconds: 5
 
 # Camera URI stays server-side. live_path is the corresponding MediaMTX path.
 cameras:
-  - {id: CAM001, uri: 'rtsp://127.0.0.1:8554/cam001', codec: h264, decoder: auto, live_path: cam001, enabled: true}
-  - {id: CAM002, uri: 'rtsp://127.0.0.1:8554/cam002', codec: h264, decoder: auto, live_path: cam002, enabled: true}
+  - {id: CAM001, uri: 'rtsp://admin123:admin123@192.168.1.55/stream1', codec: h264, decoder: auto, live_path: cam001, enabled: true}

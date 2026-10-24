@@ -105,6 +105,8 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
 .venv
 env/
 venv/
@@ -187,3 +189,10 @@ logs/
 
 # misc
 *.mp4
+*.jpg
+*.jpeg
+*.png
+runtime/streamcore/output/snapshots/
+runtime/streamcore/output/vector_index/
+.agents/
+ORIGINAL_REQUEST.md

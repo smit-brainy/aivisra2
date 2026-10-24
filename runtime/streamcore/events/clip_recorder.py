@@ -14,9 +14,15 @@ logger = logging.getLogger("events.clip_recorder")
 
 
 class ClipRecorder:
-    def __init__(self, config: EventsConfig, camera_rtsp_urls: dict[str, str]) -> None:
+    def __init__(
+        self,
+        config: EventsConfig,
+        camera_rtsp_urls: dict[str, str],
+        camera_live_paths: dict[str, str] | None = None,
+    ) -> None:
         self.config = config
         self.camera_urls = camera_rtsp_urls
+        self.camera_live_paths = camera_live_paths or {}
         self.output_dir = Path(config.clip_storage_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -29,6 +35,45 @@ class ClipRecorder:
             t.start()
             self._workers.append(t)
         logger.info("clip_recorder_started", extra={"max_concurrent": max_workers})
+
+    def _get_candidate_urls(self, camera_id: str) -> list[str]:
+        primary_url = self.camera_urls.get(camera_id)
+        candidates: list[str] = []
+        if primary_url:
+            candidates.append(primary_url)
+            # TP-Link / Tapo pattern: stream1 -> stream2
+            if "/stream1" in primary_url:
+                candidates.append(primary_url.replace("/stream1", "/stream2"))
+            elif "/stream2" in primary_url:
+                candidates.append(primary_url.replace("/stream2", "/stream1"))
+            # Hikvision pattern: 101 -> 102
+            if "/101" in primary_url:
+                candidates.append(primary_url.replace("/101", "/102"))
+            elif "/102" in primary_url:
+                candidates.append(primary_url.replace("/102", "/101"))
+            # Dahua pattern: subtype=0 -> subtype=1
+            if "subtype=0" in primary_url:
+                candidates.append(primary_url.replace("subtype=0", "subtype=1"))
+            elif "subtype=1" in primary_url:
+                candidates.append(primary_url.replace("subtype=1", "subtype=0"))
+            # Reolink / ONVIF sub patterns
+            if "/main" in primary_url:
+                candidates.append(primary_url.replace("/main", "/sub"))
+            if "/ch01/0" in primary_url:
+                candidates.append(primary_url.replace("/ch01/0", "/ch01/1"))
+
+        # Local MediaMTX fallback if running
+        live_path = self.camera_live_paths.get(camera_id) or camera_id.lower()
+        candidates.append(f"rtsp://127.0.0.1:8554/{live_path}")
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_candidates: list[str] = []
+        for u in candidates:
+            if u not in seen:
+                seen.add(u)
+                unique_candidates.append(u)
+        return unique_candidates
 
     def record_clip(
         self,
@@ -71,8 +116,8 @@ class ClipRecorder:
                 self._queue.task_done()
 
     def _record_sync(self, camera_id: str, event_id: str, start_time: float) -> str | None:
-        rtsp_url = self.camera_urls.get(camera_id)
-        if not rtsp_url:
+        candidate_urls = self._get_candidate_urls(camera_id)
+        if not candidate_urls:
             return None
 
         # Storage convention: clips/{camera_id}/{camera_id}_{YYYYMMDD_HHMMSS}_{event_id}.mp4
@@ -82,74 +127,98 @@ class ClipRecorder:
         cam_dir.mkdir(parents=True, exist_ok=True)
         filename = f"{camera_id}_{timestamp_str}_{event_id}.mp4"
         output_path = cam_dir / filename
-        timeout_sec = max(25.0, float(self.config.clip_duration_seconds) + 15.0)
+        clip_duration = str(getattr(self.config, "clip_duration_seconds", 10))
+        timeout_sec = max(20.0, float(clip_duration) + 10.0)
 
-        # Primary attempt: stream copy (fast, zero CPU re-encoding)
-        cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error"]
-        if rtsp_url.startswith("rtsp://") or rtsp_url.startswith("rtsps://"):
-            cmd.extend(["-rtsp_transport", "tcp"])
-        cmd.extend([
-            "-i", rtsp_url,
-            "-t", str(self.config.clip_duration_seconds),
-            "-c", "copy",
-            "-reset_timestamps", "1",
-            "-movflags", "+faststart",
-            "-y", str(output_path)
-        ])
+        for candidate_url in candidate_urls:
+            # Attempt 1: Fast stream copy with video only (-c:v copy -an)
+            # -an prevents container errors with camera audio codecs (like pcm_alaw)
+            # -timeout 5000000 ensures socket never hangs on dead streams
+            cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error"]
+            if candidate_url.startswith("rtsp://") or candidate_url.startswith("rtsps://"):
+                cmd.extend(["-rtsp_transport", "tcp", "-timeout", "5000000"])
+            cmd.extend([
+                "-i", candidate_url,
+                "-t", clip_duration,
+                "-c:v", "copy",
+                "-an",
+                "-avoid_negative_ts", "make_zero",
+                "-movflags", "+faststart",
+                "-y", str(output_path)
+            ])
 
-        try:
-            result = subprocess.run(cmd, capture_output=True, timeout=timeout_sec)
-            if result.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
-                rel_path = str(output_path.relative_to(self.output_dir.parent))
-                logger.info("clip_recorded", extra={"camera_id": camera_id, "event_id": event_id, "path": rel_path})
-                return rel_path
-            else:
-                stderr_first = result.stderr.decode(errors="ignore")[:300] if result else ""
-                logger.warning("clip_stream_copy_failed_fallback_encoding", extra={
-                    "camera_id": camera_id, "event_id": event_id, "stderr": stderr_first
-                })
-                # Fallback: re-encode with libx264 ultrafast in case stream copy failed on codec/container
-                cmd_fallback = ["ffmpeg", "-hide_banner", "-loglevel", "error"]
-                if rtsp_url.startswith("rtsp://") or rtsp_url.startswith("rtsps://"):
-                    cmd_fallback.extend(["-rtsp_transport", "tcp"])
-                cmd_fallback.extend([
-                    "-i", rtsp_url,
-                    "-t", str(self.config.clip_duration_seconds),
-                    "-c:v", "libx264",
-                    "-preset", "ultrafast",
-                    "-an",
-                    "-movflags", "+faststart",
-                    "-y", str(output_path)
-                ])
-                res_fallback = subprocess.run(cmd_fallback, capture_output=True, timeout=timeout_sec)
-                if res_fallback.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
+            try:
+                result = subprocess.run(cmd, capture_output=True, timeout=timeout_sec)
+                if result.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
                     rel_path = str(output_path.relative_to(self.output_dir.parent))
-                    logger.info("clip_recorded_fallback", extra={"camera_id": camera_id, "event_id": event_id, "path": rel_path})
+                    logger.info("clip_recorded", extra={"camera_id": camera_id, "event_id": event_id, "path": rel_path, "url": candidate_url})
                     return rel_path
                 else:
-                    stderr_text = res_fallback.stderr.decode(errors="ignore")[:500] if res_fallback else ""
-                    logger.error("clip_recording_failed", extra={
-                        "camera_id": camera_id,
-                        "event_id": event_id,
-                        "stderr": stderr_text
-                    })
-                    if output_path.exists() and output_path.stat().st_size == 0:
+                    if output_path.exists():
                         try:
                             output_path.unlink()
                         except Exception:
                             pass
-                    return None
-        except subprocess.TimeoutExpired:
-            logger.error("clip_recording_timeout", extra={"camera_id": camera_id, "event_id": event_id})
-            if output_path.exists() and output_path.stat().st_size == 0:
-                try:
-                    output_path.unlink()
-                except Exception:
-                    pass
-            return None
-        except Exception as exc:
-            logger.error("clip_recording_error", extra={"camera_id": camera_id, "event_id": event_id, "reason": str(exc)})
-            return None
+                    stderr_first = result.stderr.decode(errors="ignore")[:300] if result else ""
+                    logger.warning("clip_copy_attempt_failed", extra={
+                        "camera_id": camera_id, "event_id": event_id, "url": candidate_url, "stderr": stderr_first
+                    })
+                    # If stream input failed to open (e.g. session limit or unreachable), skip Attempt 2 on this URL
+                    if any(e in stderr_first.lower() for e in [
+                        "error opening input", "operation not permitted", "connection refused",
+                        "server returned 4", "server returned 5", "method describe failed",
+                        "method setup failed", "method play failed", "connection timed out",
+                        "immediate exit requested", "end of file", "connection reset by peer"
+                    ]):
+                        continue
+
+                    # Attempt 2: libx264 ultrafast re-encode fallback on this URL
+                    cmd_fallback = ["ffmpeg", "-hide_banner", "-loglevel", "error"]
+                    if candidate_url.startswith("rtsp://") or candidate_url.startswith("rtsps://"):
+                        cmd_fallback.extend(["-rtsp_transport", "tcp", "-timeout", "5000000"])
+                    cmd_fallback.extend([
+                        "-i", candidate_url,
+                        "-t", clip_duration,
+                        "-c:v", "libx264",
+                        "-preset", "ultrafast",
+                        "-an",
+                        "-movflags", "+faststart",
+                        "-y", str(output_path)
+                    ])
+                    res_fallback = subprocess.run(cmd_fallback, capture_output=True, timeout=timeout_sec)
+                    if res_fallback.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
+                        rel_path = str(output_path.relative_to(self.output_dir.parent))
+                        logger.info("clip_recorded_fallback", extra={"camera_id": camera_id, "event_id": event_id, "path": rel_path})
+                        return rel_path
+                    else:
+                        if output_path.exists():
+                            try:
+                                output_path.unlink()
+                            except Exception:
+                                pass
+            except subprocess.TimeoutExpired:
+                logger.warning("clip_recording_url_timeout", extra={"camera_id": camera_id, "url": candidate_url})
+                if output_path.exists():
+                    try:
+                        output_path.unlink()
+                    except Exception:
+                        pass
+            except Exception as exc:
+                if output_path.exists():
+                    try:
+                        output_path.unlink()
+                    except Exception:
+                        pass
+                logger.warning("clip_recording_url_error", extra={"camera_id": camera_id, "url": candidate_url, "error": str(exc)})
+
+        # If all candidates failed, clean up any partial or corrupt file
+        if output_path.exists():
+            try:
+                output_path.unlink()
+            except Exception:
+                pass
+        logger.error("clip_recording_all_urls_failed", extra={"camera_id": camera_id, "event_id": event_id})
+        return None
 
     def cleanup_old_clips(self, retention_days: int | None = None) -> int:
         if retention_days is None:

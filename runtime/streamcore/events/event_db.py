@@ -202,10 +202,12 @@ class EventDatabase:
         avg_confidence: float | None = None,
         clip_path: str | None = None,
         clip_recorded: bool | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         with self._lock:
             with self._connect() as conn:
                 recorded_val = int(clip_recorded) if clip_recorded is not None else None
+                meta_json = json.dumps(metadata) if metadata is not None else None
                 cursor = conn.execute(
                     """
                     UPDATE track_events
@@ -214,6 +216,7 @@ class EventDatabase:
                         avg_confidence = COALESCE(?, avg_confidence),
                         clip_path = COALESCE(?, clip_path),
                         clip_recorded = COALESCE(?, clip_recorded),
+                        metadata = COALESCE(?, metadata),
                         updated_at = ?
                     WHERE event_id = ?
                     """,
@@ -223,6 +226,7 @@ class EventDatabase:
                         avg_confidence,
                         clip_path,
                         recorded_val,
+                        meta_json,
                         time.time(),
                         event_id,
                     ),

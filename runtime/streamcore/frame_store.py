@@ -38,6 +38,10 @@ class LatestFrameStore:
             frame = self._frames.get(camera_id)
             return frame if frame is not None and frame.sequence > after_sequence else None
 
+    def get_latest(self, camera_id: str, after_sequence: int = -1) -> CameraFrame | GpuFrame | None:
+        """Alias for latest() to maintain compatibility with consumers."""
+        return self.latest(camera_id, after_sequence=after_sequence)
+
     def clear(self) -> None:
         with self._lock:
             self._frames.clear()

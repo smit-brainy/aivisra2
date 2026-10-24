@@ -1,1 +1,9 @@
-/home/april/miniconda3/envs/nvr/bin/python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765
+# 1. Reset SQLite DB and FAISS Vector Index
+rm -f runtime/streamcore/output/events.db* runtime/streamcore/output/vector_index/*
+
+# 2. Clear all old clips and snapshots if any exist:
+rm -rf runtime/streamcore/output/clips/* runtime/streamcore/output/snapshots/*
+
+# 3. Run the server
+cd 
+/home/brainy/miniconda3/envs/nvr/bin/python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765

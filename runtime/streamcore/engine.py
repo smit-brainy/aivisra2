@@ -17,7 +17,7 @@ from .types import CameraFrame, CameraState, DetectionResult, GpuFrame
 from .gpu_frame import GpuPreprocessor
 from .preview.preview_cache import PreviewCache
 from .preview.preview_worker import PreviewWorker
-from .events import EventDatabase
+from .events import EventDatabase, VisualSearchManager
 from .events.clip_recorder import ClipRecorder
 
 logger = logging.getLogger(__name__)
@@ -136,10 +136,19 @@ class StreamCore:
         if getattr(self.config, "events", None) and self.config.events.enabled:
             self.event_db = EventDatabase(self.config.events)
             camera_urls = {c.id: c.uri for c in self.cameras}
-            self.clip_recorder = ClipRecorder(self.config.events, camera_urls)
+            camera_live_paths = {c.id: getattr(c, "live_path", c.id.lower()) for c in self.cameras}
+            self.clip_recorder = ClipRecorder(self.config.events, camera_urls, camera_live_paths=camera_live_paths)
+            api_key = getattr(self.config.events, "gemini_api_key", None)
+            base_dir = Path(self.config.events.clip_storage_dir).parent
+            self.visual_search_manager = VisualSearchManager(
+                base_dir=base_dir,
+                api_key=api_key,
+                event_db=self.event_db,
+            )
         else:
             self.event_db = None
             self.clip_recorder = None
+            self.visual_search_manager = None
 
     def register_camera(
         self,
@@ -180,6 +189,7 @@ class StreamCore:
                 self.scheduler.register_camera(camera_id, self.config.ai.target_fps)
             if getattr(self, "clip_recorder", None) is not None:
                 self.clip_recorder.camera_urls[camera_id] = uri
+                self.clip_recorder.camera_live_paths[camera_id] = live_path or camera_id.lower()
 
             # If engine is actively running and readers started, start reader for the newly added camera
             if hasattr(self, "_active_readers") and not self.stop_event.is_set() and self._readers_started_at is not None:
@@ -444,7 +454,7 @@ class StreamCore:
 
                     # Check if track is CONFIRMED and event not created yet
                     if track.state == TrackState.CONFIRMED and not getattr(track, "_event_created", False):
-                        self._create_track_event(track, result, camera_id)
+                        self._create_track_event(track, result, camera_id, batch)
                         track._event_created = True
 
                     # Check if track ended and event not closed yet
@@ -455,12 +465,38 @@ class StreamCore:
             except Exception as exc:
                 logger.error("track_event_processing_failed", extra={"camera_id": camera_id, "reason": str(exc)})
 
-    def _create_track_event(self, track: Any, result: DetectionResult, camera_id: str) -> None:
-        """Create a new track lifecycle event and trigger clip recording."""
+    def _create_track_event(self, track: Any, result: DetectionResult, camera_id: str, batch: list[Any]) -> None:
+        """Create a new track lifecycle event, capture snapshot, and trigger clip recording."""
         event_id = f"evt-{uuid.uuid4().hex[:12]}"
         track._event_id = event_id
         ts = result.timestamp if (result.timestamp and result.timestamp > 1_000_000_000) else time.time()
         started_at = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # Extract and save snapshot crop for visual search
+        snapshot_rel_path = None
+        if self.visual_search_manager is not None:
+            try:
+                matching_frame = next((f for f in batch if f.camera_id == camera_id), None)
+                if matching_frame is None and hasattr(self, "store"):
+                    if hasattr(self.store, "latest"):
+                        matching_frame = self.store.latest(camera_id)
+                    elif hasattr(self.store, "get_latest"):
+                        matching_frame = self.store.get_latest(camera_id)
+                if matching_frame is not None:
+                    frame_bgr = matching_frame.image if hasattr(matching_frame, "image") else None
+                    if frame_bgr is None and hasattr(matching_frame, "to_bgr_cpu"):
+                        frame_bgr = matching_frame.to_bgr_cpu()
+                    if frame_bgr is not None:
+                        bbox = getattr(track, "bbox_xyxy", ())
+                        snapshot_rel_path = self.visual_search_manager.extract_and_save_snapshot(
+                            frame_bgr=frame_bgr,
+                            bbox_xyxy=bbox,
+                            camera_id=camera_id,
+                            timestamp_str=started_at,
+                            event_id=event_id,
+                        )
+            except Exception as exc:
+                logger.warning("snapshot_extraction_failed", extra={"event_id": event_id, "reason": str(exc)})
 
         # Find max confidence from detections for this track
         track_dets = [d for d in result.detections if getattr(d, "track_id", None) == track.global_track_id]
@@ -470,6 +506,7 @@ class StreamCore:
             "bbox": list(track.bbox_xyxy) if hasattr(track, "bbox_xyxy") else [],
             "class": "person",
             "track_state": str(track.state),
+            "snapshot_path": snapshot_rel_path or "",
         }
 
         track_session = "default"
@@ -489,7 +526,24 @@ class StreamCore:
             metadata=metadata,
         )
 
-        # Trigger clip recording
+        # Expected clip path convention
+        valid_start = ts if ts > 1_000_000_000 else time.time()
+        timestamp_str = datetime.fromtimestamp(valid_start, tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+        expected_clip_path = f"clips/{camera_id}/{camera_id}_{timestamp_str}_{event_id}.mp4"
+
+        # Index IMMEDIATELY into vector search so snapshot is instantly searchable
+        if self.visual_search_manager is not None and snapshot_rel_path:
+            self.visual_search_manager.index_event_async(
+                event_id=event_id,
+                camera_id=camera_id,
+                snapshot_rel_path=snapshot_rel_path,
+                clip_rel_path=expected_clip_path,
+                started_at_utc=started_at,
+                track_id=track.global_track_id,
+                bbox=list(track.bbox_xyxy) if hasattr(track, "bbox_xyxy") else [],
+            )
+
+        # Trigger clip recording asynchronously
         if self.clip_recorder is not None and getattr(self.config.events, "record_on_track_confirmed", True):
             def on_clip_done(clip_path: str):
                 self.event_db.update_track_event(
@@ -497,6 +551,14 @@ class StreamCore:
                     clip_path=clip_path,
                     clip_recorded=True,
                 )
+                if getattr(self, "visual_search_manager", None) is not None:
+                    try:
+                        meta = self.visual_search_manager.vector_store.get_event_meta(event_id)
+                        if meta:
+                            meta["clip_path"] = clip_path
+                            self.visual_search_manager.vector_store.save()
+                    except Exception:
+                        pass
             self.clip_recorder.record_clip(camera_id, event_id, ts, on_complete=on_clip_done)
 
     def _close_track_event(self, track: Any, camera_id: str) -> None:
@@ -701,6 +763,8 @@ class StreamCore:
                 self.tracks_writer.close()
             if self.clip_recorder is not None:
                 self.clip_recorder.shutdown()
+            if getattr(self, "visual_search_manager", None) is not None:
+                self.visual_search_manager.shutdown()
             if self.event_db is not None:
                 try:
                     self.event_db.close_active_events()

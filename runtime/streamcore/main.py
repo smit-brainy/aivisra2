@@ -114,6 +114,9 @@ def main() -> int:
         if args.preview_port is not None:
             target_fps = max(config.preview.fps, args.preview_fps)
             config = replace(config, diagnostic_preview=replace(config.diagnostic_preview, enabled=True, fps=target_fps, width=640, height=360))
+        for candidate in (root / ".env", Path(".env")):
+            if candidate.is_file():
+                load_local_env(candidate)
         load_local_env(args.env_file)
         cameras = load_cameras(cameras_path)
 

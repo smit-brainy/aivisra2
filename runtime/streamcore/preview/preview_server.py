@@ -3,7 +3,7 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from threading import Thread
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 from typing import Any
 
 from ..engine import StreamCore
@@ -550,7 +550,94 @@ footer { margin-top: 20px; color: #8b949e; font-size: .82rem; display: flex; jus
 </section>
 
 <!-- EVENTS & CLIPS VIEW -->
-<section id="events-view" style="display:none; flex-direction:column; gap:16px; max-width:800px; margin:0 auto; width:100%;">
+<section id="events-view" style="display:none; flex-direction:column; gap:20px; max-width:960px; margin:0 auto; width:100%;">
+
+  <!-- LEVEL 2: AI NATURAL LANGUAGE VISUAL SEARCH (FAISS) -->
+  <div style="background:#161b22; border:1px solid #388bfd; border-radius:8px; overflow:hidden; box-shadow:0 4px 20px rgba(56,139,253,0.12);">
+    <div style="padding:16px 20px; background:#1c2128; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.3rem;">🧠</span>
+        <div>
+          <div style="font-weight:700; font-size:1.05rem; color:#e6edf3;">AI Natural Language Video Search</div>
+          <div style="font-size:.78rem; color:#8b949e;">FAISS Vector DB search on person visual embeddings & snapshots · Instant Top-2 Retrieval</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span id="gemini-status-pill" class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950; font-size:.78rem;" title="Configured via GEMINI_API_KEY in .env">
+          Checking .env...
+        </span>
+        <button type="button" class="btn" style="padding:4px 10px; font-size:.78rem;" onclick="reindexExistingClips()" title="Index past clips in database">↻ Index Past Clips</button>
+      </div>
+    </div>
+
+    <div style="padding:22px 24px;">
+      <form id="vector-search-form" onsubmit="return queryVisualVector(event)">
+        <div style="display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:280px;">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Describe the person / clothing / appearance <span style="color:#f85149;">*</span></span>
+              <span style="font-size:.75rem; color:#58a6ff; cursor:pointer;" onclick="setSampleQuery('person with white clothes')">Example: "person with white clothes"</span>
+            </label>
+            <div style="position:relative;">
+              <input type="text" id="vector-query-text" class="form-input" style="padding-left:36px; font-size:1rem; height:42px;" placeholder="e.g. person with white clothes, someone wearing blue jeans, dark jacket..." required>
+              <span style="position:absolute; left:12px; top:11px; color:#8b949e; font-size:1.05rem;">🔍</span>
+            </div>
+          </div>
+
+          <div style="width:170px;">
+            <label class="form-label">Camera Filter</label>
+            <select id="vector-camera-id" class="form-select" style="height:42px;">
+              <option value="">-- All Cameras --</option>
+            </select>
+          </div>
+
+          <div style="width:140px;">
+            <label class="form-label">Matches</label>
+            <select id="vector-top-k" class="form-select" style="height:42px;">
+              <option value="2" selected>Top 2 (Recommended)</option>
+              <option value="5">Top 5</option>
+              <option value="10">Top 10</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:14px;">
+          <div>
+            <label class="form-label" style="color:#8b949e;">Start Time (IST, Optional)</label>
+            <input type="datetime-local" id="vector-start-time" class="form-input">
+          </div>
+          <div>
+            <label class="form-label" style="color:#8b949e;">End Time (IST, Optional)</label>
+            <input type="datetime-local" id="vector-end-time" class="form-input">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button type="submit" class="btn active-green" style="padding:9px 24px; font-size:.92rem; font-weight:700;">
+              ⚡ Search Clips
+            </button>
+            <button type="button" class="btn" onclick="resetVectorSearch()" style="padding:9px 18px; font-size:.92rem;">
+              🔄 Reset
+            </button>
+          </div>
+
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <span style="font-size:.75rem; color:#8b949e;">Quick prompts:</span>
+            <button type="button" class="btn" style="padding:3px 8px; font-size:.75rem;" onclick="setSampleQuery('person with white clothes')">white clothes</button>
+            <button type="button" class="btn" style="padding:3px 8px; font-size:.75rem;" onclick="setSampleQuery('person wearing dark jacket')">dark jacket</button>
+            <button type="button" class="btn" style="padding:3px 8px; font-size:.75rem;" onclick="setSampleQuery('someone in blue jeans')">blue jeans</button>
+            <button type="button" class="btn" style="padding:3px 8px; font-size:.75rem;" onclick="setSampleQuery('person carrying backpack')">backpack</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Vector Search Results Display -->
+      <div id="vector-result-container" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid #21262d;">
+        <div id="vector-result-content"></div>
+      </div>
+    </div>
+  </div>
   <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; overflow:hidden;">
     <div style="padding:16px 20px; font-weight:700; font-size:1rem; background:#1c2128; border-bottom:1px solid #30363d;">
       📋 Find Video Clip by Time Range
@@ -824,6 +911,8 @@ function switchView(view) {
     stageWebrtc.src = 'about:blank';
     stageWebrtc.style.display = 'none';
     populateQueryCameraFilter();
+    populateVectorCameraFilter();
+    checkGeminiStatus();
     // Reset any previous result
     document.getElementById('query-result').style.display = 'none';
   }
@@ -857,6 +946,202 @@ async function loadCapabilityRegistry() {
 }
 
 // ===== EVENTS & CLIPS VIEW FUNCTIONS =====
+
+// Populate camera dropdown for vector search
+async function populateVectorCameraFilter() {
+  const select = document.getElementById('vector-camera-id');
+  if (!select) return;
+  try {
+    const res = await fetch('/api/cameras');
+    if (res.ok) {
+      const cams = await res.json();
+      select.innerHTML = '<option value="">-- All Cameras --</option>' +
+        cams.map(c => `<option value="${c.camera_id}">${c.camera_id}</option>`).join('');
+    }
+  } catch (e) {}
+}
+
+// Check Gemini API Key status
+async function checkGeminiStatus() {
+  const pill = document.getElementById('gemini-status-pill');
+  if (!pill) return;
+  try {
+    const res = await fetch('/api/settings/gemini');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.has_api_key) {
+        pill.style.background = '#23863622';
+        pill.style.borderColor = '#238636';
+        pill.style.color = '#3fb950';
+        pill.innerHTML = '🟢 Gemini Vision Active (.env)';
+      } else {
+        pill.style.background = '#d2992222';
+        pill.style.borderColor = '#d29922';
+        pill.style.color = '#d29922';
+        pill.innerHTML = '🟡 Local CV (Set GEMINI_API_KEY in .env)';
+      }
+    }
+  } catch (e) {}
+}
+
+function setSampleQuery(txt) {
+  const input = document.getElementById('vector-query-text');
+  if (input) {
+    input.value = txt;
+    input.focus();
+  }
+}
+
+function resetVectorSearch() {
+  const form = document.getElementById('vector-search-form');
+  if (form) form.reset();
+  const st = document.getElementById('vector-start-time');
+  if (st) st.value = '';
+  const et = document.getElementById('vector-end-time');
+  if (et) et.value = '';
+  const container = document.getElementById('vector-result-container');
+  if (container) container.style.display = 'none';
+  const inp = document.getElementById('vector-query-text');
+  if (inp) inp.focus();
+}
+
+async function reindexExistingClips() {
+  const pill = document.getElementById('gemini-status-pill');
+  if (pill) pill.innerHTML = '⏳ Indexing past clips...';
+  try {
+    const res = await fetch('/api/events/reindex', { method: 'POST' });
+    const data = await res.json();
+    alert(`Indexed ${data.indexed_count || 0} clips into FAISS. Total indexed: ${data.total_vectors || 0}`);
+    checkGeminiStatus();
+  } catch (err) {
+    alert('Failed to reindex: ' + err.message);
+  }
+}
+
+async function queryVisualVector(event) {
+  event.preventDefault();
+  const query = document.getElementById('vector-query-text').value.trim();
+  const cameraId = document.getElementById('vector-camera-id').value;
+  const topK = parseInt(document.getElementById('vector-top-k').value || '2', 10);
+  const startTime = document.getElementById('vector-start-time')?.value || '';
+  const endTime = document.getElementById('vector-end-time')?.value || '';
+  const startUtc = istToUtc(startTime);
+  const endUtc = istToUtc(endTime);
+
+  const container = document.getElementById('vector-result-container');
+  const content = document.getElementById('vector-result-content');
+
+  if (!query) return false;
+
+  container.style.display = 'block';
+  content.innerHTML = `
+    <div style="color:#79c0ff; text-align:center; padding:30px;">
+      <div style="font-size:1.6rem; margin-bottom:8px;">🔍</div>
+      <div style="font-weight:600;">Searching FAISS vector index for "${query}"...</div>
+      <div style="font-size:.8rem; color:#8b949e; margin-top:4px;">Retrieving top ${topK} matches in milliseconds</div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/search-visual', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: query, camera_id: cameraId, top_k: topK, start: startUtc, end: endUtc})
+    });
+    if (!res.ok) throw new Error('Search failed: ' + res.statusText);
+    const data = await res.json();
+
+    const results = data.results || [];
+    if (results.length === 0) {
+      content.innerHTML = `
+        <div style="background:#1c2128; border:1px solid #30363d; border-radius:8px; padding:30px; text-align:center; color:#8b949e;">
+          <div style="font-size:1.6rem; margin-bottom:8px;">🔎</div>
+          <div style="font-weight:600; color:#e6edf3; font-size:1.05rem;">No Matching Video Clips Found</div>
+          <div style="margin-top:6px; font-size:.85rem;">No person detections in FAISS matched "${query}".</div>
+          <div style="margin-top:14px; display:inline-flex; gap:8px;">
+            <button type="button" class="btn" onclick="reindexExistingClips()">Index Past Clips</button>
+            <button type="button" class="btn" onclick="setSampleQuery('person with dark clothes')">Try 'person with dark clothes'</button>
+          </div>
+        </div>
+      `;
+      return false;
+    }
+
+    const camLabel = cameraId ? `Camera <strong>${cameraId}</strong>` : '<strong>All Cameras</strong>';
+    content.innerHTML = `
+      <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span style="font-weight:600; color:#e6edf3; font-size:1rem;">
+          Top ${results.length} Match(es) for "<em>${data.query}</em>" on ${camLabel}
+        </span>
+        <span class="badge" style="background:#23863622; border:1px solid #3fb950; color:#3fb950;">
+          ⚡ Retrieved from FAISS Vector DB
+        </span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        ${results.map((item, idx) => {
+          const started = item.started_at_utc ? new Date(item.started_at_utc.replace('Z', '+00:00')) : new Date();
+          const matchPercent = item.similarity_percent || (item.similarity * 100).toFixed(1);
+          const scoreColor = matchPercent >= 75 ? '#3fb950' : (matchPercent >= 60 ? '#58a6ff' : '#d29922');
+          return `
+            <div style="background:#0d1117; border:1px solid #30363d; border-radius:8px; overflow:hidden;">
+              <div style="padding:12px 16px; background:#1c2128; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="badge" style="background:${scoreColor}22; border:1px solid ${scoreColor}; color:${scoreColor}; font-weight:700; font-size:.85rem;">
+                    🎯 Match #${idx + 1} · ${matchPercent}% Similarity
+                  </span>
+                  <span style="font-weight:600; color:#58a6ff; font-size:1.05rem;">${item.camera_id}</span>
+                  <span style="font-size:.8rem; color:#8b949e;">Event ${item.event_id}</span>
+                </div>
+                <div style="font-size:.8rem; color:#8b949e;">
+                  ⏰ Started: ${started.toLocaleString()}
+                </div>
+              </div>
+
+              <div style="padding:16px; display:grid; grid-template-columns: minmax(180px, 220px) 1fr; gap:18px;">
+                <!-- Left: Snapshot Crop Preview -->
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <div style="font-size:.75rem; color:#8b949e; font-weight:700; text-transform:uppercase;">Person Snapshot</div>
+                  ${item.snapshot_url ? `
+                    <a href="${item.snapshot_url}" target="_blank" title="Click to view full snapshot">
+                      <img src="${item.snapshot_url}" alt="Person Snapshot" style="width:100%; max-height:260px; object-fit:contain; background:#010409; border-radius:6px; border:1px solid #30363d;">
+                    </a>
+                  ` : '<div style="background:#161b22; padding:30px; text-align:center; color:#8b949e; border-radius:6px;">No snapshot image</div>'}
+                  <div style="font-size:.78rem; color:#8b949e; text-align:center;">Crop from detection event</div>
+                </div>
+
+                <!-- Right: Video Clip and AI Description -->
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                  <div style="background:#161b22; border-left:3px solid #58a6ff; padding:10px 14px; border-radius:0 6px 6px 0; font-size:.85rem; color:#e6edf3;">
+                    <div style="font-size:.75rem; color:#79c0ff; font-weight:700; margin-bottom:4px; text-transform:uppercase;">AI Visual Description</div>
+                    <div>${item.description || 'Person detection indexed in FAISS vector store.'}</div>
+                  </div>
+
+                  <video controls style="width:100%; max-height:380px; background:#000; border-radius:6px; border:1px solid #30363d;" preload="metadata">
+                    <source src="${item.clip_url}" type="video/mp4">
+                    Your browser does not support the video tag.
+                  </video>
+
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a href="${item.clip_url}" target="_blank" class="btn" style="text-decoration:none; padding:6px 14px; font-size:.82rem;">🔗 Open in New Tab</a>
+                    <button class="btn" onclick="downloadClip('${item.clip_url}', '${item.camera_id}_${item.event_id}.mp4')" style="padding:6px 14px; font-size:.82rem;">⬇ Download Clip</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  } catch (err) {
+    content.innerHTML = `
+      <div style="background:#1c2128; border:1px solid #f85149; border-radius:8px; padding:20px; text-align:center; color:#f85149;">
+        <div style="font-weight:600; margin-bottom:6px;">Vector Search Error</div>
+        <div style="font-size:.85rem; color:#8b949e;">${err.message}</div>
+      </div>
+    `;
+  }
+  return false;
+}
 
 // Populate camera dropdown for query form
 async function populateQueryCameraFilter() {
@@ -2390,7 +2675,7 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                 self.send_header("X-Frame-Sequence", str(frame_sequence))
             self.send_header("Content-Security-Policy", "default-src 'self' http: https: data: blob:; frame-src *; img-src * data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'")
             self.end_headers()
-            if content:
+            if content and self.command != "HEAD":
                 self.wfile.write(content)
 
         def respond_file(self, status: int, content_type: str, file_path: Path,
@@ -2403,24 +2688,46 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
             file_size = file_path.stat().st_size
             start = 0
             end = file_size - 1
-            send_headers = True
+            is_range = False
 
-            if range_header and range_header.startswith("bytes="):
+            norm_range = (range_header or "").strip()
+            if norm_range.lower().startswith("bytes="):
                 try:
-                    range_spec = range_header[6:]
+                    range_spec = norm_range[6:].strip()
+                    if "," in range_spec:
+                        range_spec = range_spec.split(",", 1)[0].strip()
                     if "-" in range_spec:
                         start_str, end_str = range_spec.split("-", 1)
-                        if start_str:
+                        start_str = start_str.strip()
+                        end_str = end_str.strip()
+                        if start_str and end_str:
                             start = int(start_str)
-                        if end_str:
-                            end = min(int(end_str), file_size - 1)
-                    self.send_response(206)
-                    self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
-                    send_headers = True
+                            end = int(end_str)
+                        elif start_str:
+                            start = int(start_str)
+                            end = file_size - 1
+                        elif end_str:
+                            suffix_len = int(end_str)
+                            start = max(0, file_size - suffix_len)
+                            end = file_size - 1
+
+                        if file_size == 0 or start >= file_size or start > end:
+                            self.send_response(416)
+                            self.send_header("Content-Range", f"bytes */{file_size}")
+                            self.send_header("Content-Length", "0")
+                            self.send_header("Accept-Ranges", "bytes")
+                            self.end_headers()
+                            return
+
+                        end = min(end, file_size - 1)
+                        is_range = True
                 except (ValueError, IndexError):
                     pass
 
-            if not send_headers:
+            if is_range:
+                self.send_response(206)
+                self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+            else:
                 self.send_response(status)
 
             self.send_header("Content-Type", content_type)
@@ -2428,24 +2735,25 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
             self.send_header("Accept-Ranges", "bytes")
             self.send_header("Cache-Control", "public, max-age=3600")
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
             self.end_headers()
 
-            try:
-                with file_path.open("rb") as f:
-                    f.seek(start)
-                    remaining = end - start + 1
-                    chunk_size = 65536
-                    while remaining > 0:
-                        to_read = min(chunk_size, remaining)
-                        data = f.read(to_read)
-                        if not data:
-                            break
-                        self.wfile.write(data)
-                        remaining -= len(data)
-            except (BrokenPipeError, ConnectionResetError, OSError):
-                return
+            if self.command != "HEAD":
+                try:
+                    with file_path.open("rb") as f:
+                        f.seek(start)
+                        remaining = end - start + 1
+                        chunk_size = 65536
+                        while remaining > 0:
+                            to_read = min(chunk_size, remaining)
+                            data = f.read(to_read)
+                            if not data:
+                                break
+                            self.wfile.write(data)
+                            remaining -= len(data)
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    return
 
         def respond_json(self, status: int, data: Any) -> None:
             body = json.dumps(data).encode("utf-8")
@@ -2464,6 +2772,9 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
             self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
             self.end_headers()
+
+        def do_HEAD(self) -> None:
+            self.do_GET()
 
         def do_GET(self) -> None:
             path = urlsplit(self.path).path
@@ -2828,7 +3139,6 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     self.respond_json(200, {"camera_id": camera_id, "events": []})
             elif path == "/api/events" or path.startswith("/api/events?"):
                 # Global events query with filters
-                from urllib.parse import parse_qs
                 from datetime import datetime, timezone, timedelta
                 query = urlsplit(self.path).query
                 params = parse_qs(query)
@@ -2907,26 +3217,104 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     self.respond(200, "image/jpeg", file_path.read_bytes())
                     return
                 self.respond(404, "text/plain", b"Evidence image not found")
+            elif path.startswith("/api/snapshots/"):
+                filename = path[len("/api/snapshots/"):].strip("/")
+                from pathlib import Path
+                vsm = getattr(engine, "visual_search_manager", None)
+                base_dir = (vsm.base_dir if vsm else Path("runtime/streamcore/output")).resolve()
+                snap_dir = (vsm.snapshots_dir if vsm else (base_dir / "snapshots")).resolve()
+
+                if filename.startswith("snapshots/"):
+                    filename = filename[len("snapshots/"):]
+
+                file_path = snap_dir / filename
+                if not file_path.is_file():
+                    file_path = snap_dir.parent / filename
+                if not file_path.is_file():
+                    file_path = snap_dir / Path(filename).name
+                if not file_path.is_file() and Path(filename).name:
+                    matches = list(snap_dir.glob(f"**/{Path(filename).name}"))
+                    if matches:
+                        file_path = matches[0]
+                try:
+                    if file_path.is_file() and (base_dir in file_path.resolve().parents or file_path.resolve().is_relative_to(base_dir)):
+                        self.respond(200, "image/jpeg", file_path.read_bytes())
+                        return
+                except Exception:
+                    pass
+                self.respond(404, "text/plain", b"Snapshot image not found")
+            elif path == "/api/search-visual" or path.startswith("/api/search-visual?"):
+                query_params = parse_qs(urlsplit(self.path).query)
+                query = query_params.get("query", [""])[0]
+                cam_id = query_params.get("camera_id", [None])[0] or None
+                start_utc = query_params.get("start", [None])[0] or query_params.get("start_utc", [None])[0]
+                end_utc = query_params.get("end", [None])[0] or query_params.get("end_utc", [None])[0]
+                try:
+                    top_k = int(query_params.get("top_k", [2])[0])
+                except Exception:
+                    top_k = 2
+                vsm = getattr(engine, "visual_search_manager", None)
+                if vsm is None:
+                    from ..events.visual_search_manager import VisualSearchManager
+                    ev_cfg = getattr(getattr(engine, "config", None), "events", None)
+                    vsm = VisualSearchManager(
+                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
+                        event_db=getattr(engine, "event_db", None),
+                    )
+                    engine.visual_search_manager = vsm
+                results = vsm.search(query, top_k=top_k, camera_id=cam_id, start_utc=start_utc, end_utc=end_utc)
+                self.respond_json(200, {
+                    "query": query,
+                    "count": len(results),
+                    "has_api_key": vsm.has_api_key,
+                    "results": results
+                })
+            elif path == "/api/settings/gemini":
+                vsm = getattr(engine, "visual_search_manager", None)
+                has_key = vsm.has_api_key if vsm else False
+                self.respond_json(200, {"has_api_key": has_key})
+            elif path == "/api/events/reindex":
+                vsm = getattr(engine, "visual_search_manager", None)
+                if vsm is None:
+                    from ..events.visual_search_manager import VisualSearchManager
+                    ev_cfg = getattr(getattr(engine, "config", None), "events", None)
+                    vsm = VisualSearchManager(
+                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
+                        event_db=getattr(engine, "event_db", None),
+                    )
+                    engine.visual_search_manager = vsm
+                count = vsm.index_existing_clips_sync(max_items=500)
+                self.respond_json(200, {"status": "OK", "indexed_count": count, "total_vectors": vsm.vector_store.total_items})
             elif path.startswith("/api/clips/"):
                 # Serve video clips with Range support for streaming
                 clip_path = path[len("/api/clips/"):].strip("/")
+                from pathlib import Path
                 event_db = getattr(engine, "event_db", None)
-                if event_db:
-                    from pathlib import Path
-                    clips_dir = Path(event_db.config.clip_storage_dir)
-                    file_path = clips_dir / clip_path
-                    if not file_path.is_file():
-                        file_path = clips_dir.parent / clip_path
-                    if not file_path.is_file():
-                        file_path = clips_dir / Path(clip_path).name
-                    if not file_path.is_file():
-                        matches = list(clips_dir.glob(f"**/{Path(clip_path).name}"))
-                        if matches:
-                            file_path = matches[0]
-                    if file_path.is_file():
+                if event_db and getattr(event_db, "config", None):
+                    clips_dir = Path(event_db.config.clip_storage_dir).resolve()
+                else:
+                    clips_dir = Path("runtime/streamcore/output/clips").resolve()
+                base_dir = clips_dir.parent
+
+                if clip_path.startswith("clips/"):
+                    clip_path = clip_path[len("clips/"):]
+
+                file_path = clips_dir / clip_path
+                if not file_path.is_file():
+                    file_path = base_dir / clip_path
+                if not file_path.is_file():
+                    file_path = clips_dir / Path(clip_path).name
+                if not file_path.is_file() and Path(clip_path).name:
+                    matches = list(clips_dir.glob(f"**/{Path(clip_path).name}"))
+                    if matches:
+                        file_path = matches[0]
+                try:
+                    if file_path.is_file() and base_dir in file_path.resolve().parents:
                         range_header = self.headers.get("Range")
                         self.respond_file(200, "video/mp4", file_path, range_header)
                         return
+                except Exception:
+                    pass
                 self.respond(404, "text/plain", b"Clip not found")
             elif path.startswith("/frame/") and path.endswith(".jpg"):
                 camera_id = path[len("/frame/"):-len(".jpg")]
@@ -3042,6 +3430,46 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                             service._camera_states[camera_id]["error"] = None
                             service._camera_states[camera_id]["progress_percent"] = 0
                 self.respond_json(200, {"camera_id": camera_id, "status": "RESET"})
+            elif path == "/api/search-visual":
+                data = self.read_json_body()
+                query = str(data.get("query") or "").strip()
+                cam_id = data.get("camera_id") or None
+                start_utc = data.get("start") or data.get("start_utc") or None
+                end_utc = data.get("end") or data.get("end_utc") or None
+                try:
+                    top_k = int(data.get("top_k", 2))
+                except Exception:
+                    top_k = 2
+
+                vsm = getattr(engine, "visual_search_manager", None)
+                if vsm is None:
+                    from ..events.visual_search_manager import VisualSearchManager
+                    ev_cfg = getattr(getattr(engine, "config", None), "events", None)
+                    vsm = VisualSearchManager(
+                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
+                        event_db=getattr(engine, "event_db", None),
+                    )
+                    engine.visual_search_manager = vsm
+
+                results = vsm.search(query, top_k=top_k, camera_id=cam_id, start_utc=start_utc, end_utc=end_utc)
+                self.respond_json(200, {
+                    "query": query,
+                    "count": len(results),
+                    "has_api_key": vsm.has_api_key,
+                    "results": results
+                })
+            elif path == "/api/events/reindex":
+                vsm = getattr(engine, "visual_search_manager", None)
+                if vsm is None:
+                    from ..events.visual_search_manager import VisualSearchManager
+                    ev_cfg = getattr(getattr(engine, "config", None), "events", None)
+                    vsm = VisualSearchManager(
+                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
+                        event_db=getattr(engine, "event_db", None),
+                    )
+                    engine.visual_search_manager = vsm
+                count = vsm.index_existing_clips_sync(max_items=500)
+                self.respond_json(200, {"status": "OK", "indexed_count": count, "total_vectors": vsm.vector_store.total_items})
             else:
                 self.respond(404, "text/plain", b"Not found")
 

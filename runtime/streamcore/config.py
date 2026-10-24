@@ -119,6 +119,8 @@ class EventsConfig:
     retention_days: int = 1
     max_concurrent_recordings: int = 2
     record_on_track_confirmed: bool = True
+    gemini_api_key: str = ""
+    top_k: int = 2
 
 
 @dataclass(frozen=True, slots=True)
