@@ -1,0 +1,14 @@
+torch==2.11.0
+torchvision==0.26.0
+ultralytics==8.4.42
+ultralytics-thop==2.0.19
+numpy==2.4.4
+opencv-python==4.13.0.92
+Pillow==10.2.0
+scipy==1.17.1
+lap==0.5.13
+psutil==7.2.2
+nvidia-ml-py==13.615.71
+PyYAML==6.0.1
+pandas==3.0.5
+matplotlib==3.10.9

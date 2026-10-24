@@ -1,10 +1,9 @@
-from dataclasses import dataclass
-from enum import StrEnum
-from typing import Any
-
 import numpy as np
 from numpy.typing import NDArray
 
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Any
 
 class CameraState(StrEnum):
     CONNECTING = "CONNECTING"

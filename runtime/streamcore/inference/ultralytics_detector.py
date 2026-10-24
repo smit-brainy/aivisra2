@@ -39,6 +39,8 @@ class UltralyticsDetector(Detector):
             source=batch.tensor, device=self.config.device,
             imgsz=self.config.imgsz, half=self.config.half,
             batch=batch.batch_size, stream=False, verbose=False, save=False, rect=False,
+            classes=self.config.detection_classes,
+            conf=self.config.person_conf_threshold,
         )
         if len(predictions) != batch.batch_size:
             raise RuntimeError("Detector result count does not match input batch")
@@ -88,6 +90,8 @@ class UltralyticsDetector(Detector):
             source=[f.image for f in batch], device=self.config.device,
             imgsz=self.config.imgsz, half=self.config.half,
             batch=len(batch), stream=False, verbose=False, save=False, rect=False,
+            classes=self.config.detection_classes,
+            conf=self.config.person_conf_threshold,
         )
         if len(predictions) != len(batch):
             raise RuntimeError("Detector result count does not match input batch")

@@ -1,4 +1,5 @@
 import logging
+import uuid
 from pathlib import Path
 from threading import Event, Lock, Thread
 from time import monotonic
@@ -14,6 +15,8 @@ from .types import CameraFrame, CameraState, DetectionResult, GpuFrame
 from .gpu_frame import GpuPreprocessor
 from .preview.preview_cache import PreviewCache
 from .preview.preview_worker import PreviewWorker
+from .events import EventDatabase
+from .events.clip_recorder import ClipRecorder
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +130,14 @@ class StreamCore:
         except Exception as exc:
             logger.warning("spatial_manager_init_deferred", extra={"reason": str(exc)})
             self.spatial_manager = None
+
+        if getattr(self.config, "events", None) and self.config.events.enabled:
+            self.event_db = EventDatabase(self.config.events)
+            camera_urls = {c.id: c.uri for c in self.cameras}
+            self.clip_recorder = ClipRecorder(self.config.events, camera_urls)
+        else:
+            self.event_db = None
+            self.clip_recorder = None
 
     def register_camera(
         self,
@@ -389,6 +400,10 @@ class StreamCore:
                     except Exception as exc:
                         logger.error("spatial_manager_processing_failed", extra={"camera_id": r.camera_id, "reason": str(exc)})
 
+            # Track lifecycle events for person detection
+            if self.event_db is not None and self.config.events.enabled:
+                self._process_track_events(results, batch)
+
         self.metrics.batch(results, infer_ms, batch_wait_ms=avg_wait, preprocess_ms=prep_ms)
         with self._results_lock:
             self._results.update((r.camera_id, r) for r in results)
@@ -403,6 +418,94 @@ class StreamCore:
                 logger.error("tracks_export_failed", extra={"reason": str(exc)})
         if self.on_results is not None:
             self.on_results(results)
+
+    def _process_track_events(self, results: list[DetectionResult], batch: list[Any]) -> None:
+        """Create/update track lifecycle events for person detections."""
+        if self.tracker_manager is None or self.event_db is None:
+            return
+
+        from ..tracking.types import TrackState
+        from datetime import datetime, timezone
+
+        for result in results:
+            camera_id = result.camera_id
+            if not result.detections:
+                continue
+
+            try:
+                tracker = self.tracker_manager.get_or_create_tracker(camera_id)
+                tracks = tracker.get_tracks()
+
+                for track in tracks:
+                    # Only process person tracks that are confirmed
+                    if track.class_name != "person":
+                        continue
+
+                    # Check if track just became CONFIRMED (first time)
+                    min_hits = getattr(self.config.tracking, "min_hits_to_confirm", 3)
+                    if track.state == TrackState.CONFIRMED and track.hit_count == min_hits:
+                        if not hasattr(track, "_event_created"):
+                            track._event_created = True
+                            self._create_track_event(track, result, camera_id)
+
+                    # Check if track ended
+                    if track.state == TrackState.ENDED and not getattr(track, "_event_closed", False):
+                        track._event_closed = True
+                        self._close_track_event(track, camera_id)
+
+            except Exception as exc:
+                logger.error("track_event_processing_failed", extra={"camera_id": camera_id, "reason": str(exc)})
+
+    def _create_track_event(self, track: Any, result: DetectionResult, camera_id: str) -> None:
+        """Create a new track lifecycle event and trigger clip recording."""
+        event_id = f"evt-{uuid.uuid4().hex[:12]}"
+        started_at = datetime.fromtimestamp(result.timestamp, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # Find max confidence from detections for this track
+        track_dets = [d for d in result.detections if d.track_id == track.global_track_id]
+        max_conf = max((d.confidence for d in track_dets), default=track.confidence)
+
+        metadata = {
+            "bbox": list(track.bbox_xyxy),
+            "class": "person",
+            "track_state": str(track.state),
+        }
+
+        self.event_db.create_track_event(
+            event_id=event_id,
+            track_id=track.global_track_id,
+            track_session_id=self.spatial_manager.get_camera_session(camera_id) if self.spatial_manager else "default",
+            camera_id=camera_id,
+            started_at_utc=started_at,
+            max_confidence=max_conf,
+            metadata=metadata,
+        )
+
+        # Trigger clip recording
+        if self.clip_recorder is not None:
+            def on_clip_done(clip_path: str):
+                self.event_db.update_track_event(
+                    event_id=event_id,
+                    clip_path=clip_path,
+                    clip_recorded=True,
+                )
+            self.clip_recorder.record_clip(camera_id, event_id, result.timestamp, on_complete=on_clip_done)
+
+    def _close_track_event(self, track: Any, camera_id: str) -> None:
+        """Close a track lifecycle event when track ends."""
+        event = self.event_db.get_event_by_track(
+            track.global_track_id,
+            self.spatial_manager.get_camera_session(camera_id) if self.spatial_manager else "default"
+        )
+        if event and event.ended_at_utc is None:
+            ended_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            duration = (datetime.fromisoformat(ended_at.replace('Z', '+00:00')) -
+                       datetime.fromisoformat(event.started_at_utc.replace('Z', '+00:00'))).total_seconds()
+            self.event_db.update_track_event(
+                event_id=event.event_id,
+                ended_at_utc=ended_at,
+                duration_seconds=duration,
+            )
 
     def _monitor(self, resources: ResourceMonitor) -> None:
         while not self.stop_event.wait(self.config.monitoring.print_interval_seconds):
@@ -574,6 +677,11 @@ class StreamCore:
                 self.csv_writer.close()
             if self.tracks_writer is not None:
                 self.tracks_writer.close()
+            if self.clip_recorder is not None:
+                self.clip_recorder.shutdown()
+            if self.event_db is not None:
+                self.event_db.cleanup_old_events()
+                self.event_db.close_all_connections()
 
             status = self._status_at_stop or self.metrics.view()
             duration = monotonic() - self.benchmark.started

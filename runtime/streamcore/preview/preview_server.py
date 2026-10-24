@@ -169,6 +169,7 @@ footer { margin-top: 20px; color: #8b949e; font-size: .82rem; display: flex; jus
   <button id="btn-mjpeg" class="btn" onclick="switchView('mjpeg')">🤖 Multi-Grid Overview (All Cameras)</button>
   <button id="btn-onboarding" class="btn" onclick="switchView('onboarding')">⚡ Smart Camera Onboarding & AI</button>
   <button id="btn-spatial" class="btn" onclick="switchView('spatial')">📐 Spatial Intelligence & Rules</button>
+  <button id="btn-events" class="btn" onclick="switchView('events')">📋 Events & Clips</button>
 </div>
 
 <!-- DEMO VIEW -->
@@ -548,6 +549,59 @@ footer { margin-top: 20px; color: #8b949e; font-size: .82rem; display: flex; jus
   </aside>
 </section>
 
+<!-- EVENTS & CLIPS VIEW -->
+<section id="events-view" style="display:none; flex-direction:column; gap:16px; max-width:800px; margin:0 auto; width:100%;">
+  <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; overflow:hidden;">
+    <div style="padding:16px 20px; font-weight:700; font-size:1rem; background:#1c2128; border-bottom:1px solid #30363d;">
+      📋 Find Video Clip by Time Range
+    </div>
+    <div style="padding:24px;">
+      <form id="clip-query-form" onsubmit="return queryClip(event)">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:16px;">
+          <div class="form-group">
+            <label class="form-label">Camera ID <span style="color:#f85149;">*</span></label>
+            <select id="query-camera-id" class="form-select" required>
+              <option value="">-- Select Camera --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Start Time (IST) <span style="color:#f85149;">*</span></label>
+            <input type="datetime-local" id="query-start-time" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Time (IST) <span style="color:#f85149;">*</span></label>
+            <input type="datetime-local" id="query-end-time" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Class (Optional)</label>
+            <select id="query-class" class="form-select">
+              <option value="person">person</option>
+              <option value="car">car</option>
+              <option value="truck">truck</option>
+              <option value="bus">bus</option>
+              <option value="motorcycle">motorcycle</option>
+              <option value="bicycle">bicycle</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; justify-content:flex-start;">
+          <button type="submit" class="btn active-green" style="padding:10px 24px; font-size:.9rem;">
+            🔍 Find Clip
+          </button>
+          <button type="button" class="btn" onclick="resetQueryForm()" style="padding:10px 24px; font-size:.9rem;">
+            🔄 New Query
+          </button>
+        </div>
+      </form>
+
+      <!-- Result Area -->
+      <div id="query-result" style="display:none; margin-top:24px; padding-top:16px; border-top:1px solid #21262d;">
+        <div id="result-content"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <footer>
   <span>AIVISRA StreamCore · GPU-Native Ingest & Inference Engine</span>
   <span>Zero-Copy CUDA Frame Pipeline · Hardware Verified</span>
@@ -706,6 +760,7 @@ let activeOnboardingVersion = 1;
 let rawRecommendations = [];
 let capabilityRegistryList = [];
 const onboardingView = document.getElementById('onboarding-view');
+const eventsView = document.getElementById('events-view');
 
 function switchView(view) {
   currentView = view;
@@ -715,6 +770,8 @@ function switchView(view) {
   if (btnOb) btnOb.className = 'btn' + (view === 'onboarding' ? ' active-green' : '');
   const btnSpatial = document.getElementById('btn-spatial');
   if (btnSpatial) btnSpatial.className = 'btn' + (view === 'spatial' ? ' active-green' : '');
+  const btnEvents = document.getElementById('btn-events');
+  if (btnEvents) btnEvents.className = 'btn' + (view === 'events' ? ' active-green' : '');
 
   const spatialView = document.getElementById('spatial-view');
 
@@ -723,12 +780,14 @@ function switchView(view) {
     grid.style.display = 'none';
     if (onboardingView) onboardingView.style.display = 'none';
     if (spatialView) spatialView.style.display = 'none';
+    if (eventsView) eventsView.style.display = 'none';
     selectCamera(selectedCam);
   } else if (view === 'mjpeg') {
     demoView.style.display = 'none';
     grid.style.display = 'grid';
     if (onboardingView) onboardingView.style.display = 'none';
     if (spatialView) spatialView.style.display = 'none';
+    if (eventsView) eventsView.style.display = 'none';
     stageMjpeg.src = '';
     stageWebrtc.src = 'about:blank';
     stageWebrtc.style.display = 'none';
@@ -742,6 +801,7 @@ function switchView(view) {
     grid.style.display = 'none';
     if (onboardingView) onboardingView.style.display = 'flex';
     if (spatialView) spatialView.style.display = 'none';
+    if (eventsView) eventsView.style.display = 'none';
     stageMjpeg.src = '';
     loadExistingCamerasForOnboarding();
     loadCapabilityRegistry();
@@ -750,8 +810,21 @@ function switchView(view) {
     grid.style.display = 'none';
     if (onboardingView) onboardingView.style.display = 'none';
     if (spatialView) spatialView.style.display = 'grid';
+    if (eventsView) eventsView.style.display = 'none';
     stageMjpeg.src = '';
     if (typeof initSpatialView === 'function') initSpatialView();
+  } else if (view === 'events') {
+    demoView.style.display = 'none';
+    grid.style.display = 'none';
+    if (onboardingView) onboardingView.style.display = 'none';
+    if (spatialView) spatialView.style.display = 'none';
+    if (eventsView) eventsView.style.display = 'flex';
+    stageMjpeg.src = '';
+    stageWebrtc.src = 'about:blank';
+    stageWebrtc.style.display = 'none';
+    populateQueryCameraFilter();
+    // Reset any previous result
+    document.getElementById('query-result').style.display = 'none';
   }
 }
 
@@ -780,6 +853,173 @@ async function loadCapabilityRegistry() {
       }
     }
   } catch (e) {}
+}
+
+// ===== EVENTS & CLIPS VIEW FUNCTIONS =====
+
+// Populate camera dropdown for query form
+async function populateQueryCameraFilter() {
+  const select = document.getElementById('query-camera-id');
+  if (!select) return;
+  try {
+    const res = await fetch('/api/cameras');
+    if (res.ok) {
+      const cams = await res.json();
+      select.innerHTML = '<option value="">-- Select Camera --</option>' +
+        cams.map(c => `<option value="${c.camera_id}">${c.camera_id}</option>`).join('');
+    }
+  } catch (e) {}
+}
+
+// Convert IST (naive or +05:30) to UTC for API query
+function istToUtc(istStr) {
+  if (!istStr) return null;
+  try {
+    const istTzOffset = 5.5 * 60 * 60 * 1000; // 5:30 hours in ms
+    let dt = new Date(istStr);
+    if (isNaN(dt.getTime())) return null;
+    // If no timezone info, assume IST
+    if (istStr.indexOf('Z') === -1 && istStr.indexOf('+') === -1 && istStr.indexOf('-', 10) === -1) {
+      dt = new Date(dt.getTime() - istTzOffset);
+    }
+    return dt.toISOString().replace('.000Z', 'Z');
+  } catch (e) {
+    return null;
+  }
+}
+
+// Query for a clip matching the time range
+async function queryClip(event) {
+  event.preventDefault();
+
+  const cameraId = document.getElementById('query-camera-id').value;
+  const startTime = document.getElementById('query-start-time').value;
+  const endTime = document.getElementById('query-end-time').value;
+  const objClass = document.getElementById('query-class').value;
+
+  const resultDiv = document.getElementById('query-result');
+  const contentDiv = document.getElementById('result-content');
+
+  if (!cameraId || !startTime || !endTime) {
+    alert('Please fill in Camera ID, Start Time, and End Time');
+    return false;
+  }
+
+  // Show loading
+  resultDiv.style.display = 'block';
+  contentDiv.innerHTML = '<div style="color:#79c0ff; text-align:center; padding:20px;">🔍 Searching for clip...</div>';
+
+  try {
+    // Convert IST to UTC
+    const startUtc = istToUtc(startTime);
+    const endUtc = istToUtc(endTime);
+
+    if (!startUtc || !endUtc) {
+      throw new Error('Invalid time format');
+    }
+
+    // Query events with 1 extra to detect if there are more
+    const params = new URLSearchParams({
+      camera_id: cameraId,
+      start: startUtc,
+      end: endUtc,
+      class: objClass,
+      limit: '5',  // Get a few to find one with clip
+      offset: '0'
+    });
+
+    const res = await fetch('/api/events?' + params.toString());
+    if (!res.ok) throw new Error('Failed to query events');
+    const data = await res.json();
+
+    // Find first event with a clip in the time range
+    const eventWithClip = data.events?.find(ev => ev.clip_recorded && ev.clip_path);
+
+    if (eventWithClip) {
+      const clipUrl = `/api/clips/${eventWithClip.clip_path}`;
+      const started = new Date(eventWithClip.started_at_utc.replace('Z', '+00:00'));
+      const ended = eventWithClip.ended_at_utc ? new Date(eventWithClip.ended_at_utc.replace('Z', '+00:00')) : null;
+      const duration = eventWithClip.duration_seconds ? formatDuration(eventWithClip.duration_seconds) : (ended ? formatDuration((ended - started) / 1000) : 'Ongoing');
+
+      contentDiv.innerHTML = `
+        <div style="background:#0d1117; border:1px solid #30363d; border-radius:8px; overflow:hidden;">
+          <div style="padding:12px 16px; background:#1c2128; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span style="font-weight:600; color:#58a6ff;">${eventWithClip.camera_id}</span>
+              <span style="margin-left:8px; font-size:.75rem; color:#8b949e;">${eventWithClip.track_id}</span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950;">${eventWithClip.object_class}</span>
+              <span class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950;">📹 Clip Found</span>
+            </div>
+          </div>
+          <div style="padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; font-size:.85rem;">
+            <div><span style="color:#8b949e;">Camera</span><br><strong>${eventWithClip.camera_id}</strong></div>
+            <div><span style="color:#8b949e;">Track</span><br><strong>${eventWithClip.track_id}</strong></div>
+            <div><span style="color:#8b949e;">Started</span><br><strong>${new Date(eventWithClip.started_at_utc.replace('Z', '+00:00')).toLocaleString()}</strong></div>
+            <div><span style="color:#8b949e;">Ended</span><br><strong>${eventWithClip.ended_at_utc ? new Date(eventWithClip.ended_at_utc.replace('Z', '+00:00')).toLocaleString() : 'Active'}</strong></div>
+            <div><span style="color:#8b949e;">Duration</span><br><strong>${duration}</strong></div>
+            <div><span style="color:#8b949e;">Max Confidence</span><br><strong style="color:#79c0ff;">${(eventWithClip.max_confidence * 100).toFixed(1)}%</strong></div>
+          </div>
+          <div style="padding:0 16px 16px;">
+            <video controls style="width:100%; max-height:400px; background:#000; border-radius:4px; border:1px solid #30363d;" preload="metadata">
+              <source src="/api/clips/${eventWithClip.clip_path}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+              <a href="/api/clips/${eventWithClip.clip_path}" target="_blank" class="btn" style="text-decoration:none; padding:8px 16px;">🔗 Open in New Tab</a>
+              <button class="btn" onclick="downloadClip('/api/clips/${eventWithClip.clip_path}', '${eventWithClip.event_id}.mp4')" style="padding:8px 16px;">⬇ Download Clip</button>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      contentDiv.innerHTML = `
+        <div style="background:#1c2128; border:1px solid #30363d; border-radius:8px; padding:32px; text-align:center;">
+          <div style="font-size:2.5rem; margin-bottom:12px;">📭</div>
+          <div style="font-size:1.1rem; font-weight:600; color:#e6edf3; margin-bottom:8px;">No Video Clip Found</div>
+          <div style="color:#8b949e; font-size:.9rem;">
+            No clip recorded for <strong>${cameraId}</strong> between<br>
+            <strong>${startTime}</strong> and <strong>${endTime}</strong> (IST)
+            ${objClass !== 'person' ? ` for class <strong>${objClass}</strong>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+  } catch (err) {
+    console.error('queryClip error:', err);
+    contentDiv.innerHTML = `
+      <div style="background:#1c2128; border:1px solid #f85149; border-radius:8px; padding:24px; text-align:center; color:#f85149;">
+        <div style="font-weight:600; margin-bottom:8px;">Error</div>
+        <div style="color:#8b949e; font-size:.9rem;">${err.message}</div>
+      </div>
+    `;
+  }
+
+  return false;
+}
+
+function resetQueryForm() {
+  document.getElementById('clip-query-form').reset();
+  document.getElementById('query-result').style.display = 'none';
+  document.getElementById('query-camera-id').focus();
+}
+
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function downloadClip(url, filename) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
 }
 
 function onSelectExistingCam(camId) {
@@ -2117,6 +2357,8 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
         def log_message(self, _format: str, *_args: object) -> None:
             pass  # Avoid noisy per-frame logs.
 
+        from pathlib import Path
+
         def respond(self, status: int, content_type: str, content: bytes,
                     frame_sequence: int | None = None) -> None:
             self.send_response(status)
@@ -2135,6 +2377,60 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
             self.end_headers()
             if content:
                 self.wfile.write(content)
+
+        def respond_file(self, status: int, content_type: str, file_path: Path,
+                         range_header: str | None = None) -> None:
+            """Serve a file with Range request support for video streaming."""
+            if not file_path.is_file():
+                self.respond(404, "text/plain", b"File not found")
+                return
+
+            file_size = file_path.stat().st_size
+            start = 0
+            end = file_size - 1
+            send_headers = True
+
+            if range_header and range_header.startswith("bytes="):
+                try:
+                    range_spec = range_header[6:]
+                    if "-" in range_spec:
+                        start_str, end_str = range_spec.split("-", 1)
+                        if start_str:
+                            start = int(start_str)
+                        if end_str:
+                            end = min(int(end_str), file_size - 1)
+                    self.send_response(206)
+                    self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+                    send_headers = True
+                except (ValueError, IndexError):
+                    pass
+
+            if not send_headers:
+                self.send_response(status)
+
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(end - start + 1))
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
+            self.end_headers()
+
+            try:
+                with file_path.open("rb") as f:
+                    f.seek(start)
+                    remaining = end - start + 1
+                    chunk_size = 65536
+                    while remaining > 0:
+                        to_read = min(chunk_size, remaining)
+                        data = f.read(to_read)
+                        if not data:
+                            break
+                        self.wfile.write(data)
+                        remaining -= len(data)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                return
 
         def respond_json(self, status: int, data: Any) -> None:
             body = json.dumps(data).encode("utf-8")
@@ -2515,6 +2811,69 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     self.respond_json(200, {"camera_id": camera_id, "events": [e.to_dict() for e in evts]})
                 else:
                     self.respond_json(200, {"camera_id": camera_id, "events": []})
+            elif path == "/api/events" or path.startswith("/api/events?"):
+                # Global events query with filters
+                from urllib.parse import parse_qs
+                from datetime import datetime, timezone, timedelta
+                query = urlsplit(self.path).query
+                params = parse_qs(query)
+                camera_id = params.get("camera_id", [None])[0]
+                start_ist = params.get("start", [None])[0]
+                end_ist = params.get("end", [None])[0]
+                obj_class = params.get("class", ["person"])[0]
+                limit = int(params.get("limit", ["2"])[0])
+                offset = int(params.get("offset", ["0"])[0])
+
+                # Convert IST (UTC+5:30) to UTC for database query
+                ist_tz = timezone(timedelta(hours=5, minutes=30))
+                def ist_to_utc(ist_str: str | None) -> str | None:
+                    if not ist_str:
+                        return None
+                    try:
+                        # Parse as IST (assume naive datetime is IST)
+                        dt = datetime.fromisoformat(ist_str.replace('Z', '+00:00'))
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=ist_tz)
+                        else:
+                            dt = dt.astimezone(ist_tz)
+                        # Convert to UTC
+                        return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    except Exception:
+                        return None
+
+                start_utc = ist_to_utc(start_ist)
+                end_utc = ist_to_utc(end_ist)
+
+                event_db = getattr(engine, "event_db", None)
+                if event_db:
+                    events = event_db.query_events(
+                        camera_id=camera_id,
+                        start_utc=start_utc,
+                        end_utc=end_utc,
+                        object_class=obj_class,
+                        limit=limit,
+                        offset=offset,
+                    )
+                    self.respond_json(200, {
+                        "events": [e.to_dict() for e in events],
+                        "total": len(events),
+                        "limit": limit,
+                        "offset": offset,
+                    })
+                else:
+                    self.respond_json(200, {"events": [], "total": 0, "limit": limit, "offset": offset})
+            elif path.startswith("/api/events/"):
+                # Get single event by ID
+                event_id = path[len("/api/events/"):].strip("/")
+                event_db = getattr(engine, "event_db", None)
+                if event_db:
+                    event = event_db.get_event(event_id)
+                    if event:
+                        self.respond_json(200, event.to_dict())
+                    else:
+                        self.respond_json(404, {"error": "Event not found"})
+                else:
+                    self.respond_json(404, {"error": "Event database not available"})
             elif path == "/api/intelligence/metrics":
                 sp = getattr(engine, "spatial_manager", None)
                 if sp:
@@ -2531,6 +2890,19 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     self.respond(200, "image/jpeg", file_path.read_bytes())
                     return
                 self.respond(404, "text/plain", b"Evidence image not found")
+            elif path.startswith("/api/clips/"):
+                # Serve video clips with Range support for streaming
+                clip_path = path[len("/api/clips/"):].strip("/")
+                event_db = getattr(engine, "event_db", None)
+                if event_db:
+                    from pathlib import Path
+                    clips_dir = Path(event_db.config.clip_storage_dir)
+                    file_path = clips_dir / clip_path
+                    if file_path.is_file():
+                        range_header = self.headers.get("Range")
+                        self.respond_file(200, "video/mp4", file_path, range_header)
+                        return
+                self.respond(404, "text/plain", b"Clip not found")
             elif path.startswith("/frame/") and path.endswith(".jpg"):
                 camera_id = path[len("/frame/"):-len(".jpg")]
                 if camera_id not in c_ids:

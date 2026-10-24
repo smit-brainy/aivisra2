@@ -9,23 +9,17 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-# If invoked with conda python, re-execute with system python which has GStreamer gi bindings
-if ("miniconda" in sys.executable.lower() or "conda" in sys.executable.lower()) and os.path.exists("/usr/bin/python3"):
-    env = dict(os.environ)
-    env.pop("PYTHONNOUSERSITE", None)
-    os.execve("/usr/bin/python3", ["/usr/bin/python3"] + sys.argv, env)
-
 # Ensure user site packages (~/.local/lib/python3.12/site-packages) are always discovered
 user_site = Path.home() / f".local/lib/python3.{sys.version_info.minor}/site-packages"
 if user_site.is_dir() and str(user_site) not in sys.path:
     sys.path.insert(0, str(user_site))
 
-# Enable running directly as script (python3 main.py) or as module (python3 -m mis.runtime.streamcore.main)
+# Enable running directly as script (python3 main.py) or as module (python3 -m runtime.streamcore.main)
 if __package__ is None or __package__ == "":
-    project_root = Path(__file__).resolve().parents[3]
+    project_root = Path(__file__).resolve().parents[2]
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
-    __package__ = "mis.runtime.streamcore"
+    __package__ = "runtime.streamcore"
 
 from .config import load_cameras, load_config, load_local_env
 from .engine import StreamCore

@@ -42,6 +42,8 @@ inference:
   fallback_cpu_frames: true
   max_batch_wait_ms: 5.0
   frame_path: "gpu"
+  detection_classes: [0]
+  person_conf_threshold: 0.5
 
 tracking:
   enabled: true
@@ -69,6 +71,14 @@ evidence:
   enabled: true
   key_frames_per_track: 3
   local_output_dir: runtime/streamcore/output
+
+events:
+  enabled: true
+  clip_duration_seconds: 10
+  clip_storage_dir: runtime/streamcore/output/clips
+  retention_days: 1
+  max_concurrent_recordings: 2
+  record_on_track_confirmed: true
 
 monitoring:
   print_interval_seconds: 5

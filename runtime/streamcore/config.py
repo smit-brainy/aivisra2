@@ -1,7 +1,7 @@
 import math
 import os
 import re
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -62,6 +62,8 @@ class InferenceConfig:
     fallback_cpu_frames: bool = True
     max_batch_wait_ms: float = 15.0
     frame_path: str = "gpu"
+    detection_classes: list[int] = field(default_factory=lambda: [0])
+    person_conf_threshold: float = 0.5
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,6 +112,16 @@ class EvidenceConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class EventsConfig:
+    enabled: bool = True
+    clip_duration_seconds: int = 10
+    clip_storage_dir: str = "runtime/streamcore/output/clips"
+    retention_days: int = 1
+    max_concurrent_recordings: int = 2
+    record_on_track_confirmed: bool = True
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     runtime: RuntimeConfig
     streams: StreamsConfig
@@ -120,6 +132,7 @@ class Config:
     decode: DecodeConfig = DecodeConfig()
     ai: AIConfig = AIConfig()
     evidence: EvidenceConfig = EvidenceConfig()
+    events: EventsConfig = EventsConfig()
     benchmark: BenchmarkConfig = BenchmarkConfig()
     health: HealthConfig = HealthConfig()
     tracking: TrackingConfig = TrackingConfig()
@@ -169,6 +182,7 @@ def load_config(path: str | Path) -> Config:
                 "diagnostic_preview": PreviewConfig,
                 "live_view": LiveViewConfig, "decode": DecodeConfig,
                 "ai": AIConfig, "evidence": EvidenceConfig,
+                "events": EventsConfig,
                 "benchmark": BenchmarkConfig, "health": HealthConfig,
                 "tracking": TrackingConfig}
     if set(data) - (sections.keys() | {"cameras"}):
@@ -214,6 +228,10 @@ def load_config(path: str | Path) -> Config:
         raise ValueError("model_path must be a nonempty string")
     if inf.detector == "ultralytics" and inf.device == "cpu" and inf.half:
         raise ValueError("CPU inference requires half: false")
+    if not isinstance(inf.detection_classes, list) or not all(isinstance(c, int) for c in inf.detection_classes):
+        raise ValueError("detection_classes must be a list of integers")
+    if not isinstance(inf.person_conf_threshold, (int, float)) or not (0 <= inf.person_conf_threshold <= 1):
+        raise ValueError("person_conf_threshold must be a float between 0 and 1")
     if not isinstance(config.live_view.enabled, bool):
         raise ValueError("live_view.enabled must be a boolean")
     if config.live_view.provider != "mediamtx" or config.live_view.protocol != "webrtc":
@@ -240,6 +258,15 @@ def load_config(path: str | Path) -> Config:
         raise ValueError("evidence.key_frames_per_track must be between 1 and 5")
     if not isinstance(config.evidence.local_output_dir, str) or not config.evidence.local_output_dir:
         raise ValueError("evidence.local_output_dir must be nonempty")
+    if not isinstance(config.events.enabled, bool):
+        raise ValueError("events.enabled must be a boolean")
+    _positive("events.clip_duration_seconds", config.events.clip_duration_seconds, integer=True)
+    _positive("events.retention_days", config.events.retention_days, integer=True)
+    _positive("events.max_concurrent_recordings", config.events.max_concurrent_recordings, integer=True)
+    if not isinstance(config.events.record_on_track_confirmed, bool):
+        raise ValueError("events.record_on_track_confirmed must be a boolean")
+    if not isinstance(config.events.clip_storage_dir, str) or not config.events.clip_storage_dir:
+        raise ValueError("events.clip_storage_dir must be nonempty")
     return config
 
 
@@ -271,7 +298,7 @@ def load_cameras(path: str | Path) -> list[CameraConfig]:
     data = _mapping(path)
     sections = {"runtime", "streams", "inference", "monitoring", "preview",
                 "diagnostic_preview", "live_view", "decode", "ai", "evidence",
-                "benchmark", "health", "tracking", "cameras"}
+                "events", "benchmark", "health", "tracking", "cameras"}
     if (set(data) - sections or "cameras" not in data
             or not isinstance(data["cameras"], list)):
         raise ValueError("Camera configuration must contain a cameras list")
