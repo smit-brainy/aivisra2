@@ -138,12 +138,11 @@ class StreamCore:
             camera_urls = {c.id: c.uri for c in self.cameras}
             camera_live_paths = {c.id: getattr(c, "live_path", c.id.lower()) for c in self.cameras}
             self.clip_recorder = ClipRecorder(self.config.events, camera_urls, camera_live_paths=camera_live_paths)
-            api_key = getattr(self.config.events, "gemini_api_key", None)
             base_dir = Path(self.config.events.clip_storage_dir).parent
             self.visual_search_manager = VisualSearchManager(
                 base_dir=base_dir,
-                api_key=api_key,
                 event_db=self.event_db,
+                settings=self.config.events,
             )
         else:
             self.event_db = None
@@ -434,11 +433,13 @@ class StreamCore:
             self.on_results(results)
 
     def _process_track_events(self, results: list[DetectionResult], batch: list[Any]) -> None:
-        """Create/update track lifecycle events for person detections."""
+        """Create/update track lifecycle events for all tracked COCO classes."""
         if self.tracker_manager is None or self.event_db is None:
             return
 
         from ..tracking.types import TrackState
+
+        tracked_filter = self.config.events.tracked_classes or []
 
         for result in results:
             camera_id = result.camera_id
@@ -448,8 +449,8 @@ class StreamCore:
                 tracks = tracker.get_tracks()
 
                 for track in tracks:
-                    # Only process person tracks
-                    if str(getattr(track, "class_name", "")).lower() != "person":
+                    class_id = int(getattr(track, "class_id", -1))
+                    if tracked_filter and class_id not in tracked_filter:
                         continue
 
                     # Check if track is CONFIRMED and event not created yet
@@ -504,10 +505,12 @@ class StreamCore:
 
         metadata = {
             "bbox": list(track.bbox_xyxy) if hasattr(track, "bbox_xyxy") else [],
-            "class": "person",
+            "class": str(getattr(track, "class_name", "person")),
             "track_state": str(track.state),
             "snapshot_path": snapshot_rel_path or "",
         }
+
+        object_class = str(getattr(track, "class_name", "person") or "person")
 
         track_session = "default"
         if getattr(self, "spatial_manager", None) is not None:
@@ -524,6 +527,7 @@ class StreamCore:
             started_at_utc=started_at,
             max_confidence=max_conf,
             metadata=metadata,
+            object_class=object_class,
         )
 
         # Expected clip path convention
@@ -541,6 +545,7 @@ class StreamCore:
                 started_at_utc=started_at,
                 track_id=track.global_track_id,
                 bbox=list(track.bbox_xyxy) if hasattr(track, "bbox_xyxy") else [],
+                object_class=object_class,
             )
 
         # Trigger clip recording asynchronously
@@ -551,14 +556,6 @@ class StreamCore:
                     clip_path=clip_path,
                     clip_recorded=True,
                 )
-                if getattr(self, "visual_search_manager", None) is not None:
-                    try:
-                        meta = self.visual_search_manager.vector_store.get_event_meta(event_id)
-                        if meta:
-                            meta["clip_path"] = clip_path
-                            self.visual_search_manager.vector_store.save()
-                    except Exception:
-                        pass
             self.clip_recorder.record_clip(camera_id, event_id, ts, on_complete=on_clip_done)
 
     def _close_track_event(self, track: Any, camera_id: str) -> None:

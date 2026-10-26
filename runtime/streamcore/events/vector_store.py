@@ -24,34 +24,47 @@ VECTOR_DIM = 768
 class FaissVectorStore:
     """Thread-safe vector store backed by FAISS IndexFlatIP (Cosine Similarity)."""
 
-    def __init__(self, storage_dir: str | Path = "runtime/streamcore/output/vector_index") -> None:
+    def __init__(
+        self,
+        storage_dir: str | Path = "runtime/streamcore/output/vector_index",
+        event_db: Any = None,
+        dim: int | None = None,
+    ) -> None:
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.index_path = self.storage_dir / "faiss.index"
         self.metadata_path = self.storage_dir / "metadata.json"
 
         self._lock = threading.RLock()
-        self.dim = VECTOR_DIM
+        self.dim = int(dim or VECTOR_DIM)
+        self.event_db = event_db
 
         # In-memory mapping
         self.id_map: list[str] = []  # Index position -> event_id
-        self.metadata_map: dict[str, dict[str, Any]] = {}  # event_id -> metadata dict
+        self.metadata_map: dict[str, dict[str, Any]] = {}  # legacy mode only
         self.index: faiss.IndexFlatIP = faiss.IndexFlatIP(self.dim)
 
         self._load()
-        # Guarantee files exist on disk immediately upon startup
+        # Guarantee the index file exists on disk immediately upon startup
         self._ensure_files_exist()
 
     def _ensure_files_exist(self) -> None:
-        """Guarantee that storage directory, faiss.index, and metadata.json exist on disk."""
+        """Guarantee storage directory and index file exist on disk."""
         with self._lock:
             self.storage_dir.mkdir(parents=True, exist_ok=True)
+            if self.event_db is not None:
+                if not self.index_path.is_file():
+                    self.save()
+                return
             if not self.index_path.is_file() or not self.metadata_path.is_file():
                 self.save()
 
     def _load(self) -> None:
-        """Load index and metadata from disk if available, or create fresh files."""
+        """Load the index; the id map comes from SQLite when an event DB is attached."""
         with self._lock:
+            if self.event_db is not None:
+                self._load_db_mode()
+                return
             try:
                 if self.metadata_path.exists():
                     with open(self.metadata_path, "r", encoding="utf-8") as f:
@@ -104,8 +117,55 @@ class FaissVectorStore:
             self.metadata_map = {}
             self.save()
 
+    def _load_db_mode(self) -> None:
+        """Load index + reconcile the SQLite vector_id_map with the FAISS file."""
+        rows = self.event_db.all_vector_rows()
+        self.id_map = [event_id for _row, event_id in rows]
+        self.metadata_map = {}
+        try:
+            if self.index_path.exists() and len(self.id_map) > 0:
+                loaded_index = faiss.read_index(str(self.index_path))
+                if loaded_index.ntotal == len(self.id_map):
+                    self.index = loaded_index
+                    logger.info("vector_store_loaded_db_mode", extra={
+                        "total_vectors": self.index.ntotal, "path": str(self.index_path)
+                    })
+                    return
+                if loaded_index.ntotal > len(self.id_map):
+                    logger.warning("vector_store_index_orphans_trimmed", extra={
+                        "index_total": loaded_index.ntotal, "id_map_len": len(self.id_map)
+                    })
+                    new_index = faiss.IndexFlatIP(self.dim)
+                    if len(self.id_map) > 0:
+                        raw = loaded_index.reconstruct_n(0, len(self.id_map))
+                        new_index.add(raw)
+                    self.index = new_index
+                    self.save()
+                    return
+                logger.warning("vector_store_db_rows_orphaned", extra={
+                    "index_total": loaded_index.ntotal, "id_map_len": len(self.id_map)
+                })
+                for row, _event_id in rows[loaded_index.ntotal:]:
+                    self.event_db.delete_vector_row(row)
+                self.id_map = self.id_map[: loaded_index.ntotal]
+                self.index = loaded_index
+                return
+            if self.index_path.exists() and len(self.id_map) == 0:
+                loaded_index = faiss.read_index(str(self.index_path))
+                if loaded_index.ntotal == 0:
+                    self.index = loaded_index
+                    return
+                raise RuntimeError("faiss index has vectors but SQLite vector_id_map is empty; dropping orphan vectors")
+        except Exception as exc:
+            logger.error("vector_store_db_load_failed", extra={"reason": str(exc)})
+            for row, _event_id in self.event_db.all_vector_rows():
+                self.event_db.delete_vector_row(row)
+            self.id_map = []
+            self.index = faiss.IndexFlatIP(self.dim)
+            self.save()
+
     def save(self) -> None:
-        """Atomically persist FAISS index and metadata to disk."""
+        """Atomically persist the FAISS index (and legacy metadata sidecar, if in legacy mode)."""
         with self._lock:
             try:
                 self.storage_dir.mkdir(parents=True, exist_ok=True)
@@ -113,13 +173,14 @@ class FaissVectorStore:
                 faiss.write_index(self.index, str(tmp_idx))
                 os.replace(tmp_idx, self.index_path)
 
-                tmp_meta = self.storage_dir / "metadata.json.tmp"
-                with open(tmp_meta, "w", encoding="utf-8") as f:
-                    json.dump({
-                        "id_map": self.id_map,
-                        "metadata": self.metadata_map
-                    }, f, indent=2)
-                os.replace(tmp_meta, self.metadata_path)
+                if self.event_db is None:
+                    tmp_meta = self.storage_dir / "metadata.json.tmp"
+                    with open(tmp_meta, "w", encoding="utf-8") as f:
+                        json.dump({
+                            "id_map": self.id_map,
+                            "metadata": self.metadata_map
+                        }, f, indent=2)
+                    os.replace(tmp_meta, self.metadata_path)
             except Exception as exc:
                 logger.error("vector_store_save_failed", extra={"reason": str(exc)})
 
@@ -127,44 +188,51 @@ class FaissVectorStore:
         self,
         event_id: str,
         vector: np.ndarray | list[float],
-        metadata: dict[str, Any]
-    ) -> bool:
-        """Add or update an event embedding vector with metadata."""
+        metadata: dict[str, Any] | None = None,
+    ) -> int:
+        """Add an event embedding; returns the FAISS row position, or -1 on failure.
+
+        With an attached event DB, the row <-> event mapping is recorded in SQLite
+        and no JSON sidecar is written. Without one, legacy metadata is kept in
+        the sidecar file.
+        """
         with self._lock:
             self._ensure_files_exist()
             try:
                 vec = np.asarray(vector, dtype=np.float32).reshape(1, -1)
                 if vec.shape[1] != self.dim:
                     logger.error("invalid_vector_dim", extra={"expected": self.dim, "got": vec.shape[1]})
-                    return False
+                    return -1
                 if not np.all(np.isfinite(vec)):
                     vec = np.nan_to_num(vec, nan=0.0, posinf=0.0, neginf=0.0)
                 norm = float(np.linalg.norm(vec))
                 if norm <= 1e-6:
                     logger.warning("zero_norm_vector_rejected", extra={"event_id": event_id})
-                    return False
+                    return -1
 
                 # Normalize for Cosine Similarity
                 faiss.normalize_L2(vec)
 
-                # Check if event_id already exists in id_map
                 if event_id in self.id_map:
-                    # Update metadata
-                    if event_id in self.metadata_map:
-                        self.metadata_map[event_id].update(metadata)
-                    else:
-                        self.metadata_map[event_id] = metadata
-                    self.save()
-                    return True
+                    if self.event_db is None and metadata is not None:
+                        self.metadata_map.setdefault(event_id, {}).update(metadata)
+                        self.save()
+                    row = self.id_map.index(event_id)
+                    return row
 
+                row = int(self.index.ntotal)
+                if self.event_db is not None:
+                    if not self.event_db.record_vector_row(row, event_id):
+                        return -1
                 self.index.add(vec)
                 self.id_map.append(event_id)
-                self.metadata_map[event_id] = metadata
+                if self.event_db is None:
+                    self.metadata_map[event_id] = metadata or {}
                 self.save()
-                return True
+                return row
             except Exception as exc:
                 logger.error("vector_store_add_failed", extra={"event_id": event_id, "reason": str(exc)})
-                return False
+                return -1
 
     def search(
         self,
@@ -210,15 +278,32 @@ class FaissVectorStore:
 
                 n_start = _norm_iso(start_utc)
                 n_end = _norm_iso(end_utc)
+                cam_filter = (camera_id or "").strip().upper()
+
+                # Batch fetch event metadata from SQLite when event_db is attached
+                candidate_ids = [
+                    self.id_map[idx]
+                    for idx in indices[0]
+                    if 0 <= idx < len(self.id_map)
+                ]
+                db_meta_map: dict[str, dict[str, Any]] = {}
+                if self.event_db is not None and candidate_ids:
+                    try:
+                        db_meta_map = self.event_db.get_events_by_ids(candidate_ids)
+                    except Exception as ex:
+                        logger.warning("fetch_event_db_meta_failed", extra={"reason": str(ex)})
 
                 results = []
                 for score, idx in zip(distances[0], indices[0]):
                     if idx < 0 or idx >= len(self.id_map):
                         continue
                     event_id = self.id_map[idx]
-                    meta = self.metadata_map.get(event_id, {})
+                    meta = db_meta_map.get(event_id) if self.event_db is not None else self.metadata_map.get(event_id, {})
+                    if not meta:
+                        meta = {}
 
-                    if camera_id and meta.get("camera_id") != camera_id:
+                    cam_val = str(meta.get("camera_id") or "").strip().upper()
+                    if cam_filter and cam_val and cam_val != cam_filter:
                         continue
 
                     evt_time = meta.get("started_at_utc")
@@ -248,6 +333,9 @@ class FaissVectorStore:
 
     def get_event_meta(self, event_id: str) -> dict[str, Any] | None:
         with self._lock:
+            if self.event_db is not None:
+                events = self.event_db.get_events_by_ids([event_id])
+                return events.get(event_id)
             return self.metadata_map.get(event_id)
 
     @property

@@ -32,7 +32,10 @@ class EmbeddingService:
     """Generates visual descriptions and 768-dim embeddings for surveillance queries."""
 
     def __init__(self, api_key: str | None = None) -> None:
-        self._api_key = (api_key or "").strip() or self._resolve_api_key()
+        if (api_key or "").strip().lower() in ("disabled", "none", "off", "local"):
+            self._api_key = ""
+        else:
+            self._api_key = (api_key or "").strip() or self._resolve_api_key()
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
         self._quota_cooldown_until: float = 0.0

@@ -2,8 +2,8 @@
 
 Coordinates:
 - Snapshot extraction and disk storage
-- Asynchronous visual embedding via Gemini / local vision
-- FAISS vector store indexing and query retrieval
+- Local VLM description + local embedder (Ollama) with deterministic fallbacks
+- FAISS vector store indexing; row <-> event mapping lives in SQLite (vector_id_map)
 """
 
 from __future__ import annotations
@@ -20,20 +20,22 @@ from typing import Any
 import cv2
 import numpy as np
 
-from .embedding_service import EmbeddingService
+from ..config import EventsConfig
+from .local_models import LocalModelService
 from .vector_store import FaissVectorStore
 
 logger = logging.getLogger("events.visual_search")
 
 
 class VisualSearchManager:
-    """Manages visual embeddings, FAISS indexing, and natural language surveillance queries."""
+    """Manages 100% local visual embeddings, FAISS indexing, and natural language surveillance queries."""
 
     def __init__(
         self,
         base_dir: str | Path = "runtime/streamcore/output",
-        api_key: str | None = None,
         event_db: Any = None,
+        settings: Any = None,
+        **kwargs: Any,
     ) -> None:
         self.base_dir = Path(base_dir)
         self.snapshots_dir = self.base_dir / "snapshots"
@@ -42,8 +44,16 @@ class VisualSearchManager:
         self.index_dir.mkdir(parents=True, exist_ok=True)
 
         self.event_db = event_db
-        self.vector_store = FaissVectorStore(self.index_dir)
-        self.embedding_service = EmbeddingService(api_key=api_key)
+        self.settings = settings
+        self.min_crop_px = max(10, int(getattr(settings, "min_crop_px", 10) or 10))
+        self.vector_store = FaissVectorStore(
+            self.index_dir,
+            event_db=event_db,
+            dim=int(getattr(settings, "embed_dim", 0) or 0) or None,
+        )
+        self.local_models: LocalModelService = (
+            LocalModelService(settings) if settings else LocalModelService(EventsConfig())
+        )
 
         # Thread pool for asynchronous background embedding so video pipeline is never delayed
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="visual-indexer")
@@ -63,7 +73,9 @@ class VisualSearchManager:
 
     @property
     def has_api_key(self) -> bool:
-        return self.embedding_service.has_api_key
+        if self.local_models is not None and self.local_models.has_vlm:
+            return True
+        return False
 
     def extract_and_save_snapshot(
         self,
@@ -73,9 +85,10 @@ class VisualSearchManager:
         timestamp_str: str,
         event_id: str,
     ) -> str | None:
-        """Extract person bounding box with 10% padding and save as JPEG snapshot.
-        
+        """Extract the object bounding box with 10% padding and save as JPEG snapshot.
+
         Returns relative path to snapshot from output/ (e.g. snapshots/CAM001/CAM001_...jpg).
+        Crops smaller than ``events.min_crop_px`` per side are skipped.
         """
         try:
             if frame_bgr is None or not hasattr(frame_bgr, "shape"):
@@ -104,7 +117,11 @@ class VisualSearchManager:
             cx2 = min(w, int(x2 + pad_x))
             cy2 = min(h, int(y2 + pad_y))
 
-            if cx2 <= cx1 + 10 or cy2 <= cy1 + 10:
+            if cx2 <= cx1 + self.min_crop_px or cy2 <= cy1 + self.min_crop_px:
+                logger.debug("snapshot_crop_too_small", extra={
+                    "event_id": event_id, "width": cx2 - cx1, "height": cy2 - cy1,
+                    "min_crop_px": self.min_crop_px,
+                })
                 return None
 
             crop = frame_bgr[cy1:cy2, cx1:cx2]
@@ -133,8 +150,9 @@ class VisualSearchManager:
         started_at_utc: str,
         track_id: str = "",
         bbox: list[float] | None = None,
+        object_class: str = "",
     ) -> None:
-        """Schedule background embedding generation and FAISS indexing."""
+        """Schedule local description + embedding generation and FAISS indexing."""
         if event_id in self._indexed_events:
             return
         self._indexed_events.add(event_id)
@@ -147,6 +165,7 @@ class VisualSearchManager:
             started_at_utc,
             track_id,
             bbox or [],
+            object_class,
         )
 
     def _do_index_event(
@@ -158,8 +177,9 @@ class VisualSearchManager:
         started_at_utc: str,
         track_id: str,
         bbox: list[float],
+        object_class: str = "",
     ) -> None:
-        """Worker function to analyze snapshot and add to FAISS."""
+        """Worker: describe the snapshot locally, embed it, and persist to FAISS + SQLite."""
         try:
             snap_p = Path(snapshot_rel_path)
             if snap_p.is_absolute() and snap_p.exists():
@@ -182,32 +202,43 @@ class VisualSearchManager:
                 else:
                     abs_snap = self.base_dir / clean_snap
 
-            desc, vec = self.embedding_service.analyze_image_and_embed(abs_snap)
+            desc = self.local_models.describe_with_fallback(abs_snap, object_class=object_class)
+            if not desc:
+                desc = f"{object_class or 'object'} detected on surveillance camera"
 
-            metadata = {
+            vec = self.local_models.embed_text(desc)
+
+            if self.event_db is not None:
+                row = self.vector_store.add(event_id, vec)
+                if row < 0:
+                    raise RuntimeError(f"faiss add rejected event {event_id}")
+                self.event_db.update_track_event(
+                    event_id=event_id,
+                    description=desc,
+                    snapshot_path=snapshot_rel_path,
+                )
+            else:
+                metadata = {
+                    "event_id": event_id,
+                    "camera_id": camera_id,
+                    "track_id": str(track_id),
+                    "started_at_utc": started_at_utc,
+                    "snapshot_path": snapshot_rel_path,
+                    "clip_path": clip_rel_path,
+                    "description": desc,
+                    "bbox": bbox,
+                }
+                row = self.vector_store.add(event_id, vec, metadata)
+                if row < 0:
+                    raise RuntimeError(f"faiss add rejected event {event_id}")
+
+            logger.info("event_vector_indexed", extra={
                 "event_id": event_id,
                 "camera_id": camera_id,
-                "track_id": str(track_id),
-                "started_at_utc": started_at_utc,
-                "snapshot_path": snapshot_rel_path,
-                "clip_path": clip_rel_path,
-                "description": desc,
-                "bbox": bbox,
-            }
-
-            self.vector_store.add(event_id, vec, metadata)
-            logger.info("event_vector_indexed", extra={"event_id": event_id, "camera_id": camera_id, "desc": desc[:60]})
-
-            # Optionally update event_db metadata with description
-            if self.event_db is not None:
-                try:
-                    ev = self.event_db.get_event(event_id)
-                    if ev and isinstance(ev.metadata, dict):
-                        ev.metadata["description"] = desc
-                        ev.metadata["snapshot_path"] = snapshot_rel_path
-                        self.event_db.update_track_event(event_id=event_id, metadata=ev.metadata)
-                except Exception:
-                    pass
+                "row": row,
+                "mode": "db" if self.event_db is not None else "legacy",
+                "desc": desc[:60],
+            })
         except Exception as exc:
             self._indexed_events.discard(event_id)
             logger.error("do_index_event_failed", extra={"event_id": event_id, "reason": str(exc)})
@@ -230,11 +261,11 @@ class VisualSearchManager:
 
         cleaned_query = query.strip()
 
-        # Parse natural language query intent (Approach B: Gemini LLM extraction)
+        # Parse natural language query intent (time windows, camera ID, visual semantics)
         # only if temporal or camera filters were not explicitly passed from UI
         if not start_utc and not end_utc:
             try:
-                intent = self.embedding_service.parse_query_intent(cleaned_query)
+                intent = self.local_models.parse_query_intent(cleaned_query)
                 visual_query = intent.get("visual_query") or cleaned_query
                 start_utc = intent.get("start_utc") or start_utc
                 end_utc = intent.get("end_utc") or end_utc
@@ -249,7 +280,7 @@ class VisualSearchManager:
         if not visual_query or not visual_query.strip():
             visual_query = "person"
 
-        query_vec = self.embedding_service.embed_text(visual_query)
+        query_vec = self.local_models.embed_text(visual_query)
 
         results = self.vector_store.search(
             query_vec,
@@ -278,6 +309,17 @@ class VisualSearchManager:
 
         return results
 
+    def _is_indexed(self, event_id: str) -> bool:
+        """Whether an event already has a vector row (SQLite in DB mode, legacy id map otherwise)."""
+        if event_id in self._indexed_events:
+            return True
+        if self.event_db is not None:
+            try:
+                return self.event_db.get_vector_row_for_event(event_id) is not None
+            except Exception:
+                return False
+        return event_id in self.vector_store.id_map
+
     def index_existing_clips_sync(self, max_items: int = 500) -> int:
         """Scan existing snapshots and events in events.db to build FAISS index."""
         indexed_count = 0
@@ -296,7 +338,8 @@ class VisualSearchManager:
                 try:
                     c = conn.cursor()
                     c.execute("""
-                        SELECT event_id, camera_id, track_id, started_at_utc, clip_path, metadata
+                        SELECT event_id, camera_id, track_id, started_at_utc, clip_path, metadata,
+                               object_class, snapshot_path
                         FROM track_events
                         ORDER BY created_at DESC
                         LIMIT ?
@@ -305,7 +348,7 @@ class VisualSearchManager:
 
                     for row in rows:
                         event_id = row["event_id"]
-                        if event_id in self._indexed_events:
+                        if self._is_indexed(event_id):
                             continue
 
                         camera_id = row["camera_id"]
@@ -313,9 +356,10 @@ class VisualSearchManager:
                         track_id = row["track_id"]
                         meta = json.loads(row["metadata"]) if row["metadata"] else {}
                         bbox = meta.get("bbox") or []
+                        object_class = row["object_class"] or meta.get("class") or ""
 
                         # Find snapshot on disk
-                        rel_snap = meta.get("snapshot_path") or ""
+                        rel_snap = row["snapshot_path"] or meta.get("snapshot_path") or ""
                         if rel_snap and not (self.base_dir / rel_snap).exists():
                             rel_snap = ""
 
@@ -350,17 +394,24 @@ class VisualSearchManager:
                                 started_at_utc=started_at_utc,
                                 track_id=str(track_id),
                                 bbox=bbox,
+                                object_class=object_class,
                             )
-                            self._indexed_events.add(event_id)
-                            indexed_count += 1
+                            if self._is_indexed(event_id):
+                                self._indexed_events.add(event_id)
+                                indexed_count += 1
                 except Exception as db_exc:
                     logger.warning("db_scan_failed", extra={"reason": str(db_exc)})
 
-            # Also scan snapshots directory for any unindexed snapshots on disk
+            # Also scan snapshots directory for unindexed files on disk (legacy mode only):
+            # with an event DB attached, events.db is the single source of truth, so disk
+            # files without a DB row must NOT become orphan pseudo-events.
             try:
-                snap_files = sorted(self.snapshots_dir.glob("**/*.jpg"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if self.event_db is not None:
+                    snap_files = []
+                else:
+                    snap_files = sorted(self.snapshots_dir.glob("**/*.jpg"), key=lambda p: p.stat().st_mtime, reverse=True)
             except Exception:
-                snap_files = list(self.snapshots_dir.glob("**/*.jpg"))
+                snap_files = [] if self.event_db is not None else list(self.snapshots_dir.glob("**/*.jpg"))
 
             for snap_path in snap_files:
                 filename = snap_path.name
@@ -382,24 +433,30 @@ class VisualSearchManager:
                     event_id = parts[-1] if len(parts) >= 2 else stem
                     ts_str = ""
 
-                if event_id in self._indexed_events:
+                if self._is_indexed(event_id):
                     continue
 
                 started_at_utc = ""
                 track_id = "-1"
                 bbox = []
                 expected_clip = ""
+                object_class = ""
 
                 # Correlate with events.db if possible
                 if conn is not None:
                     try:
                         c = conn.cursor()
-                        c.execute("SELECT track_id, started_at_utc, clip_path, metadata FROM track_events WHERE event_id = ?", (event_id,))
+                        c.execute(
+                            "SELECT track_id, started_at_utc, clip_path, metadata, object_class, snapshot_path "
+                            "FROM track_events WHERE event_id = ?",
+                            (event_id,),
+                        )
                         db_row = c.fetchone()
                         if db_row:
                             track_id = str(db_row["track_id"] or "-1")
                             started_at_utc = db_row["started_at_utc"] or ""
                             expected_clip = db_row["clip_path"] or ""
+                            object_class = db_row["object_class"] or ""
                             m = json.loads(db_row["metadata"]) if db_row["metadata"] else {}
                             bbox = m.get("bbox") or []
                     except Exception:
@@ -430,9 +487,11 @@ class VisualSearchManager:
                     started_at_utc=started_at_utc,
                     track_id=track_id,
                     bbox=bbox,
+                    object_class=object_class,
                 )
-                self._indexed_events.add(event_id)
-                indexed_count += 1
+                if self._is_indexed(event_id):
+                    self._indexed_events.add(event_id)
+                    indexed_count += 1
 
             if conn is not None:
                 try:

@@ -1,7 +1,8 @@
 from .event_db import EventDatabase, TrackEvent
 from .clip_recorder import ClipRecorder
 from .vector_store import FaissVectorStore
-from .embedding_service import EmbeddingService
+from .local_models import LocalModelService
+from .time_resolver import TimeAndQueryResolver, resolve_camera_id, resolve_vague_time_window
 from .visual_search_manager import VisualSearchManager
 
 __all__ = [
@@ -9,6 +10,9 @@ __all__ = [
     "TrackEvent",
     "ClipRecorder",
     "FaissVectorStore",
-    "EmbeddingService",
+    "LocalModelService",
+    "TimeAndQueryResolver",
+    "resolve_camera_id",
+    "resolve_vague_time_window",
     "VisualSearchManager",
 ]

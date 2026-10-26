@@ -1,3 +1,6 @@
+# 0. Start the conda env
+conda activate nvr
+
 # 1. Reset SQLite DB and FAISS Vector Index
 rm -f runtime/streamcore/output/events.db* runtime/streamcore/output/vector_index/*
 
@@ -5,5 +8,5 @@ rm -f runtime/streamcore/output/events.db* runtime/streamcore/output/vector_inde
 rm -rf runtime/streamcore/output/clips/* runtime/streamcore/output/snapshots/*
 
 # 3. Run the server
-cd 
+cd brainy_neurals/smit/aivisra2
 /home/brainy/miniconda3/envs/nvr/bin/python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765

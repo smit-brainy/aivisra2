@@ -27,6 +27,8 @@ class TrackEvent:
     duration_seconds: float | None
     max_confidence: float
     avg_confidence: float
+    description: str | None
+    snapshot_path: str | None
     clip_path: str | None
     clip_recorded: bool
     metadata: dict[str, Any]
@@ -46,6 +48,8 @@ class TrackEvent:
             "duration_seconds": self.duration_seconds,
             "max_confidence": self.max_confidence,
             "avg_confidence": self.avg_confidence,
+            "description": self.description,
+            "snapshot_path": self.snapshot_path,
             "clip_path": self.clip_path,
             "clip_recorded": self.clip_recorded,
             "metadata": self.metadata,
@@ -55,6 +59,7 @@ class TrackEvent:
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> "TrackEvent":
+        keys = set(row.keys())
         return cls(
             event_id=row["event_id"],
             track_id=row["track_id"],
@@ -67,6 +72,8 @@ class TrackEvent:
             duration_seconds=row["duration_seconds"],
             max_confidence=row["max_confidence"],
             avg_confidence=row["avg_confidence"],
+            description=row["description"] if "description" in keys else None,
+            snapshot_path=row["snapshot_path"] if "snapshot_path" in keys else None,
             clip_path=row["clip_path"],
             clip_recorded=bool(row["clip_recorded"]),
             metadata=json.loads(row["metadata"]) if row["metadata"] else {},
@@ -102,12 +109,32 @@ class EventDatabase:
                     duration_seconds REAL,
                     max_confidence REAL,
                     avg_confidence REAL,
+                    description TEXT,
+                    snapshot_path TEXT,
                     clip_path TEXT,
                     clip_recorded BOOLEAN DEFAULT 0,
                     metadata TEXT,
                     created_at REAL NOT NULL,
                     updated_at REAL NOT NULL
                 )
+            """)
+            # Idempotent migration for legacy databases created before the
+            # description/snapshot_path columns existed.
+            existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(track_events)")}
+            if "description" not in existing_columns:
+                conn.execute("ALTER TABLE track_events ADD COLUMN description TEXT")
+            if "snapshot_path" not in existing_columns:
+                conn.execute("ALTER TABLE track_events ADD COLUMN snapshot_path TEXT")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS vector_id_map (
+                    faiss_row INTEGER PRIMARY KEY,
+                    event_id TEXT NOT NULL,
+                    created_at REAL NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_vidmap_event
+                ON vector_id_map(event_id)
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_camera_time
@@ -162,8 +189,12 @@ class EventDatabase:
         started_at_utc: str,
         max_confidence: float,
         metadata: dict[str, Any],
+        object_class: str = "person",
+        description: str | None = None,
+        snapshot_path: str | None = None,
     ) -> str:
         now = time.time()
+        event_type = f"{(object_class or 'object').upper()}_TRACK"
         with self._lock:
             with self._connect() as conn:
                 conn.execute(
@@ -172,19 +203,22 @@ class EventDatabase:
                         event_id, track_id, track_session_id, camera_id,
                         event_type, object_class, started_at_utc,
                         max_confidence, avg_confidence,
+                        description, snapshot_path,
                         metadata, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         event_id,
                         track_id,
                         track_session_id,
                         camera_id,
-                        "PERSON_TRACK",
-                        "person",
+                        event_type,
+                        object_class,
                         started_at_utc,
                         max_confidence,
                         max_confidence,
+                        description,
+                        snapshot_path,
                         json.dumps(metadata),
                         now,
                         now,
@@ -203,6 +237,8 @@ class EventDatabase:
         clip_path: str | None = None,
         clip_recorded: bool | None = None,
         metadata: dict[str, Any] | None = None,
+        description: str | None = None,
+        snapshot_path: str | None = None,
     ) -> bool:
         with self._lock:
             with self._connect() as conn:
@@ -217,6 +253,8 @@ class EventDatabase:
                         clip_path = COALESCE(?, clip_path),
                         clip_recorded = COALESCE(?, clip_recorded),
                         metadata = COALESCE(?, metadata),
+                        description = COALESCE(?, description),
+                        snapshot_path = COALESCE(?, snapshot_path),
                         updated_at = ?
                     WHERE event_id = ?
                     """,
@@ -227,6 +265,8 @@ class EventDatabase:
                         clip_path,
                         recorded_val,
                         meta_json,
+                        description,
+                        snapshot_path,
                         time.time(),
                         event_id,
                     ),
@@ -241,6 +281,27 @@ class EventDatabase:
                     "SELECT * FROM track_events WHERE event_id = ?", (event_id,)
                 ).fetchone()
                 return TrackEvent.from_row(row) if row else None
+
+    def get_events_by_ids(self, event_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """Batch retrieve full event records for a list of event IDs."""
+        if not event_ids:
+            return {}
+        cleaned_ids = [str(eid) for eid in event_ids if eid]
+        if not cleaned_ids:
+            return {}
+        result: dict[str, dict[str, Any]] = {}
+        with self._lock:
+            with self._connect() as conn:
+                chunk_size = 500
+                for i in range(0, len(cleaned_ids), chunk_size):
+                    chunk = cleaned_ids[i : i + chunk_size]
+                    placeholders = ",".join("?" for _ in chunk)
+                    query = f"SELECT * FROM track_events WHERE event_id IN ({placeholders})"
+                    rows = conn.execute(query, chunk).fetchall()
+                    for r in rows:
+                        ev = TrackEvent.from_row(r)
+                        result[ev.event_id] = ev.to_dict()
+        return result
 
     def get_event_by_track(
         self, track_id: str, track_session_id: str | None = None
@@ -407,6 +468,78 @@ class EventDatabase:
                     "events_with_clips": with_clips,
                     "by_camera": {row["camera_id"]: row["c"] for row in by_camera},
                 }
+
+    def record_vector_row(self, faiss_row: int, event_id: str) -> bool:
+        """Map a FAISS row position to an event id (strict 1:1).
+
+        Returns True on success or benign no-op (same event, same row).
+        Returns False and logs on invariant violations: event already mapped
+        to a different row, or the row is held by a different event. Callers
+        treat both as indexing-flow bugs.
+        """
+        event_id = str(event_id)
+        row = int(faiss_row)
+        with self._lock:
+            with self._connect() as conn:
+                mapped = conn.execute(
+                    "SELECT faiss_row FROM vector_id_map WHERE event_id = ?", (event_id,)
+                ).fetchone()
+                if mapped is not None:
+                    if mapped["faiss_row"] == row:
+                        return True
+                    logger.error("vidmap_event_row_mismatch", extra={
+                        "event_id": event_id, "existing_row": mapped["faiss_row"], "new_row": row,
+                    })
+                    return False
+                holder = conn.execute(
+                    "SELECT event_id FROM vector_id_map WHERE faiss_row = ?", (row,)
+                ).fetchone()
+                if holder is not None:
+                    logger.error("vidmap_row_conflict", extra={
+                        "event_id": event_id, "row": row, "holder": holder["event_id"],
+                    })
+                    return False
+                conn.execute(
+                    "INSERT INTO vector_id_map (faiss_row, event_id, created_at) VALUES (?, ?, ?)",
+                    (row, event_id, time.time()),
+                )
+                conn.commit()
+                return True
+
+    def delete_vector_row(self, faiss_row: int) -> None:
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute("DELETE FROM vector_id_map WHERE faiss_row = ?", (int(faiss_row),))
+                conn.commit()
+
+    def get_event_id_for_row(self, faiss_row: int) -> str | None:
+        with self._lock:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT event_id FROM vector_id_map WHERE faiss_row = ?", (int(faiss_row),)
+                ).fetchone()
+                return row["event_id"] if row else None
+
+    def get_vector_row_for_event(self, event_id: str) -> int | None:
+        with self._lock:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT faiss_row FROM vector_id_map WHERE event_id = ?", (str(event_id),)
+                ).fetchone()
+                return row["faiss_row"] if row else None
+
+    def all_vector_rows(self) -> list[tuple[int, str]]:
+        with self._lock:
+            with self._connect() as conn:
+                rows = conn.execute(
+                    "SELECT faiss_row, event_id FROM vector_id_map ORDER BY faiss_row ASC"
+                ).fetchall()
+                return [(row["faiss_row"], row["event_id"]) for row in rows]
+
+    def count_vector_rows(self) -> int:
+        with self._lock:
+            with self._connect() as conn:
+                return conn.execute("SELECT COUNT(*) as c FROM vector_id_map").fetchone()["c"]
 
     def close_all_connections(self) -> None:
         """Close all thread-local connections. Call on shutdown."""

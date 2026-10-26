@@ -559,12 +559,12 @@ footer { margin-top: 20px; color: #8b949e; font-size: .82rem; display: flex; jus
         <span style="font-size:1.3rem;">🧠</span>
         <div>
           <div style="font-weight:700; font-size:1.05rem; color:#e6edf3;">AI Natural Language Video Search</div>
-          <div style="font-size:.78rem; color:#8b949e;">FAISS Vector DB search on person visual embeddings & snapshots · Instant Top-2 Retrieval</div>
+          <div style="font-size:.78rem; color:#8b949e;">Local VLM (Qwen 3.5 9B) & FAISS vector search across COCO detections & video clips</div>
         </div>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <span id="gemini-status-pill" class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950; font-size:.78rem;" title="Configured via GEMINI_API_KEY in .env">
-          Checking .env...
+        <span id="gemini-status-pill" class="badge" style="background:#23863622; border:1px solid #238636; color:#3fb950; font-size:.78rem;" title="100% Local VLM & FAISS Search">
+          Checking Local VLM...
         </span>
         <button type="button" class="btn" style="padding:4px 10px; font-size:.78rem;" onclick="reindexExistingClips()" title="Index past clips in database">↻ Index Past Clips</button>
       </div>
@@ -973,12 +973,12 @@ async function checkGeminiStatus() {
         pill.style.background = '#23863622';
         pill.style.borderColor = '#238636';
         pill.style.color = '#3fb950';
-        pill.innerHTML = '🟢 Gemini Vision Active (.env)';
+        pill.innerHTML = '🟢 Local VLM Active (Qwen 3.5 9B + EmbeddingGemma)';
       } else {
         pill.style.background = '#d2992222';
         pill.style.borderColor = '#d29922';
         pill.style.color = '#d29922';
-        pill.innerHTML = '🟡 Local CV (Set GEMINI_API_KEY in .env)';
+        pill.innerHTML = '🟡 Local CV Fallback (Ollama Offline)';
       }
     }
   } catch (e) {}
@@ -1100,7 +1100,7 @@ async function queryVisualVector(event) {
               <div style="padding:16px; display:grid; grid-template-columns: minmax(180px, 220px) 1fr; gap:18px;">
                 <!-- Left: Snapshot Crop Preview -->
                 <div style="display:flex; flex-direction:column; gap:8px;">
-                  <div style="font-size:.75rem; color:#8b949e; font-weight:700; text-transform:uppercase;">Person Snapshot</div>
+                  <div style="font-size:.75rem; color:#8b949e; font-weight:700; text-transform:uppercase;">\${(item.object_class || 'Object').toUpperCase()} Snapshot</div>
                   ${item.snapshot_url ? `
                     <a href="${item.snapshot_url}" target="_blank" title="Click to view full snapshot">
                       <img src="${item.snapshot_url}" alt="Person Snapshot" style="width:100%; max-height:260px; object-fit:contain; background:#010409; border-radius:6px; border:1px solid #30363d;">
@@ -3258,8 +3258,8 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     from ..events.visual_search_manager import VisualSearchManager
                     ev_cfg = getattr(getattr(engine, "config", None), "events", None)
                     vsm = VisualSearchManager(
-                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
                         event_db=getattr(engine, "event_db", None),
+                        settings=ev_cfg,
                     )
                     engine.visual_search_manager = vsm
                 results = vsm.search(query, top_k=top_k, camera_id=cam_id, start_utc=start_utc, end_utc=end_utc)
@@ -3269,18 +3269,35 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     "has_api_key": vsm.has_api_key,
                     "results": results
                 })
-            elif path == "/api/settings/gemini":
+            elif path in ("/api/settings/gemini", "/api/status/search"):
                 vsm = getattr(engine, "visual_search_manager", None)
-                has_key = vsm.has_api_key if vsm else False
-                self.respond_json(200, {"has_api_key": has_key})
+                has_vlm = False
+                vlm_model = ""
+                embed_model = ""
+                ollama_url = ""
+                if vsm and vsm.local_models:
+                    has_vlm = bool(vsm.local_models.has_vlm and vsm.local_models.has_embedder)
+                    vlm_model = vsm.local_models.config.vlm_model
+                    embed_model = vsm.local_models.config.embed_model
+                    ollama_url = vsm.local_models.config.ollama_url
+                elif vsm:
+                    has_vlm = vsm.has_api_key
+                self.respond_json(200, {
+                    "has_api_key": has_vlm,
+                    "backend": "local",
+                    "vlm_model": vlm_model,
+                    "embed_model": embed_model,
+                    "ollama_url": ollama_url,
+                    "total_vectors": vsm.vector_store.total_items if vsm else 0,
+                })
             elif path == "/api/events/reindex":
                 vsm = getattr(engine, "visual_search_manager", None)
                 if vsm is None:
                     from ..events.visual_search_manager import VisualSearchManager
                     ev_cfg = getattr(getattr(engine, "config", None), "events", None)
                     vsm = VisualSearchManager(
-                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
                         event_db=getattr(engine, "event_db", None),
+                        settings=ev_cfg,
                     )
                     engine.visual_search_manager = vsm
                 count = vsm.index_existing_clips_sync(max_items=500)
@@ -3446,8 +3463,8 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     from ..events.visual_search_manager import VisualSearchManager
                     ev_cfg = getattr(getattr(engine, "config", None), "events", None)
                     vsm = VisualSearchManager(
-                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
                         event_db=getattr(engine, "event_db", None),
+                        settings=ev_cfg,
                     )
                     engine.visual_search_manager = vsm
 
@@ -3464,8 +3481,8 @@ def start_preview(engine: StreamCore, cache: PreviewCache, port: int) -> Threadi
                     from ..events.visual_search_manager import VisualSearchManager
                     ev_cfg = getattr(getattr(engine, "config", None), "events", None)
                     vsm = VisualSearchManager(
-                        api_key=getattr(ev_cfg, "gemini_api_key", None) if ev_cfg else None,
                         event_db=getattr(engine, "event_db", None),
+                        settings=ev_cfg,
                     )
                     engine.visual_search_manager = vsm
                 count = vsm.index_existing_clips_sync(max_items=500)

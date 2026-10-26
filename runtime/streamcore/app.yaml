@@ -42,7 +42,7 @@ inference:
   fallback_cpu_frames: true
   max_batch_wait_ms: 5.0
   frame_path: "gpu"
-  detection_classes: [0]
+  detection_classes: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79]
   person_conf_threshold: 0.5
 
 tracking:
@@ -80,10 +80,84 @@ events:
   max_concurrent_recordings: 2
   record_on_track_confirmed: true
   top_k: 2 # Top K matching video clips returned for natural language vector queries
+  # Local search stack (Ollama). 100% offline, zero cloud API dependencies.
+  search_backend: local
+  ollama_url: http://127.0.0.1:11434
+  vlm_model: qwen3.5:9b
+  vlm_timeout_s: 60
+  vlm_keep_alive_s: 90
+  embed_model: embeddinggemma-2:740m
+  embed_dim: 0 # 0 = auto-detect the embedder output dimension at startup
+  min_crop_px: 40
+  tracked_classes: [] # empty = all detected classes
+  ist_offset_hours: 5.5 # local timezone offset used when parsing time phrases
 
 monitoring:
   print_interval_seconds: 5
 
 # Camera URI stays server-side. live_path is the corresponding MediaMTX path.
 cameras:
-  - {id: CAM001, uri: 'rtsp://admin123:admin123@192.168.1.55/stream1', codec: h264, decoder: auto, live_path: cam001, enabled: true}
+  - {id: CAM001, uri: 'rtsp://192.168.1.27:8554/cam001', codec: h264, decoder: auto, live_path: cam001, enabled: true}
+  - {id: CAM002, uri: 'rtsp://192.168.1.27:8554/cam002', codec: h264, decoder: auto, live_path: cam002, enabled: true}
+  - {id: CAM003, uri: 'rtsp://192.168.1.27:8554/cam003', codec: h264, decoder: auto, live_path: cam003, enabled: true}
+  - {id: CAM004, uri: 'rtsp://192.168.1.27:8554/cam004', codec: h264, decoder: auto, live_path: cam004, enabled: true}
+  - {id: CAM005, uri: 'rtsp://192.168.1.27:8554/cam005', codec: h264, decoder: auto, live_path: cam005, enabled: true}
+  - {id: CAM006, uri: 'rtsp://192.168.1.27:8554/cam006', codec: h264, decoder: auto, live_path: cam006, enabled: true}
+  - {id: CAM007, uri: 'rtsp://192.168.1.27:8554/cam007', codec: h264, decoder: auto, live_path: cam007, enabled: true}
+  - {id: CAM008, uri: 'rtsp://192.168.1.27:8554/cam008', codec: h264, decoder: auto, live_path: cam008, enabled: true}
+  - {id: CAM009, uri: 'rtsp://192.168.1.27:8554/cam009', codec: h264, decoder: auto, live_path: cam009, enabled: true}
+  - {id: CAM010, uri: 'rtsp://192.168.1.27:8554/cam010', codec: h264, decoder: auto, live_path: cam010, enabled: true}
+  - {id: CAM011, uri: 'rtsp://192.168.1.27:8554/cam011', codec: h264, decoder: auto, live_path: cam011, enabled: true}
+  - {id: CAM012, uri: 'rtsp://192.168.1.27:8554/cam012', codec: h264, decoder: auto, live_path: cam012, enabled: true}
+  - {id: CAM013, uri: 'rtsp://192.168.1.27:8554/cam013', codec: h264, decoder: auto, live_path: cam013, enabled: true}
+  - {id: CAM014, uri: 'rtsp://192.168.1.27:8554/cam014', codec: h264, decoder: auto, live_path: cam014, enabled: true}
+  - {id: CAM015, uri: 'rtsp://192.168.1.27:8554/cam015', codec: h264, decoder: auto, live_path: cam015, enabled: true}
+  - {id: CAM016, uri: 'rtsp://192.168.1.27:8554/cam016', codec: h264, decoder: auto, live_path: cam016, enabled: true}
+  - {id: CAM017, uri: 'rtsp://192.168.1.27:8554/cam017', codec: h264, decoder: auto, live_path: cam017, enabled: true}
+  - {id: CAM018, uri: 'rtsp://192.168.1.27:8554/cam018', codec: h264, decoder: auto, live_path: cam018, enabled: true}
+  - {id: CAM019, uri: 'rtsp://192.168.1.27:8554/cam019', codec: h264, decoder: auto, live_path: cam019, enabled: true}
+  - {id: CAM020, uri: 'rtsp://192.168.1.27:8554/cam020', codec: h264, decoder: auto, live_path: cam020, enabled: true}
+  - {id: CAM021, uri: 'rtsp://192.168.1.27:8554/cam021', codec: h264, decoder: auto, live_path: cam021, enabled: true}
+  - {id: CAM022, uri: 'rtsp://192.168.1.27:8554/cam022', codec: h264, decoder: auto, live_path: cam022, enabled: true}
+  - {id: CAM023, uri: 'rtsp://192.168.1.27:8554/cam023', codec: h264, decoder: auto, live_path: cam023, enabled: true}
+  - {id: CAM024, uri: 'rtsp://192.168.1.27:8554/cam024', codec: h264, decoder: auto, live_path: cam024, enabled: true}
+  - {id: CAM025, uri: 'rtsp://192.168.1.27:8554/cam025', codec: h264, decoder: auto, live_path: cam025, enabled: true}
+  - {id: CAM026, uri: 'rtsp://192.168.1.27:8554/cam026', codec: h264, decoder: auto, live_path: cam026, enabled: true}
+  - {id: CAM027, uri: 'rtsp://192.168.1.27:8554/cam027', codec: h264, decoder: auto, live_path: cam027, enabled: true}
+  - {id: CAM028, uri: 'rtsp://192.168.1.27:8554/cam028', codec: h264, decoder: auto, live_path: cam028, enabled: true}
+  - {id: CAM029, uri: 'rtsp://192.168.1.27:8554/cam029', codec: h264, decoder: auto, live_path: cam029, enabled: true}
+  - {id: CAM030, uri: 'rtsp://192.168.1.27:8554/cam030', codec: h264, decoder: auto, live_path: cam030, enabled: true}
+  - {id: CAM031, uri: 'rtsp://192.168.1.27:8554/cam031', codec: h264, decoder: auto, live_path: cam031, enabled: true}
+  - {id: CAM032, uri: 'rtsp://192.168.1.27:8554/cam032', codec: h264, decoder: auto, live_path: cam032, enabled: true}
+  - {id: CAM033, uri: 'rtsp://192.168.1.27:8554/cam033', codec: h264, decoder: auto, live_path: cam033, enabled: true}
+  - {id: CAM034, uri: 'rtsp://192.168.1.27:8554/cam034', codec: h264, decoder: auto, live_path: cam034, enabled: true}
+  - {id: CAM035, uri: 'rtsp://192.168.1.27:8554/cam035', codec: h264, decoder: auto, live_path: cam035, enabled: true}
+  - {id: CAM036, uri: 'rtsp://192.168.1.27:8554/cam036', codec: h264, decoder: auto, live_path: cam036, enabled: true}
+  - {id: CAM037, uri: 'rtsp://192.168.1.27:8554/cam037', codec: h264, decoder: auto, live_path: cam037, enabled: true}
+  - {id: CAM038, uri: 'rtsp://192.168.1.27:8554/cam038', codec: h264, decoder: auto, live_path: cam038, enabled: true}
+  - {id: CAM039, uri: 'rtsp://192.168.1.27:8554/cam039', codec: h264, decoder: auto, live_path: cam039, enabled: true}
+  - {id: CAM040, uri: 'rtsp://192.168.1.27:8554/cam040', codec: h264, decoder: auto, live_path: cam040, enabled: true}
+  - {id: CAM041, uri: 'rtsp://192.168.1.27:8554/cam041', codec: h264, decoder: auto, live_path: cam041, enabled: true}
+  - {id: CAM042, uri: 'rtsp://192.168.1.27:8554/cam042', codec: h264, decoder: auto, live_path: cam042, enabled: true}
+  - {id: CAM043, uri: 'rtsp://192.168.1.27:8554/cam043', codec: h264, decoder: auto, live_path: cam043, enabled: true}
+  - {id: CAM044, uri: 'rtsp://192.168.1.27:8554/cam044', codec: h264, decoder: auto, live_path: cam044, enabled: true}
+  - {id: CAM045, uri: 'rtsp://192.168.1.27:8554/cam045', codec: h264, decoder: auto, live_path: cam045, enabled: true}
+  - {id: CAM046, uri: 'rtsp://192.168.1.27:8554/cam046', codec: h264, decoder: auto, live_path: cam046, enabled: true}
+  - {id: CAM047, uri: 'rtsp://192.168.1.27:8554/cam047', codec: h264, decoder: auto, live_path: cam047, enabled: true}
+  - {id: CAM048, uri: 'rtsp://192.168.1.27:8554/cam048', codec: h264, decoder: auto, live_path: cam048, enabled: true}
+  - {id: CAM049, uri: 'rtsp://192.168.1.27:8554/cam049', codec: h264, decoder: auto, live_path: cam049, enabled: true}
+  - {id: CAM050, uri: 'rtsp://192.168.1.27:8554/cam050', codec: h264, decoder: auto, live_path: cam050, enabled: true}
+  - {id: CAM051, uri: 'rtsp://192.168.1.27:8554/cam051', codec: h264, decoder: auto, live_path: cam051, enabled: true}
+  - {id: CAM052, uri: 'rtsp://192.168.1.27:8554/cam052', codec: h264, decoder: auto, live_path: cam052, enabled: true}
+  - {id: CAM053, uri: 'rtsp://192.168.1.27:8554/cam053', codec: h264, decoder: auto, live_path: cam053, enabled: true}
+  - {id: CAM054, uri: 'rtsp://192.168.1.27:8554/cam054', codec: h264, decoder: auto, live_path: cam054, enabled: true}
+  - {id: CAM055, uri: 'rtsp://192.168.1.27:8554/cam055', codec: h264, decoder: auto, live_path: cam055, enabled: true}
+  - {id: CAM056, uri: 'rtsp://192.168.1.27:8554/cam056', codec: h264, decoder: auto, live_path: cam056, enabled: true}
+  - {id: CAM057, uri: 'rtsp://192.168.1.27:8554/cam057', codec: h264, decoder: auto, live_path: cam057, enabled: true}
+  - {id: CAM058, uri: 'rtsp://192.168.1.27:8554/cam058', codec: h264, decoder: auto, live_path: cam058, enabled: true}
+  - {id: CAM059, uri: 'rtsp://192.168.1.27:8554/cam059', codec: h264, decoder: auto, live_path: cam059, enabled: true}
+  - {id: CAM060, uri: 'rtsp://192.168.1.27:8554/cam060', codec: h264, decoder: auto, live_path: cam060, enabled: true}
+  - {id: CAM061, uri: 'rtsp://192.168.1.27:8554/cam061', codec: h264, decoder: auto, live_path: cam061, enabled: true}
+  - {id: CAM062, uri: 'rtsp://192.168.1.27:8554/cam062', codec: h264, decoder: auto, live_path: cam062, enabled: true}
+  - {id: CAM063, uri: 'rtsp://192.168.1.27:8554/cam063', codec: h264, decoder: auto, live_path: cam063, enabled: true}
+  - {id: CAM064, uri: 'rtsp://192.168.1.27:8554/cam064', codec: h264, decoder: auto, live_path: cam064, enabled: true}
