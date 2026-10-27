@@ -32,6 +32,22 @@
       }
     ],
     "lines": [],
-    "rules": []
+    "rules": [
+      {
+        "rule_id": "rule_enter_zone_1",
+        "camera_id": "CAM001",
+        "name": "Zone_1 Intrusion Alert",
+        "rule_type": "ZONE_ENTER",
+        "target_geometry_id": "zone_1",
+        "object_classes": [
+          "person"
+        ],
+        "severity": "CRITICAL",
+        "enabled": true,
+        "cooldown_seconds": 5.0,
+        "conditions": {},
+        "metadata": {}
+      }
+    ]
   }
 }

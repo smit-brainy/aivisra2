@@ -24,3 +24,9 @@ matplotlib==3.10.9
 fastapi==0.162.0
 uvicorn==0.54.0
 pydantic==2.14.1
+annotated_types==0.7.0
+anyio==4.15.1
+starlette==1.10.0
+h11==0.16.0
+h11==0.16.0
+

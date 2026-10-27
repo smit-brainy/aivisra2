@@ -25,11 +25,17 @@ export default function SpatialRules({ cameras = [] }) {
 
   useEffect(() => {
     if (!selectedCam) return;
-    fetchZones(selectedCam).then((d) => setZones(d.zones || [])).catch(() => {});
-    fetchLines(selectedCam).then((d) => setLines(d.lines || [])).catch(() => {});
-    fetchRules(selectedCam).then((d) => setRules(d.rules || [])).catch(() => {});
-    fetchOccupancy(selectedCam).then(setOccupancy).catch(() => {});
-    fetchActiveSpatialEvents(selectedCam).then((d) => setEvents(d.events || [])).catch(() => {});
+    const loadSpatialData = () => {
+      fetchZones(selectedCam).then((d) => setZones(d.zones || [])).catch(() => {});
+      fetchLines(selectedCam).then((d) => setLines(d.lines || [])).catch(() => {});
+      fetchRules(selectedCam).then((d) => setRules(d.rules || [])).catch(() => {});
+      fetchOccupancy(selectedCam).then(setOccupancy).catch(() => {});
+      fetchActiveSpatialEvents(selectedCam).then((d) => setEvents(d.events || [])).catch(() => {});
+    };
+
+    loadSpatialData();
+    const interval = setInterval(loadSpatialData, 2000);
+    return () => clearInterval(interval);
   }, [selectedCam]);
 
   // Draw zones and lines on top of canvas
@@ -38,17 +44,26 @@ export default function SpatialRules({ cameras = [] }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    if (rect.width > 0 && rect.height > 0) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const parsePoint = (pt) => {
+      if (!pt) return [0, 0];
+      if (Array.isArray(pt)) return [Number(pt[0]) || 0, Number(pt[1]) || 0];
+      if (typeof pt === 'object') return [Number(pt.x) || 0, Number(pt.y) || 0];
+      return [0, 0];
+    };
 
     // Draw saved zones
     for (const z of zones) {
       if (!z.polygon || z.polygon.length < 3) continue;
       ctx.beginPath();
       for (let i = 0; i < z.polygon.length; i++) {
-        const [nx, ny] = z.polygon[i];
+        const [nx, ny] = parsePoint(z.polygon[i]);
         const x = nx * canvas.width;
         const y = ny * canvas.height;
         if (i === 0) ctx.moveTo(x, y);
@@ -62,7 +77,7 @@ export default function SpatialRules({ cameras = [] }) {
       ctx.stroke();
 
       // Label
-      const [lx, ly] = z.polygon[0];
+      const [lx, ly] = parsePoint(z.polygon[0]);
       ctx.fillStyle = '#3fb950';
       ctx.font = 'bold 12px sans-serif';
       ctx.fillText(z.name || 'Zone', lx * canvas.width + 4, ly * canvas.height + 14);
@@ -71,7 +86,8 @@ export default function SpatialRules({ cameras = [] }) {
     // Draw saved lines
     for (const l of lines) {
       if (!l.line || l.line.length < 2) continue;
-      const [p1, p2] = l.line;
+      const p1 = parsePoint(l.line[0]);
+      const p2 = parsePoint(l.line[1]);
       ctx.beginPath();
       ctx.moveTo(p1[0] * canvas.width, p1[1] * canvas.height);
       ctx.lineTo(p2[0] * canvas.width, p2[1] * canvas.height);
@@ -88,7 +104,7 @@ export default function SpatialRules({ cameras = [] }) {
     if (points.length > 0) {
       ctx.beginPath();
       for (let i = 0; i < points.length; i++) {
-        const [nx, ny] = points[i];
+        const [nx, ny] = parsePoint(points[i]);
         const x = nx * canvas.width;
         const y = ny * canvas.height;
         if (i === 0) ctx.moveTo(x, y);
@@ -110,26 +126,50 @@ export default function SpatialRules({ cameras = [] }) {
 
     const newPts = [...points, [nx, ny]];
     if (tool === 'line' && newPts.length === 2) {
+      const newLineId = `line_${Date.now()}`;
       const newLine = {
+        line_id: newLineId,
         name: `Tripwire ${lines.length + 1}`,
-        line: newPts,
+        point_a: { x: newPts[0][0], y: newPts[0][1] },
+        point_b: { x: newPts[1][0], y: newPts[1][1] },
         direction: 'BIDIRECTIONAL',
+        applicable_classes: ['person'],
+        enabled: true,
       };
       const updated = [...lines, newLine];
       setLines(updated);
       setPoints([]);
       setTool('none');
-      updateLines(selectedCam, updated, 1).catch(() => {});
+      updateLines(selectedCam, updated).catch(() => {});
     } else if (tool === 'zone' && newPts.length >= 4) {
+      const newZoneId = `zone_${Date.now()}`;
       const newZone = {
+        zone_id: newZoneId,
         name: `Zone ${zones.length + 1}`,
-        polygon: newPts,
+        polygon: newPts.map((p) => ({ x: p[0], y: p[1] })),
+        applicable_classes: ['person'],
+        enabled: true,
       };
       const updated = [...zones, newZone];
       setZones(updated);
       setPoints([]);
       setTool('none');
-      updateZones(selectedCam, updated, 1).catch(() => {});
+      updateZones(selectedCam, updated).then(() => {
+        // Automatically ensure an active alert rule exists for this zone
+        const autoRule = {
+          rule_id: `rule_enter_${newZoneId}`,
+          name: `${newZone.name} Intrusion Alert`,
+          rule_type: 'ZONE_ENTER',
+          target_geometry_id: newZoneId,
+          object_classes: ['person'],
+          severity: 'CRITICAL',
+          enabled: true,
+          cooldown_seconds: 5,
+        };
+        const updatedRules = [...rules.filter((r) => r.rule_id !== autoRule.rule_id), autoRule];
+        setRules(updatedRules);
+        updateRules(selectedCam, updatedRules).catch(() => {});
+      }).catch(() => {});
     } else {
       setPoints(newPts);
     }
@@ -140,7 +180,7 @@ export default function SpatialRules({ cameras = [] }) {
       {/* 1. Spatial Configuration Tools */}
       <div className="sp-card">
         <div className="sp-card-head">
-          <span>📐 Spatial Elements</span>
+          <span>Spatial Elements</span>
           <select
             className="form-select"
             value={selectedCam}
@@ -164,7 +204,7 @@ export default function SpatialRules({ cameras = [] }) {
                 setPoints([]);
               }}
             >
-              🟩 Draw Zone (4 pts)
+              Draw Zone (4 pts)
             </button>
             <button
               className={`sp-tool-btn ${tool === 'line' ? 'active' : ''}`}
@@ -174,7 +214,7 @@ export default function SpatialRules({ cameras = [] }) {
                 setPoints([]);
               }}
             >
-              📏 Draw Line (2 pts)
+              Draw Line (2 pts)
             </button>
           </div>
 
@@ -197,18 +237,18 @@ export default function SpatialRules({ cameras = [] }) {
       </div>
 
       {/* 2. Interactive Canvas Overlay */}
-      <div className="sp-card" style={{ position: 'relative' }}>
+      <div className="sp-card" style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="sp-card-head">
           <span>Interactive Spatial Stage</span>
           <span style={{ fontSize: '.78rem', color: '#8b949e' }}>
             {tool !== 'none' ? `Click stage to place ${tool} points (${points.length})` : 'Stage Ready'}
           </span>
         </div>
-        <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000' }}>
+        <div className="stage-video-box" style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', background: '#020617' }}>
           <img
             src={getStreamUrl(selectedCam)}
             alt="Spatial Feed"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
             onError={(e) => {
               e.target.src = getFrameUrl(selectedCam);
             }}
@@ -224,7 +264,7 @@ export default function SpatialRules({ cameras = [] }) {
       {/* 3. Occupancy & Spatial Events */}
       <div className="sp-card">
         <div className="sp-card-head">
-          <span>👥 Flow Occupancy</span>
+          <span>Flow Occupancy</span>
           <span className="badge badge-gpu">{occupancy?.visible_occupancy || 0} Persons</span>
         </div>
         <div className="sp-body">

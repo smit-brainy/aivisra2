@@ -9,10 +9,22 @@ import { fetchCameras, fetchStatus } from './utils/api';
 import './styles/theme.css';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('demo'); // 'demo', 'grid', 'onboarding', 'spatial', 'events'
+  const [activeTab, setActiveTab] = useState('demo');
   const [cameras, setCameras] = useState([]);
   const [selectedCam, setSelectedCam] = useState('CAM001');
   const [status, setStatus] = useState(null);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('aivisra_theme') || 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('aivisra_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const loadCameras = () => {
     fetchCameras()
@@ -36,14 +48,15 @@ export default function App() {
   };
 
   return (
-    <div>
+    <div className="app-container">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        mode={status?.mode === 'production' ? 'Production AI' : 'Interactive Demo'}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
-      <main style={{ minHeight: 'calc(100vh - 180px)' }}>
+      <main className="main-content">
         {activeTab === 'demo' && (
           <StageView
             cameras={cameras}
@@ -80,10 +93,9 @@ export default function App() {
       </main>
 
       <footer>
-        <span>AIVISRA StreamCore · GPU-Native Ingest & Inference Engine</span>
-        <span>Zero-Copy CUDA Frame Pipeline · Hardware Verified</span>
+        <span>AIVISRA</span>
+        <span>Brainy Neurals - AI Software Company</span>
       </footer>
     </div>
   );
 }
-

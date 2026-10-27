@@ -8,7 +8,100 @@ import {
   getSnapshotUrl,
 } from '../../utils/api';
 
+// Feather SVG Icons (Stroke-based, zero emojis)
+function SearchIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }) {
+  return (
+    <svg
+      className={`ev-chevron ${open ? 'open' : ''}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+function RefreshIcon({ spinning }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={spinning ? { animation: 'spin 1s linear infinite' } : {}}
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="5 3 19 12 5 21 5 3" />
+    </svg>
+  );
+}
+
+function SwitchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 3 21 3 21 8" />
+      <line x1="4" y1="20" x2="21" y2="3" />
+      <polyline points="21 16 21 21 16 21" />
+      <line x1="15" y1="15" x2="21" y2="21" />
+      <line x1="4" y1="4" x2="9" y2="9" />
+    </svg>
+  );
+}
+
 export default function EventsView({ cameras = [] }) {
+  // Mode selection: 'nl' = Natural Language Visual Search, 'time' = Video Clip by Time Range
+  const [mode, setMode] = useState('nl');
+
+  // Combined Example Queries sidebar collapse & expand
+  const [queriesOpen, setQueriesOpen] = useState(true);
+  const [showAllQueries, setShowAllQueries] = useState(false);
+
   // Visual Search State
   const [queryText, setQueryText] = useState('');
   const [camFilter, setCamFilter] = useState('');
@@ -26,11 +119,40 @@ export default function EventsView({ cameras = [] }) {
   const [timeStart, setTimeStart] = useState('');
   const [timeEnd, setTimeEnd] = useState('');
   const [timeClass, setTimeClass] = useState('person');
+  const [timeSearching, setTimeSearching] = useState(false);
   const [timeEvents, setTimeEvents] = useState(null);
+
+  // Combined single list of example queries / quick prompts
+  const allExampleQueries = [
+    'person with white clothes',
+    'person wearing dark jacket',
+    'someone in blue jeans',
+    'person carrying backpack',
+    'red color car',
+    'two people standing together',
+    'person in uniform',
+    'vehicle parked near entrance',
+    'someone running across scene',
+    'delivery person with package',
+  ];
+
+  // Show top 5 by default, expand full list on view more
+  const displayedQueries = showAllQueries
+    ? allExampleQueries
+    : allExampleQueries.slice(0, 5);
 
   useEffect(() => {
     fetchSearchStatus().then(setSearchStatus).catch(() => {});
   }, []);
+
+  const handleSelectQuery = (text) => {
+    setQueryText(text);
+    if (mode !== 'nl') setMode('nl');
+  };
+
+  const handleToggleMode = () => {
+    setMode((prev) => (prev === 'nl' ? 'time' : 'nl'));
+  };
 
   const handleVisualSearch = async (e) => {
     e?.preventDefault();
@@ -71,6 +193,8 @@ export default function EventsView({ cameras = [] }) {
 
   const handleTimeQuery = async (e) => {
     e.preventDefault();
+    setTimeSearching(true);
+    setTimeEvents(null);
     try {
       const res = await fetchEvents({
         camera_id: timeCam || undefined,
@@ -82,491 +206,472 @@ export default function EventsView({ cameras = [] }) {
       setTimeEvents(res.events || []);
     } catch (err) {
       setAlert({ type: 'error', msg: `Time query failed: ${err.message}` });
+    } finally {
+      setTimeSearching(false);
     }
   };
 
-  const quickPrompts = [
-    'person with white clothes',
-    'person wearing dark jacket',
-    'someone in blue jeans',
-    'person carrying backpack',
-    'red color car',
-  ];
+  const handleResetSearch = () => {
+    setQueryText('');
+    setSearchResults(null);
+    setStartTime('');
+    setEndTime('');
+  };
 
   return (
-    <section id="events-view" style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+    <section id="events-view">
+      {/* Alert banner */}
       {alert && (
-        <div className={`alert-box ${alert.type}`} style={{ display: 'block' }}>
-          {alert.msg}
+        <div className={`alert-box ${alert.type}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{alert.msg}</span>
+          <button
+            type="button"
+            onClick={() => setAlert(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+            title="Dismiss"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
       )}
 
-      {/* 1. AI NATURAL LANGUAGE VISUAL SEARCH (FAISS + LOCAL VLM) */}
-      <div style={{ background: '#161b22', border: '1px solid #388bfd', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(56,139,253,0.12)' }}>
-        <div style={{ padding: '16px 20px', background: '#1c2128', borderBottom: '1px solid #30363d', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+      {/* Top Bar: Simple Mode Toggle Switch & Index status */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <button
+          type="button"
+          className="ev-toggle-switch-btn"
+          onClick={handleToggleMode}
+          title="Click to switch search mode"
+        >
+          <SwitchIcon />
+          <span>
+            Mode: <strong>{mode === 'nl' ? 'Search' : 'Time Range Filter'}</strong>
+          </span>
+          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginLeft: '4px' }}>
+            (Switch to {mode === 'nl' ? 'Time Range Filter' : 'Search'})
+          </span>
+        </button>
+
+        {mode === 'nl' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.4rem' }}>🧠</span>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#e6edf3' }}>
-                AI Natural Language Video Search
-              </div>
-              <div style={{ fontSize: '.78rem', color: '#8b949e' }}>
-                Local VLM (Qwen 3.5 9B) & FAISS vector search across COCO detections & video clips
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span
-              className="badge"
-              style={{ background: '#23863622', border: '1px solid #238636', color: '#3fb950', fontSize: '.78rem' }}
-            >
-              100% Local VLM ({searchStatus?.total_vectors || 0} vectors)
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              {searchStatus?.total_vectors ?? 0} vectors indexed
             </span>
             <button
               type="button"
               className="btn"
-              style={{ padding: '4px 10px', fontSize: '.78rem' }}
+              style={{ padding: '5px 12px', fontSize: '0.78rem' }}
               onClick={handleReindex}
               disabled={reindexing}
             >
-              {reindexing ? '⏳ Indexing...' : '↻ Index Past Clips'}
+              <RefreshIcon spinning={reindexing} />
+              <span>{reindexing ? 'Indexing...' : 'Index Past Clips'}</span>
             </button>
           </div>
-        </div>
+        )}
+      </div>
 
-        <div style={{ padding: '22px 24px' }}>
-          <form onSubmit={handleVisualSearch}>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '280px' }}>
-                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Describe the person / clothing / vehicle <span style={{ color: '#f85149' }}>*</span></span>
-                  <span
-                    style={{ fontSize: '.75rem', color: '#58a6ff', cursor: 'pointer' }}
-                    onClick={() => setQueryText('person with white clothes')}
-                  >
-                    Example: "person with white clothes"
-                  </span>
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    className="form-input"
-                    style={{ paddingLeft: '36px', fontSize: '1rem', height: '42px', width: '100%', boxSizing: 'border-box' }}
-                    placeholder="e.g. person with white clothes, someone wearing blue jeans, dark jacket..."
-                    value={queryText}
-                    onChange={(e) => setQueryText(e.target.value)}
-                    required
-                  />
-                  <span style={{ position: 'absolute', left: '12px', top: '11px', color: '#8b949e', fontSize: '1.05rem' }}>🔍</span>
-                </div>
-              </div>
-
-              <div style={{ width: '170px' }}>
-                <label className="form-label">Camera Filter</label>
-                <select
-                  className="form-select"
-                  style={{ height: '42px', width: '100%' }}
-                  value={camFilter}
-                  onChange={(e) => setCamFilter(e.target.value)}
-                >
-                  <option value="">-- All Cameras --</option>
-                  {cameras.map((c) => (
-                    <option key={c.camera_id} value={c.camera_id}>
-                      {c.name || c.camera_id}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ width: '140px' }}>
-                <label className="form-label">Matches</label>
-                <select
-                  className="form-select"
-                  style={{ height: '42px', width: '100%' }}
-                  value={topK}
-                  onChange={(e) => setTopK(e.target.value)}
-                >
-                  <option value="2">Top 2 (Recommended)</option>
-                  <option value="5">Top 5</option>
-                  <option value="10">Top 10</option>
-                </select>
-              </div>
+      {/* 2-Column Layout */}
+      <div className="ev-layout">
+        {/* Left Sidebar: Single Combined Example Queries Section */}
+        <aside className="ev-sidebar">
+          <div className="ev-sidebar-group">
+            <div
+              className="ev-sidebar-group-header"
+              onClick={() => setQueriesOpen(!queriesOpen)}
+            >
+              <span>Example Queries</span>
+              <ChevronIcon open={queriesOpen} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '14px' }}>
-              <div>
-                <label className="form-label">Start Time (IST, Optional)</label>
-                <input
-                  type="datetime-local"
-                  className="form-input"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="form-label">End Time (IST, Optional)</label>
-                <input
-                  type="datetime-local"
-                  className="form-input"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button
-                  type="submit"
-                  className="btn active-green"
-                  style={{ padding: '9px 24px', fontSize: '.92rem', fontWeight: 700 }}
-                  disabled={searching}
-                >
-                  {searching ? '⚡ Searching...' : '⚡ Search Clips'}
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  style={{ padding: '9px 18px', fontSize: '.92rem' }}
-                  onClick={() => {
-                    setQueryText('');
-                    setSearchResults(null);
-                    setStartTime('');
-                    setEndTime('');
-                  }}
-                >
-                  🔄 Reset
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '.75rem', color: '#8b949e' }}>Quick prompts:</span>
-                {quickPrompts.map((p, idx) => (
+            {queriesOpen && (
+              <div className="ev-sidebar-group-body">
+                {displayedQueries.map((q, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    className="btn"
-                    style={{ padding: '3px 8px', fontSize: '.75rem' }}
-                    onClick={() => {
-                      setQueryText(p);
-                    }}
+                    className="ev-prompt-item"
+                    onClick={() => handleSelectQuery(q)}
                   >
-                    {p}
+                    {q}
                   </button>
                 ))}
-              </div>
-            </div>
-          </form>
 
-          {/* Search Results Display */}
-          {searchResults && (
-            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #21262d' }}>
-              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#e6edf3', marginBottom: '14px' }}>
-                🎯 Top {searchResults.length} Visual Matches for "{queryText}"
+                {allExampleQueries.length > 5 && (
+                  <button
+                    type="button"
+                    className="ev-view-more-btn"
+                    onClick={() => setShowAllQueries(!showAllQueries)}
+                  >
+                    <span>{showAllQueries ? 'Show Less' : `View More (${allExampleQueries.length - 5} more)`}</span>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ transform: showAllQueries ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                )}
               </div>
-              {searchResults.length === 0 ? (
-                <div style={{ color: '#8b949e', textAlign: 'center', padding: '20px' }}>
-                  No visual matches found matching query and time constraints.
+            )}
+          </div>
+        </aside>
+
+        {/* Right Main Content */}
+        <div className="ev-main">
+          {mode === 'nl' ? (
+            /* NATURAL LANGUAGE SEARCH VIEW */
+            <div>
+              <div className="ev-main-head">
+                <div>
+                  <div className="ev-main-title">Search</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  </div>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {searchResults.map((item, idx) => {
-                    const started = item.started_at_utc
-                      ? new Date(item.started_at_utc.replace('Z', '+00:00'))
-                      : new Date();
-                    const matchPercent =
-                      item.similarity_percent || Math.round((item.similarity || 0) * 100);
-                    const scoreColor =
-                      matchPercent >= 75 ? '#3fb950' : matchPercent >= 60 ? '#58a6ff' : '#d29922';
-                    const clipUrl = item.clip_url ? item.clip_url : getClipUrl(item.clip_path || '');
-                    const snapUrl = item.snapshot_url
-                      ? item.snapshot_url
-                      : item.snapshot_path
-                      ? getSnapshotUrl(item.snapshot_path)
-                      : null;
+              </div>
 
-                    return (
-                      <div
-                        key={idx}
+              <div className="ev-main-body">
+                <form onSubmit={handleVisualSearch}>
+                  {/* Query input */}
+                  <div className="form-group" style={{ marginBottom: '16px' }}>
+                    <label className="form-label">
+                      Describe Person / Clothing / Vehicle
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ paddingLeft: '34px', width: '100%' }}
+                        placeholder="e.g. person with white clothes"
+                        value={queryText}
+                        onChange={(e) => setQueryText(e.target.value)}
+                        required
+                      />
+                      <span
                         style={{
-                          background: '#0d1117',
-                          border: '1px solid #30363d',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
+                          position: 'absolute',
+                          left: '11px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          color: 'var(--text-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
                         }}
                       >
-                        <div
-                          style={{
-                            padding: '12px 16px',
-                            background: '#1c2128',
-                            borderBottom: '1px solid #30363d',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                            gap: '8px',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span
-                              className="badge"
-                              style={{
-                                background: `${scoreColor}22`,
-                                border: `1px solid ${scoreColor}`,
-                                color: scoreColor,
-                                fontWeight: 700,
-                                fontSize: '.85rem',
-                              }}
-                            >
-                              🎯 Match #{idx + 1} · {matchPercent}% Similarity
-                            </span>
-                            <span style={{ fontWeight: 600, color: '#58a6ff', fontSize: '1.05rem' }}>
-                              {item.camera_id}
-                            </span>
-                            <span style={{ fontSize: '.8rem', color: '#8b949e' }}>
-                              Event {item.event_id}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '.8rem', color: '#8b949e' }}>
-                            ⏰ Started: {started.toLocaleString()}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            padding: '16px',
-                            display: 'grid',
-                            gridTemplateColumns: 'minmax(180px, 220px) 1fr',
-                            gap: '18px',
-                          }}
-                        >
-                          {/* Left: Snapshot */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div
-                              style={{
-                                fontSize: '.75rem',
-                                color: '#8b949e',
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                              }}
-                            >
-                              {(item.object_class || 'Object').toUpperCase()} Snapshot
-                            </div>
-                            {snapUrl ? (
-                              <a href={snapUrl} target="_blank" rel="noreferrer">
-                                <img
-                                  src={snapUrl}
-                                  alt="Detection Crop"
-                                  style={{
-                                    width: '100%',
-                                    maxHeight: '260px',
-                                    objectFit: 'contain',
-                                    background: '#010409',
-                                    borderRadius: '6px',
-                                    border: '1px solid #30363d',
-                                  }}
-                                />
-                              </a>
-                            ) : (
-                              <div
-                                style={{
-                                  background: '#161b22',
-                                  padding: '30px',
-                                  textAlign: 'center',
-                                  color: '#8b949e',
-                                  borderRadius: '6px',
-                                }}
-                              >
-                                No snapshot image
-                              </div>
-                            )}
-                            <div style={{ fontSize: '.78rem', color: '#8b949e', textAlign: 'center' }}>
-                              Crop from detection event
-                            </div>
-                          </div>
-
-                          {/* Right: Video Clip and AI Description */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div
-                              style={{
-                                background: '#161b22',
-                                borderLeft: '3px solid #58a6ff',
-                                padding: '10px 14px',
-                                borderRadius: '0 6px 6px 0',
-                                fontSize: '.85rem',
-                                color: '#e6edf3',
-                              }}
-                            >
-                              <div
-                                style={{
-                                  fontSize: '.75rem',
-                                  color: '#79c0ff',
-                                  fontWeight: 700,
-                                  marginBottom: '4px',
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                AI Visual Description
-                              </div>
-                              <div>
-                                {item.description || 'Person detection indexed in FAISS vector store.'}
-                              </div>
-                            </div>
-
-                            <video
-                              controls
-                              style={{
-                                width: '100%',
-                                maxHeight: '380px',
-                                background: '#000',
-                                borderRadius: '6px',
-                                border: '1px solid #30363d',
-                              }}
-                              preload="metadata"
-                            >
-                              <source src={clipUrl} type="video/mp4" />
-                              Your browser does not support the video tag.
-                            </video>
-
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                              <a
-                                href={clipUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="btn"
-                                style={{ textDecoration: 'none', padding: '6px 14px', fontSize: '.82rem' }}
-                              >
-                                🔗 Open in New Tab
-                              </a>
-                              <a
-                                href={clipUrl}
-                                download
-                                className="btn"
-                                style={{ textDecoration: 'none', padding: '6px 14px', fontSize: '.82rem' }}
-                              >
-                                ⬇ Download Clip
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 2. FIND VIDEO CLIP BY TIME RANGE */}
-      <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: '8px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', fontWeight: 700, fontSize: '1rem', background: '#1c2128', borderBottom: '1px solid #30363d' }}>
-          📋 Find Video Clip by Time Range
-        </div>
-        <div style={{ padding: '24px' }}>
-          <form onSubmit={handleTimeQuery}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Camera ID (Optional)</label>
-                <select
-                  className="form-select"
-                  value={timeCam}
-                  onChange={(e) => setTimeCam(e.target.value)}
-                >
-                  <option value="">-- All Cameras --</option>
-                  {cameras.map((c) => (
-                    <option key={c.camera_id} value={c.camera_id}>
-                      {c.name || c.camera_id}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Start Time (IST) <span style={{ color: '#f85149' }}>*</span></label>
-                <input
-                  type="datetime-local"
-                  className="form-input"
-                  value={timeStart}
-                  onChange={(e) => setTimeStart(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">End Time (IST) <span style={{ color: '#f85149' }}>*</span></label>
-                <input
-                  type="datetime-local"
-                  className="form-input"
-                  value={timeEnd}
-                  onChange={(e) => setTimeEnd(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Class</label>
-                <select
-                  className="form-select"
-                  value={timeClass}
-                  onChange={(e) => setTimeClass(e.target.value)}
-                >
-                  <option value="">All Classes</option>
-                  <option value="person">person</option>
-                  <option value="car">car</option>
-                  <option value="truck">truck</option>
-                  <option value="bus">bus</option>
-                  <option value="motorcycle">motorcycle</option>
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button type="submit" className="btn active-green" style={{ padding: '10px 24px' }}>
-                🔍 Find Clip
-              </button>
-            </div>
-          </form>
-
-          {/* Time Query Results */}
-          {timeEvents && (
-            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #21262d' }}>
-              <div style={{ fontWeight: 600, color: '#e6edf3', marginBottom: '10px' }}>
-                Found {timeEvents.length} recorded events with video clips:
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {timeEvents.map((ev, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '12px',
-                      background: '#0d1117',
-                      borderRadius: '6px',
-                      border: '1px solid #30363d',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <div>
-                      <span style={{ color: '#58a6ff', fontWeight: 600 }}>{ev.camera_id}</span>
-                      <span style={{ margin: '0 8px', color: '#8b949e' }}>·</span>
-                      <span>{ev.object_class}</span>
-                      <span style={{ margin: '0 8px', color: '#8b949e' }}>·</span>
-                      <span style={{ color: '#8b949e', fontSize: '.8rem' }}>{ev.started_at_utc}</span>
+                        <SearchIcon />
+                      </span>
                     </div>
-                    {ev.clip_path && (
-                      <a
-                        href={getClipUrl(ev.clip_path)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn"
-                        style={{ padding: '4px 10px', fontSize: '.8rem' }}
-                      >
-                        ▶ Watch Clip
-                      </a>
-                    )}
                   </div>
-                ))}
+
+                  {/* Filter row */}
+                  <div className="ev-form-row" style={{ marginBottom: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Camera Filter</label>
+                      <select
+                        className="form-select"
+                        value={camFilter}
+                        onChange={(e) => setCamFilter(e.target.value)}
+                      >
+                        <option value="">All Cameras</option>
+                        {cameras.map((c) => (
+                          <option key={c.camera_id} value={c.camera_id}>
+                            {c.name || c.camera_id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Matches</label>
+                      <select
+                        className="form-select"
+                        value={topK}
+                        onChange={(e) => setTopK(e.target.value)}
+                      >
+                        <option value="2">Top 2</option>
+                        <option value="5">Top 5</option>
+                        <option value="10">Top 10</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Start Time (Optional)</label>
+                      <input
+                        type="datetime-local"
+                        className="form-input"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">End Time (Optional)</label>
+                      <input
+                        type="datetime-local"
+                        className="form-input"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                      type="submit"
+                      className="btn active-green"
+                      disabled={searching}
+                    >
+                      <SearchIcon />
+                      <span>{searching ? 'Searching...' : 'Search Clips'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={handleResetSearch}
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </form>
+
+                {/* Search Results Display */}
+                {searchResults !== null && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '10px' }}>
+                    <hr className="ev-divider" />
+                    <div className="ev-results-header">
+                      {searchResults.length === 0
+                        ? 'No visual matches found matching query and time constraints.'
+                        : `Top ${searchResults.length} Visual Matches for "${queryText}"`}
+                    </div>
+
+                    {searchResults.map((item, idx) => {
+                      const started = item.started_at_utc
+                        ? new Date(item.started_at_utc.replace('Z', '+00:00'))
+                        : new Date();
+                      const matchPercent =
+                        item.similarity_percent || Math.round((item.similarity || 0) * 100);
+                      const badgeClass =
+                        matchPercent >= 75 ? 'high' : matchPercent >= 60 ? 'mid' : 'low';
+                      const clipUrl = item.clip_url ? item.clip_url : getClipUrl(item.clip_path || '');
+                      const snapUrl = item.snapshot_url
+                        ? item.snapshot_url
+                        : item.snapshot_path
+                        ? getSnapshotUrl(item.snapshot_path)
+                        : null;
+
+                      return (
+                        <div key={idx} className="ev-result-card">
+                          <div className="ev-result-head">
+                            <div className="ev-result-meta">
+                              <span className={`ev-match-badge ${badgeClass}`}>
+                                Match {idx + 1} · {matchPercent}%
+                              </span>
+                              <span className="ev-result-cam">{item.camera_id}</span>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                Event {item.event_id}
+                              </span>
+                            </div>
+                            <div className="ev-result-time">
+                              {started.toLocaleString()}
+                            </div>
+                          </div>
+
+                          <div className="ev-result-body">
+                            {/* Left: Snapshot */}
+                            <div>
+                              <div className="ev-snap-label">
+                                {(item.object_class || 'Object').toUpperCase()} Snapshot
+                              </div>
+                              {snapUrl ? (
+                                <a href={snapUrl} target="_blank" rel="noreferrer">
+                                  <img
+                                    src={snapUrl}
+                                    alt="Detection Snapshot"
+                                    className="ev-snap-img"
+                                  />
+                                </a>
+                              ) : (
+                                <div className="ev-snap-placeholder">
+                                  No snapshot image
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Right: AI Description & Video Clip */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <div className="ev-ai-desc-box">
+                                <div className="ev-ai-desc-label">AI Visual Description</div>
+                                <div>
+                                  {item.description || 'Detection indexed in FAISS vector store.'}
+                                </div>
+                              </div>
+
+                              <video
+                                controls
+                                className="ev-video"
+                                preload="metadata"
+                              >
+                                <source src={clipUrl} type="video/mp4" />
+                                Your browser does not support video playback.
+                              </video>
+
+                              <div className="ev-clip-actions">
+                                <a
+                                  href={clipUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="btn"
+                                  style={{ padding: '5px 12px', fontSize: '0.78rem', textDecoration: 'none' }}
+                                >
+                                  <ExternalLinkIcon />
+                                  <span>Open in New Tab</span>
+                                </a>
+                                <a
+                                  href={clipUrl}
+                                  download
+                                  className="btn"
+                                  style={{ padding: '5px 12px', fontSize: '0.78rem', textDecoration: 'none' }}
+                                >
+                                  <DownloadIcon />
+                                  <span>Download Clip</span>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* TIME RANGE QUERY VIEW */
+            <div>
+              <div className="ev-main-head">
+                <div>
+                  <div className="ev-main-title">Time Range Filter</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ev-main-body">
+                <form onSubmit={handleTimeQuery}>
+                  <div className="ev-form-row" style={{ marginBottom: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Camera ID</label>
+                      <select
+                        className="form-select"
+                        value={timeCam}
+                        onChange={(e) => setTimeCam(e.target.value)}
+                      >
+                        <option value="">All Cameras</option>
+                        {cameras.map((c) => (
+                          <option key={c.camera_id} value={c.camera_id}>
+                            {c.name || c.camera_id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Start Time</label>
+                      <input
+                        type="datetime-local"
+                        className="form-input"
+                        value={timeStart}
+                        onChange={(e) => setTimeStart(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">End Time</label>
+                      <input
+                        type="datetime-local"
+                        className="form-input"
+                        value={timeEnd}
+                        onChange={(e) => setTimeEnd(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Class</label>
+                      <select
+                        className="form-select"
+                        value={timeClass}
+                        onChange={(e) => setTimeClass(e.target.value)}
+                      >
+                        <option value="">All Classes</option>
+                        <option value="person">person</option>
+                        <option value="car">car</option>
+                        <option value="truck">truck</option>
+                        <option value="bus">bus</option>
+                        <option value="motorcycle">motorcycle</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="submit"
+                      className="btn active-green"
+                      disabled={timeSearching}
+                    >
+                      <SearchIcon />
+                      <span>{timeSearching ? 'Searching...' : 'Find Clips'}</span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Time Query Results */}
+                {timeEvents !== null && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                    <hr className="ev-divider" />
+                    <div className="ev-results-header">
+                      {timeEvents.length === 0
+                        ? 'No recorded events found for this time range.'
+                        : `Found ${timeEvents.length} recorded events with video clips`}
+                    </div>
+
+                    {timeEvents.map((ev, idx) => (
+                      <div key={idx} className="ev-event-row">
+                        <div className="ev-event-info">
+                          <span className="ev-event-cam">{ev.camera_id}</span>
+                          <span className="ev-event-sep">·</span>
+                          <span className="ev-event-class">{ev.object_class}</span>
+                          <span className="ev-event-sep">·</span>
+                          <span className="ev-event-ts">{ev.started_at_utc}</span>
+                        </div>
+                        {ev.clip_path && (
+                          <a
+                            href={getClipUrl(ev.clip_path)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn"
+                            style={{ padding: '4px 10px', fontSize: '0.78rem', textDecoration: 'none' }}
+                          >
+                            <PlayIcon />
+                            <span>Watch Clip</span>
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -575,4 +680,3 @@ export default function EventsView({ cameras = [] }) {
     </section>
   );
 }
-

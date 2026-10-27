@@ -7,7 +7,6 @@ import {
   triggerCameraAnalysis,
   getOnboardingStatus,
   getCameraRecommendations,
-  resetCameraOnboarding,
 } from '../../utils/api';
 
 export default function Onboarding({ cameras = [], onRefreshCameras }) {
@@ -102,10 +101,13 @@ export default function Onboarding({ cameras = [], onRefreshCameras }) {
     }
   };
 
+  // Group capabilities by category
+  const categories = Array.from(new Set(allCaps.map((c) => c.category || 'General')));
+
   return (
-    <section id="onboarding-view" style={{ display: 'flex' }}>
+    <section id="onboarding-view">
       {alert && (
-        <div className={`alert-box ${alert.type}`} style={{ display: 'block', marginBottom: '14px' }}>
+        <div className={`alert-box ${alert.type}`}>
           {alert.msg}
         </div>
       )}
@@ -113,12 +115,12 @@ export default function Onboarding({ cameras = [], onRefreshCameras }) {
       {/* 1. Register Camera Card */}
       <div className="ob-card">
         <div className="ob-card-head">
-          <span>⚡ Register & Connect RTSP Camera</span>
+          <span className="ob-card-title">Register New Camera</span>
         </div>
         <form className="ob-card-body" onSubmit={handleRegister}>
-          <div className="form-row">
+          <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Camera Identifier</label>
+              <label className="form-label">Camera ID</label>
               <input
                 type="text"
                 className="form-input"
@@ -128,63 +130,70 @@ export default function Onboarding({ cameras = [], onRefreshCameras }) {
                 required
               />
             </div>
-            <div className="form-group" style={{ flex: 2 }}>
+            <div className="form-group">
               <label className="form-label">RTSP Stream URI</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="rtsp://127.0.0.1:8554/live/stream"
+                placeholder="rtsp://192.168.1.55/stream1"
                 value={newRtspUrl}
                 onChange={(e) => setNewRtspUrl(e.target.value)}
                 required
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Codec</label>
+              <label className="form-label">Video Codec</label>
               <select className="form-select" value={newCodec} onChange={(e) => setNewCodec(e.target.value)}>
-                <option value="h264">H.264 (NVDEC Hardware)</option>
+                <option value="h264">H.264 (Hardware NVDEC)</option>
                 <option value="h265">H.265 / HEVC</option>
               </select>
             </div>
-            <button type="submit" className="btn active-green" style={{ height: '38px' }}>
-              + Add Camera
+            <button type="submit" className="btn active-green" style={{ height: '38px', minWidth: '120px' }}>
+              Add Camera
             </button>
           </div>
         </form>
       </div>
 
-      {/* 2. Auto-Analysis Card */}
+      {/* 2. Scene Auto-Analysis Card */}
       <div className="ob-card">
         <div className="ob-card-head">
-          <span>🔍 AI Scene Analysis & Automatic Recommendations</span>
-          <select
-            className="form-select"
-            value={selectedCam}
-            onChange={(e) => setSelectedCam(e.target.value)}
-            style={{ padding: '4px 10px' }}
-          >
-            {cameras.map((c) => (
-              <option key={c.camera_id} value={c.camera_id}>
-                {c.name || c.camera_id}
-              </option>
-            ))}
-          </select>
+          <span className="ob-card-title">AI Scene Analysis</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="form-label" style={{ margin: 0 }}>Target Camera:</span>
+            <select
+              className="form-select"
+              value={selectedCam}
+              onChange={(e) => setSelectedCam(e.target.value)}
+              style={{ padding: '5px 10px', fontSize: '0.82rem' }}
+            >
+              {cameras.map((c) => (
+                <option key={c.camera_id} value={c.camera_id}>
+                  {c.name || c.camera_id}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
         <div className="ob-card-body">
-          <p style={{ margin: 0, color: '#8b949e', fontSize: '.85rem' }}>
-            StreamCore runs hardware NVDEC frame sampling to detect pedestrians, vehicles, indoor/outdoor
-            lighting, and density, automatically recommending optimal analytics.
+          <p className="ob-section-desc">
+            Hardware NVDEC automatically samples video frames to detect density, pedestrians, vehicles, and
+            lighting conditions, generating tailored analytics recommendations.
           </p>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+
+          <div className="analysis-action-box">
             <button
               type="button"
-              className="btn active"
+              className="btn btn-blue"
               onClick={handleStartAnalysis}
               disabled={analyzing}
+              style={{ minWidth: '180px' }}
             >
-              {analyzing ? '⏳ Analyzing Scene...' : '🚀 Run Scene Auto-Analysis'}
+              {analyzing ? 'Analyzing Stream...' : 'Run Scene Auto-Analysis'}
             </button>
-            <div className="progress-container" style={{ flex: 1 }}>
+
+            <div className="progress-container">
               <div className="progress-bar" style={{ width: `${analysisProgress}%` }}></div>
               <div className="progress-text">{analysisProgress}% Complete</div>
             </div>
@@ -195,38 +204,72 @@ export default function Onboarding({ cameras = [], onRefreshCameras }) {
       {/* 3. Capability Selection Card */}
       <div className="ob-card">
         <div className="ob-card-head">
-          <span>🎛️ Active AI Capabilities for {selectedCam}</span>
-          <span style={{ fontSize: '.75rem', color: '#8b949e' }}>Config Version: {configVersion}</span>
+          <span className="ob-card-title">Camera AI Capabilities</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Selected: <strong style={{ color: 'var(--text-primary)' }}>{selectedCam}</strong> · Config v{configVersion}
+          </span>
         </div>
+
         <div className="ob-card-body">
-          <div className="caps-list">
-            {allCaps.map((cap) => {
-              const isChecked = activeCaps.includes(cap.id);
-              return (
-                <div key={cap.id} className="cap-item">
-                  <input
-                    type="checkbox"
-                    className="cap-checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleCapability(cap.id)}
-                  />
-                  <div className="cap-content">
-                    <div className="cap-header">
-                      <span className="cap-title">{cap.name}</span>
-                      <div className="cap-badges">
-                        <span className="cap-badge score">{cap.category}</span>
-                        <span className="cap-badge available">GPU Accelerated</span>
+          {categories.map((category) => {
+            const categoryCaps = allCaps.filter((c) => (c.category || 'General') === category);
+            if (categoryCaps.length === 0) return null;
+
+            return (
+              <div key={category} className="caps-category-group">
+                <div className="caps-category-title">{category}</div>
+                <div className="caps-grid">
+                  {categoryCaps.map((cap) => {
+                    const isChecked = activeCaps.includes(cap.id);
+                    const isImplemented = cap.implementation_status !== 'NOT_IMPLEMENTED';
+
+                    return (
+                      <div
+                        key={cap.id}
+                        className={`cap-card ${isChecked ? 'active' : ''} ${!isImplemented ? 'disabled' : ''}`}
+                        onClick={() => isImplemented && toggleCapability(cap.id)}
+                      >
+                        <input
+                          type="checkbox"
+                          className="cap-checkbox"
+                          checked={isChecked}
+                          disabled={!isImplemented}
+                          onChange={() => {}}
+                        />
+                        <div className="cap-content">
+                          <div className="cap-header">
+                            <span className="cap-title">{cap.display_name || cap.name || cap.id}</span>
+                            <div className="cap-badges">
+                              <span
+                                className={`cap-badge ${
+                                  isImplemented ? 'available' : 'not-implemented'
+                                }`}
+                              >
+                                {isImplemented ? 'Available' : 'Coming Soon'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="cap-desc">{cap.description}</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="cap-desc">{cap.description}</div>
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-          <div className="action-bar" style={{ marginTop: '14px' }}>
-            <button type="button" className="btn active-green" onClick={handleSaveCapabilities}>
-              💾 Save & Apply Capabilities
+              </div>
+            );
+          })}
+
+          <div className="ob-footer-bar">
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              {activeCaps.length} active capabilities enabled for {selectedCam}
+            </span>
+            <button
+              type="button"
+              className="btn active-green"
+              onClick={handleSaveCapabilities}
+              style={{ minWidth: '160px' }}
+            >
+              Save Capabilities
             </button>
           </div>
         </div>
@@ -234,4 +277,3 @@ export default function Onboarding({ cameras = [], onRefreshCameras }) {
     </section>
   );
 }
-

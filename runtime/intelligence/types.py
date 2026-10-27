@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 import time
 from typing import Any
+import uuid
 
 
 class AnchorType(StrEnum):
@@ -124,9 +125,10 @@ class PolygonZone:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PolygonZone:
         pts = [Point.from_dict(p) for p in data.get("polygon", [])]
+        zid = str(data.get("zone_id") or f"zone_{uuid.uuid4().hex[:8]}")
         return cls(
-            zone_id=str(data["zone_id"]),
-            name_or_camera=str(data.get("name", data["zone_id"])),
+            zone_id=zid,
+            name_or_camera=str(data.get("name") or zid),
             polygon_or_name=pts,
             camera_id=str(data.get("camera_id", "")),
             applicable_classes=list(data.get("applicable_classes", ["person"])),
@@ -233,11 +235,15 @@ class VirtualLine:
     def from_dict(cls, data: dict[str, Any]) -> VirtualLine:
         pa_raw = data.get("point_a") or data.get("p1")
         pb_raw = data.get("point_b") or data.get("p2")
+        if (pa_raw is None or pb_raw is None) and isinstance(data.get("line"), (list, tuple)) and len(data["line"]) >= 2:
+            pa_raw = data["line"][0]
+            pb_raw = data["line"][1]
         if pa_raw is None or pb_raw is None:
             raise ValueError("VirtualLine requires point_a (or p1) and point_b (or p2)")
+        lid = str(data.get("line_id") or f"line_{uuid.uuid4().hex[:8]}")
         return cls(
-            line_id=str(data["line_id"]),
-            name_or_camera=str(data.get("name", data["line_id"])),
+            line_id=lid,
+            name_or_camera=str(data.get("name") or lid),
             pa_or_name=Point.from_dict(pa_raw),
             pb_or_pa=Point.from_dict(pb_raw),
             camera_id=str(data.get("camera_id", "")),

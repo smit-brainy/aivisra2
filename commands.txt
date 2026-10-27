@@ -1,13 +1,13 @@
-# ==============================================================================
-# AIVISRA StreamCore Run & Test Commands
-# ==============================================================================
+# Run & Test Commands
 
+# ------------------------------------------------------------------------------
 # 0. Environment Setup
+# ------------------------------------------------------------------------------
 conda activate nvr
 cd /home/brainy/brainy_neurals/smit/aivisra2
 
 # ------------------------------------------------------------------------------
-# 1. Reset Storage & Cache (Optional / Clean Slate)
+# 1. Reset Storage & Cache (Optional / Clean State)
 # ------------------------------------------------------------------------------
 # Clear SQLite DB and FAISS Vector Index
 rm -f runtime/streamcore/output/events.db* runtime/streamcore/output/vector_index/*
@@ -18,8 +18,7 @@ rm -rf runtime/streamcore/output/clips/* runtime/streamcore/output/snapshots/*
 # ------------------------------------------------------------------------------
 # 2. Running Backend and Frontend
 # ------------------------------------------------------------------------------
-
-# --- METHOD A: Unified Pipeline + Preview / Web Server (All-in-one) ---
+# --- METHOD A (Old Method): Unified Pipeline + Preview / Web Server (All-in-one) ---
 # Runs StreamCore video processing engine with the integrated FastAPI/Vite web UI
 python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765
 

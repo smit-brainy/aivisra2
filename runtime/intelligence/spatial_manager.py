@@ -19,7 +19,7 @@ from .line_crossing import LineCrossingManager
 from .metrics import IntelligenceMetrics
 from .occupancy_manager import OccupancyManager
 from .rule_engine import RuleEngine, TriggeredRuleMatch
-from .types import OccupancyState, PolygonZone, SpatialEvent, SpatialRule, VirtualLine
+from .types import OccupancyState, PolygonZone, RuleType, Severity, SpatialEvent, SpatialRule, VirtualLine
 from .zone_manager import ZoneManager
 
 logger = logging.getLogger("intelligence.manager")
