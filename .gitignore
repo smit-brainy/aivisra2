@@ -196,3 +196,27 @@ runtime/streamcore/output/snapshots/
 runtime/streamcore/output/vector_index/
 .agents/
 ORIGINAL_REQUEST.md
+
+# ─── Frontend (React / Vite) ─────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.vite-inspect/
+
+# ─── Backend (FastAPI / Python) ───────────────────────────────
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+
+# ─── Preview server backup ────────────────────────────────────
+runtime/streamcore/preview/preview_server.py.bak
+
+# ─── StreamCore runtime output (clips, evidence, DB) ─────────
+runtime/streamcore/output/clips/
+runtime/streamcore/output/evidence/
+runtime/streamcore/output/events.db
+runtime/streamcore/output/vector_index/
+runtime/streamcore/output/snapshots/
+runtime/streamcore/output/*.db
+runtime/streamcore/output/*.db-shm
+runtime/streamcore/output/*.db-wal
