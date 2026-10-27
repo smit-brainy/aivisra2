@@ -10,3 +10,9 @@ rm -rf runtime/streamcore/output/clips/* runtime/streamcore/output/snapshots/*
 # 3. Run the server
 cd brainy_neurals/smit/aivisra2
 /home/brainy/miniconda3/envs/nvr/bin/python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765
+
+# 4. To find the Process ID of the running process.
+ps -eo pid,user,pmem,rss,comm --sort=-rss | awk 'NR==1 || $4 > 100000 {printf "%-7s %-10s %-6s %-8s %s\n", $1, $2, $3, int($4/1024)"MB", $5}'
+
+# 5. Kill the process with
+sudo kill -9 {pid}
