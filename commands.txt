@@ -1,18 +1,70 @@
-# 0. Start the conda env
-conda activate nvr
+# ==============================================================================
+# AIVISRA StreamCore Run & Test Commands
+# ==============================================================================
 
-# 1. Reset SQLite DB and FAISS Vector Index
+# 0. Environment Setup
+conda activate nvr
+cd /home/brainy/brainy_neurals/smit/aivisra2
+
+# ------------------------------------------------------------------------------
+# 1. Reset Storage & Cache (Optional / Clean Slate)
+# ------------------------------------------------------------------------------
+# Clear SQLite DB and FAISS Vector Index
 rm -f runtime/streamcore/output/events.db* runtime/streamcore/output/vector_index/*
 
-# 2. Clear all old clips and snapshots if any exist:
+# Clear generated clips and snapshots
 rm -rf runtime/streamcore/output/clips/* runtime/streamcore/output/snapshots/*
 
-# 3. Run the server
-cd brainy_neurals/smit/aivisra2
-/home/brainy/miniconda3/envs/nvr/bin/python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765
+# ------------------------------------------------------------------------------
+# 2. Running Backend and Frontend
+# ------------------------------------------------------------------------------
 
-# 4. To find the Process ID of the running process.
+# --- METHOD A: Unified Pipeline + Preview / Web Server (All-in-one) ---
+# Runs StreamCore video processing engine with the integrated FastAPI/Vite web UI
+python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --preview-port 8765
+
+# --- METHOD B: Standalone Individual Services ---
+
+# B.1 Start Backend (FastAPI API + Embedded SPA static files):
+./run_backend.sh 8765
+# Or directly via Python:
+# python3 -m backend.run --port 8765
+
+# B.2 Start Frontend (Vite Hot-Reload Dev Server with API Proxy):
+./run_frontend.sh
+# Or directly via npm in frontend directory:
+# cd frontend && npm run dev
+
+# ------------------------------------------------------------------------------
+# 3. Frontend Production Build
+# ------------------------------------------------------------------------------
+cd frontend
+npm run build
+cd ..
+
+# ------------------------------------------------------------------------------
+# 4. API & Health Check Verification
+# ------------------------------------------------------------------------------
+# Check root SPA entry
+curl -I http://127.0.0.1:8765/
+
+# Check Swagger API documentation
+curl -I http://127.0.0.1:8765/docs
+
+# Check visual search status / vector count
+curl -s http://127.0.0.1:8765/api/status/search
+
+# Check registered cameras
+curl -s http://127.0.0.1:8765/api/cameras
+
+# Check recent events
+curl -s "http://127.0.0.1:8765/api/events?limit=5"
+
+# ------------------------------------------------------------------------------
+# 5. Process Monitoring & Termination
+# ------------------------------------------------------------------------------
+# Find StreamCore / Backend processes consuming memory:
 ps -eo pid,user,pmem,rss,comm --sort=-rss | awk 'NR==1 || $4 > 100000 {printf "%-7s %-10s %-6s %-8s %s\n", $1, $2, $3, int($4/1024)"MB", $5}'
 
-# 5. Kill the process with
-sudo kill -9 {pid}
+# Kill process by PID:
+kill -9 <PID>
