@@ -7,6 +7,7 @@ export default function Navbar({ activeTab, setActiveTab, theme, onToggleTheme }
     { id: 'onboarding', label: 'Camera Setup' },
     { id: 'spatial', label: 'Spatial Rules & Zones' },
     { id: 'events', label: 'Visual Search & Clips' },
+    { id: 'inetra', label: 'i-Netra (Demo UI)' },
   ];
 
   return (

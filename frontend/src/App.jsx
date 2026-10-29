@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
-import StageView from './components/stage/StageView';
-import GridView from './components/grid/GridView';
-import Onboarding from './components/onboarding/Onboarding';
-import SpatialRules from './components/spatial/SpatialRules';
-import EventsView from './components/events/EventsView';
+import LiveDemo from './pages/demo/LiveDemo';
+import CameraGridPage from './pages/demo/CameraGridPage';
+import OnboardingPage from './pages/setup/OnboardingPage';
+import SpatialRulesPage from './pages/vision/SpatialRulesPage';
+import EventsPage from './pages/vision/EventsPage';
+import IIntraPrototype from './pages/inetra/IIntraPrototype';
 import { fetchCameras, fetchStatus } from './utils/api';
+import './styles/fonts.css';
+import './styles/foundations.css';
 import './styles/theme.css';
 
 export default function App() {
@@ -58,7 +61,7 @@ export default function App() {
 
       <main className="main-content">
         {activeTab === 'demo' && (
-          <StageView
+          <LiveDemo
             cameras={cameras}
             selectedCam={selectedCam}
             setSelectedCam={setSelectedCam}
@@ -66,29 +69,33 @@ export default function App() {
         )}
 
         {activeTab === 'grid' && (
-          <GridView
+          <CameraGridPage
             cameras={cameras}
             onSelectCamera={handleSelectCameraFromGrid}
           />
         )}
 
         {activeTab === 'onboarding' && (
-          <Onboarding
+          <OnboardingPage
             cameras={cameras}
             onRefreshCameras={loadCameras}
           />
         )}
 
         {activeTab === 'spatial' && (
-          <SpatialRules
+          <SpatialRulesPage
             cameras={cameras}
           />
         )}
 
         {activeTab === 'events' && (
-          <EventsView
+          <EventsPage
             cameras={cameras}
           />
+        )}
+
+        {activeTab === 'inetra' && (
+          <IIntraPrototype />
         )}
       </main>
 
