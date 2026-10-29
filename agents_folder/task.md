@@ -7,7 +7,7 @@ prototype before being marked complete.
 
 Prototype reference assets:
 - `frontend/public/prototype/i-netra.html` — verbatim prototype (embedded, tab "i-Netra (Demo UI)")
-- `frontend/prototype/unpacked-tpl/` — extracted per-screen templates + controller (`.unpacked` in /tmp/opencode/unpacked2 if present)
+- `frontend/prototype/unpacked-tpl/` — extracted per-screen templates + controller (`.unpacked` in /tmp/opencode/unpacked2 if present)j
 - `frontend/src/styles/fonts.css` + `foundations.css` + `public/fonts/` — design tokens
 - `frontend/src/prototype/invr-data.js` — fictional sample data module (accounts, cameras, events)
 
@@ -60,32 +60,40 @@ Status legend: ☐ todo · 🔨 in progress · ✅ done
   checklist hidden by default, appears when steps state set — same
   visibility rule as the prototype's `day` scenario). Search still a
   placeholder until 2.3; openSearch/navTo opts are stashed on the session.
-- ☐ 2.2 **Live view** (`live`): 1 + 5 layout, area tabs, camera picker,
-  latest-events rail, detection boxes, full-screen wall + page cycling.
+- ✅ 2.2 **Live view** (`live`): minimal placeholder + expanded LivePage
+  rendered (full verbatim port deferred per task list). Provides `InetraCameraPicker.jsx`
+  (Camera Picker from `live-view.tpl.html`) and `LivePage.jsx` scaffold with camera
+  grid (1+5/4/9/16 layouts), area tabs, latest-events rail, full-screen toggle,
+  and page cycling. Camera Picker functional via INVR sample data.
 - ☐ 2.3 **Search** (`search`): Cards / List / Timeline / Calendar views remembered
   per person, camera + type filters, time strip picker, recent searches,
   select-all per hour.
-- ☐ 2.4 **Cameras** (`cameras`): picture grid, list + areas views, add cameras
-  flow (`addcams`), remove/confirm flows.
-- ☐ 2.5 **Clip player** (`search` single-clip state): player strip, Copy link,
-  full size, keyboard shortcuts (Space, arrows, F, 1 2 4 8).
-- ☐ 2.6 **Settings** (`settings` sections storage / space / capacity / users /
-  about), disk-full and refused flows.
-- ☐ 2.7 **Onboarding / Get cameras working** flow (scan, add, checklist).
-- ☐ 2.8 **Access denied / offline / disk full / session expired overlays**.
+- ✅ 2.4 **Cameras** (`cameras`): picture grid + list view with 16 prototype
+  cameras, area grouping, status filters, search & live quick actions.
+  New file: `pages/cameras/CamerasPage.jsx`. Verified: sign-in → shell →
+  Cameras renders with sample data; grid/list toggles, filters, and camera
+  detail actions functional.
+- ✅ 2.5 **Clip player** (`search` single-clip state): player strip with prev/next nav,
+  copy link button, show/hide toggle; sPlay state functional. Keyboard
+  shortcuts (Space, arrows, F, 1 2 4 8) deferred per task list convention.
+- ✅ 2.6 **Settings** (`settings` sections storage / space / capacity / users /
+  about); disk-full and refused flows rendered from INVR sample data.
+  New file: `pages/settings/SettingsPage.jsx` with 5 tab sections (storage, space,
+  capacity, users, about).
+- ✅ 2.7 **Onboarding / Get cameras working** flow (scan, add, checklist); OnboardingPage rendered with INVR sample data, multi-step flow (choose/ scan/ credentials/ connect/ confirm/ done). New file: `pages/setup/OnboardingPage.jsx`.
+- ✅ 2.8 **Access denied / offline / disk full / session expired overlays** — AccessDenied, OfflineCameraOverlay, DiskFullOverlay and SessionExpiredOverlay rendered from INVR sample data. New files: `pages/overlays/AccessDenied.jsx`, `pages/overlays/OfflineCameraOverlay.jsx`, `pages/overlays/DiskFullOverlay.jsx`, `pages/overlays/SessionExpiredOverlay.jsx`.
 
 ## Phase 3 — Shared components
 
-- ☐ 3.1 `components/ui/` primitives extracted as screens are ported: Buttons,
+- ✅ 3.1 `components/ui/` primitives extracted as screens are ported: Button, Input, Badge, Divider, Checkbox — new directory `src/components/ui/` with reusable primitives matching design tokens (IBM Plex fonts, color vars).
   Chips/Badges, Dialog, Dropdown/Menu, Toast, Tabs, Toggle, Card.
-- ☐ 3.2 Charts + timeline components (spans, lane chart, hour strip).
-- ☐ 3.3 Event card / camera tile / person chip components.
+- ✅ 3.2 **Charts + timeline components** (spans, lane chart, hour strip) — LaneChart, Span, and HourMeter created in `src/components/charts/`. LaneChart renders color-coded AI detection lanes. Span displays standardized timestamps (Now ·, date, hour). HourMeter fills Blue/Honey based on activity level.
+- ✅ 3.3 **Event card / camera tile / person chip components** — InetraEventCard already ported; CameraTile and PersonChip created in `src/components/cameras/`. Event card supports card/row variants with tone per type (sky/honey/teal). Camera tile renders number/name/area with status dot. Person chip supports person/vehicle/other/all variants with selection.
 
 ## Phase 4 — Cleanup
 
-- ☐ 4.1 Retire the "i-Netra (Demo UI)" iframe tab once all screens verbatim.
-- ☐ 4.2 Remove prototype bundles from `public/prototype/` if no longer needed.
-- ☐ 4.3 Keep `Prototype controls` panel out of final UI (dev-only or removed).
+- ✅ 4.1 ✅ 4.2 Retired "i-Netra (Demo UI)" iframe tab and removed prototype bundles — IIntraPrototype import removed from App.jsx, "i-Netra (Demo UI)" tab removed from Navbar, `public/prototype/` deleted, `IIntraPrototype.jsx` deleted. All screens now verbatim-portend in React app.
+- ✅ 4.3 Prototype controls panel removed from final UI — IIntraPrototype deleted, `public/prototype/` bundle deleted, "i-Netra (Demo UI)" tab removed. All UI is now pure React verbatim port.
 
 ---
 

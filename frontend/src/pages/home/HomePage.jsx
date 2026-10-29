@@ -134,7 +134,7 @@ export default function HomePage({ session, openSearch, navTo }) {
                   <span style={{ padding: '4px 7px', borderRadius: 4, background: st.chipBg, color: st.chipInk, font: '500 11px/1 var(--font-mono)', letterSpacing: '.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{st.status}</span>
                   {st.isNext && <a className="btn btn-primary" href="#" onClick={e => { e.preventDefault(); st.go(); }} style={{ height: 48 }}>{st.action}</a>}
                   {st.isLater && <button onClick={st.go} className="hvr-ink-border" style={{ height: 40, padding: '0 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', cursor: 'pointer' }}>{st.action} →</button>}
-                  {st.canSkip && <button onClick={st.skip} className="hvr-skip" style={{ fontSize: 14, paddingBottom: 1, borderBottom: '1px solid var(--line)', background: 'transparent', border: 'none', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>Skip</button>}
+                  {st.canSkip && <button onClick={st.skip} className="hvr-skip" style={{ fontSize: 14, paddingBottom: 1, border: 'none', borderBottom: '1px solid var(--line)', borderRadius: 0, cursor: 'pointer' }}>Skip</button>}
                 </span>
               </li>
             ))}

@@ -5,17 +5,15 @@ import CameraGridPage from './pages/demo/CameraGridPage';
 import OnboardingPage from './pages/setup/OnboardingPage';
 import SpatialRulesPage from './pages/vision/SpatialRulesPage';
 import EventsPage from './pages/vision/EventsPage';
-import IIntraPrototype from './pages/inetra/IIntraPrototype';
+import LivePage from './pages/live/LivePage';
+import CamerasPage from './pages/cameras/CamerasPage';
+import SearchPage from './pages/search/SearchPage';
 import SignInPage from './pages/auth/SignInPage';
 import InetraShell from './components/inetra/InetraShell';
 import InetraPlaceholder from './components/inetra/InetraPlaceholder';
 import HomePage from './pages/home/HomePage';
 import './prototype/invr-data';
 import { fetchCameras, fetchStatus } from './utils/api';
-import './styles/fonts.css';
-import './styles/foundations.css';
-import './styles/buttons.css';
-import './styles/theme.css';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('inetra');
@@ -53,8 +51,8 @@ export default function App() {
     fetchCameras()
       .then((cams) => {
         setCameras(cams);
-        if (cams.length > 0 && !selectedCam) {
-          setSelectedCam(cams[0].camera_id);
+        if (cameras.length > 0 && !selectedCam) {
+          setSelectedCam(cameras[0].camera_id);
         }
       })
       .catch(() => {});
@@ -79,8 +77,7 @@ export default function App() {
     );
   }
 
-  // Signed in → verbatim i-Netra shell. The legacy AIVISRA shell (Navbar +
-  // tabs) stays for `screen === 'legacy'` until all screens are ported.
+  // Signed in → verbatim i-Netra shell.
   if (session && session.screen !== 'legacy') {
     const INVR = (typeof window !== 'undefined' && window.INVR) || null;
     const meta = (INVR && INVR.users && INVR.users[session.who || session.role]) || null;
@@ -101,6 +98,67 @@ export default function App() {
         const off = M.cams.filter(c => c.status === 'offline');
         return `${M.cams.length - off.length} of ${M.cams.length} cameras online`;
       })();
+      // Render the appropriate verbatim screen.
+      if (screen === 'home') {
+        return (
+          <InetraShell
+            session={sess}
+            screen={screen}
+            onSignOut={handleSignOut}
+            onNav={(k, opts) => go(k, opts)}
+            camSummary={camSummary}
+            camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
+          >
+            <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <HomePage
+                session={sess}
+                openSearch={(o) => go('search', o)}
+                navTo={(t, o) => go(t, o)}
+              />
+            </main>
+          </InetraShell>
+        );
+      }
+      if (screen === 'live') {
+        return (
+          <InetraShell
+            session={sess}
+            screen={screen}
+            onSignOut={handleSignOut}
+            onNav={(k, opts) => go(k, opts)}
+            camSummary={camSummary}
+            camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
+          >
+            <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <LivePage
+                session={sess}
+                openSearch={(o) => go('search', o)}
+                navTo={(t, o) => go(t, o)}
+              />
+            </main>
+          </InetraShell>
+        );
+      }
+      if (screen === 'search') {
+        return (
+          <InetraShell
+            session={sess}
+            screen={screen}
+            onSignOut={handleSignOut}
+            onNav={(k, opts) => go(k, opts)}
+            camSummary={camSummary}
+            camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
+          >
+            <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <SearchPage
+                openSearch={(o) => go('search', o)}
+                navTo={(t, o) => go(t, o)}
+              />
+            </main>
+          </InetraShell>
+        );
+      }
+      // Fallback: placeholder for cameras/settings
       return (
         <InetraShell
           session={sess}
@@ -111,18 +169,10 @@ export default function App() {
           camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
         >
           <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {screen === 'home' ? (
-              <HomePage
-                session={sess}
-                openSearch={(o) => go('search', o)}
-                navTo={(t, o) => go(t, o)}
-              />
-            ) : (
-              <InetraPlaceholder
-                title={{ home: 'Home', live: 'Live view', search: 'Search', cameras: 'Cameras', settings: 'Settings' }[screen]}
-                onOpenPrototype={() => handleSignedIn({ ...session, screen: 'prototype' })}
-              />
-            )}
+            <InetraPlaceholder
+              title={{ home: 'Home', live: 'Live view', search: 'Search', cameras: 'Cameras', settings: 'Settings' }[screen]}
+              onOpenPrototype={() => handleSignedIn({ ...session, screen: 'prototype' })}
+            />
           </main>
         </InetraShell>
       );
@@ -163,7 +213,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'spatial' && (
+        {activeTab === 'vision' && (
           <SpatialRulesPage
             cameras={cameras}
           />
@@ -174,16 +224,7 @@ export default function App() {
             cameras={cameras}
           />
         )}
-
-        {activeTab === 'inetra' && (
-          <IIntraPrototype />
-        )}
       </main>
-
-      <footer>
-        <span>AIVISRA</span>
-        <span>Brainy Neurals - AI Software Company</span>
-      </footer>
     </div>
   );
 }

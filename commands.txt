@@ -38,7 +38,7 @@ python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --previe
 # 3. Frontend Production Build
 # ------------------------------------------------------------------------------
 cd frontend
-npm run build
+npm run dev
 cd ..
 
 # ------------------------------------------------------------------------------

@@ -2,7 +2,6 @@ import React from 'react';
 
 export default function Navbar({ activeTab, setActiveTab, theme, onToggleTheme, session, onSignOut }) {
   const navTabs = [
-    { id: 'inetra', label: 'i-Netra (Demo UI)' },
     { id: 'demo', label: 'Camera View' },
     { id: 'grid', label: 'Multi-Grid Camera' },
     { id: 'onboarding', label: 'Camera Setup' },
