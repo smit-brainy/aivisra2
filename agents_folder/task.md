@@ -28,16 +28,21 @@ Status legend: ☐ todo · 🔨 in progress · ✅ done
   for reference while porting — 29 Oct 2026.
 - ✅ 0.5 Remove empty `frontend/prototype-reference/` leftover dir — 29 Oct 2026.
 
-## Phase 1 — App shell & auth
+## Phase 1 — App shell & auth (✅ all 29 Oct 2026; Downloads panel deferred to 2.3/2.4)
 
 - ✅ 1.1 Port **Sign in** screen (`signin`): exact layout, sample account cards,
   password show/hide, error states (wrong / locked / access off / expired) →
   `src/pages/auth/SignInPage.jsx` — 29 Oct 2026.
 - ✅ 1.2 Port **Set password** screen (`setpw`, Neha Shah flow) with 15-char
   strength cells, match indicator, weak-password rules — 29 Oct 2026.
-- 🔨 1.3 App-level auth state: localStorage session (`aivisra_session`), sign-in
-  gate in App.jsx, sign-out pill in Navbar (dev-styled). TODO: verbatim top-bar
-  session pill + account menu (prototype `chrome()` bindings).
+- ✅ 1.3 App-level auth state: localStorage session (`aivisra_session`), sign-in
+  gate in App.jsx, verbatim account menu (avatar, name, role line, Sign out) —
+  29 Oct 2026. Downloads progress logic belongs to 2.3/2.4.
+- ✅ 1.4 Port top bar + sidebar chrome verbatim into
+  `components/inetra/InetraShell.jsx` + `InetraChrome.jsx` (header grid, Plant 2 /
+  INVR-01, cameras-summary button, sidebar rail with active states) — verified
+  in browser with sign-in/sign-out flow — 29 Oct 2026. TODO left: Downloads
+  dropdown panel (with 2.3 Search select/download) + live offline/online dot.
 - ☐ 1.4 Port top bar + left sidebar chrome (verbatim from prototype): Plant 2 /
   INVR-01 header, Downloads menu, account menu, screen nav.
 

@@ -7,6 +7,9 @@ import SpatialRulesPage from './pages/vision/SpatialRulesPage';
 import EventsPage from './pages/vision/EventsPage';
 import IIntraPrototype from './pages/inetra/IIntraPrototype';
 import SignInPage from './pages/auth/SignInPage';
+import InetraShell from './components/inetra/InetraShell';
+import InetraPlaceholder from './components/inetra/InetraPlaceholder';
+import './prototype/invr-data';
 import { fetchCameras, fetchStatus } from './utils/api';
 import './styles/fonts.css';
 import './styles/foundations.css';
@@ -14,7 +17,7 @@ import './styles/buttons.css';
 import './styles/theme.css';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('demo');
+  const [activeTab, setActiveTab] = useState('inetra');
   const [cameras, setCameras] = useState([]);
   const [selectedCam, setSelectedCam] = useState('CAM001');
   const [status, setStatus] = useState(null);
@@ -73,6 +76,33 @@ export default function App() {
         <SignInPage onSignedIn={handleSignedIn} />
       </div>
     );
+  }
+
+  // Signed in → verbatim i-Netra shell. The legacy AIVISRA shell (Navbar +
+  // tabs) stays for `screen === 'legacy'` until all screens are ported.
+  if (session && session.screen !== 'legacy') {
+    const INVR = (typeof window !== 'undefined' && window.INVR) || null;
+    const meta = (INVR && INVR.users && INVR.users[session.who || session.role]) || null;
+    const sess = { ...session, meta };
+    const screen = session.screen || 'home';
+    const iNetraScreens = ['home', 'live', 'search', 'cameras', 'settings'];
+    if (iNetraScreens.includes(screen)) {
+      return (
+        <InetraShell
+          session={sess}
+          screen={screen}
+          onSignOut={handleSignOut}
+          onNav={(k) => handleSignedIn({ ...session, screen: k })}
+        >
+          <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <InetraPlaceholder
+              title={{ home: 'Home', live: 'Live view', search: 'Search', cameras: 'Cameras', settings: 'Settings' }[screen]}
+              onOpenPrototype={() => handleSignedIn({ ...session, screen: 'prototype' })}
+            />
+          </main>
+        </InetraShell>
+      );
+    }
   }
 
   return (
