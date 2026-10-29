@@ -41,15 +41,25 @@ Status legend: ☐ todo · 🔨 in progress · ✅ done
 - ✅ 1.4 Port top bar + sidebar chrome verbatim into
   `components/inetra/InetraShell.jsx` + `InetraChrome.jsx` (header grid, Plant 2 /
   INVR-01, cameras-summary button, sidebar rail with active states) — verified
-  in browser with sign-in/sign-out flow — 29 Oct 2026. TODO left: Downloads
-  dropdown panel (with 2.3 Search select/download) + live offline/online dot.
-- ☐ 1.4 Port top bar + left sidebar chrome (verbatim from prototype): Plant 2 /
-  INVR-01 header, Downloads menu, account menu, screen nav.
+  in browser with sign-in/sign-out flow — 29 Oct 2026. Downloads button +
+  panel finished during 2.1 (29 Oct 2026); prototype controls / toasts stay
+  out of scope for the app shell (toasts come with Search 2.3).
 
 ## Phase 2 — Core screens
 
-- ☐ 2.1 **Home** (`home`): Today so far, setup checklist states (first / fresh),
-  monthly calendar with busy shading, single-camera center view, comparisons.
+- ✅ 2.1 **Home** (`home`) — 29 Oct 2026, verbatim parity vs prototype checked
+  frame-by-frame by screenshot: offline notice, Today so far stat band
+  (serif italic numbers, hour bars, comparisons, cameras-online cells, space
+  saved), Activity by camera (day segmenter, Pick a date → month calendar
+  popover, area filter, per-camera strips with offline hatching + clickable
+  bins, ticks, Now marker), Latest events (8 EventCard rows + link), plus
+  verbatim Downloads button + panel in the top bar (progress ticking, Retry).
+  New files: `pages/home/HomePage.jsx`, `components/inetra/`
+  `InetraStrip.jsx`, `InetraEventCard.jsx`, `InetraMonthCalendar.jsx`,
+  `prototype/api.js`. Setup checklist markup + states ported (admin
+  checklist hidden by default, appears when steps state set — same
+  visibility rule as the prototype's `day` scenario). Search still a
+  placeholder until 2.3; openSearch/navTo opts are stashed on the session.
 - ☐ 2.2 **Live view** (`live`): 1 + 5 layout, area tabs, camera picker,
   latest-events rail, detection boxes, full-screen wall + page cycling.
 - ☐ 2.3 **Search** (`search`): Cards / List / Timeline / Calendar views remembered

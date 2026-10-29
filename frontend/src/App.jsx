@@ -9,6 +9,7 @@ import IIntraPrototype from './pages/inetra/IIntraPrototype';
 import SignInPage from './pages/auth/SignInPage';
 import InetraShell from './components/inetra/InetraShell';
 import InetraPlaceholder from './components/inetra/InetraPlaceholder';
+import HomePage from './pages/home/HomePage';
 import './prototype/invr-data';
 import { fetchCameras, fetchStatus } from './utils/api';
 import './styles/fonts.css';
@@ -87,18 +88,41 @@ export default function App() {
     const screen = session.screen || 'home';
     const iNetraScreens = ['home', 'live', 'search', 'cameras', 'settings'];
     if (iNetraScreens.includes(screen)) {
+      // Verbatim controller semantics: openSearch(opts)/navTo(t, opts) set the
+      // session screen and stash pending options for the target screen.
+      const go = (t, opts) => {
+        const next = { ...session, screen: t === 'addcams' ? 'cameras' : t === 'denied' ? 'settings' : t };
+        if (t === 'search') next.searchOpts = opts || {};
+        try { sessionStorage.setItem('aivisra_inetra_opts', JSON.stringify({ opts: opts || {}, to: next.screen })); } catch (x) {}
+        handleSignedIn(next);
+      };
+      const camSummary = !INVR ? 'No cameras yet' : (() => {
+        const M = INVR.merge({}, 'day');
+        const off = M.cams.filter(c => c.status === 'offline');
+        return `${M.cams.length - off.length} of ${M.cams.length} cameras online`;
+      })();
       return (
         <InetraShell
           session={sess}
           screen={screen}
           onSignOut={handleSignOut}
-          onNav={(k) => handleSignedIn({ ...session, screen: k })}
+          onNav={(k, opts) => go(k, opts)}
+          camSummary={camSummary}
+          camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
         >
           <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <InetraPlaceholder
-              title={{ home: 'Home', live: 'Live view', search: 'Search', cameras: 'Cameras', settings: 'Settings' }[screen]}
-              onOpenPrototype={() => handleSignedIn({ ...session, screen: 'prototype' })}
-            />
+            {screen === 'home' ? (
+              <HomePage
+                session={sess}
+                openSearch={(o) => go('search', o)}
+                navTo={(t, o) => go(t, o)}
+              />
+            ) : (
+              <InetraPlaceholder
+                title={{ home: 'Home', live: 'Live view', search: 'Search', cameras: 'Cameras', settings: 'Settings' }[screen]}
+                onOpenPrototype={() => handleSignedIn({ ...session, screen: 'prototype' })}
+              />
+            )}
           </main>
         </InetraShell>
       );
