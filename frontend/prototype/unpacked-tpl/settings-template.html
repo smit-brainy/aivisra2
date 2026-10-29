@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/brainyneurals.css">
+  <script src="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/_ds_bundle.js"></script>
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="position:relative; width:100%; height:100%; display:grid; grid-template-columns: 232px minmax(0,1fr); overflow:hidden; background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.45;">
+
+  <nav aria-label="Settings sections" style="display:flex; flex-direction:column; gap: 4px; padding: 20px 14px; border-right: 1px solid var(--line); overflow-y:auto; overflow-x:hidden;">
+    <h1 style="margin: 0 10px 14px; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">Settings</h1>
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+      <span style="margin: 12px 10px 4px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ g.name }}</span>
+      <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="2">
+        <button onClick="{{ n.go }}" style="height: 40px; display:flex; align-items:center; gap: 10px; padding: 0 10px; border-radius: 8px; text-align:left; font-size: 14.5px; font-weight: {{ n.weight }}; background: {{ n.bg }}; color: {{ n.ink }}; box-shadow: {{ n.ring }};" style-hover="background: var(--blue-tint);">
+          <span style="width: 6px; height: 6px; flex-shrink:0; background: {{ n.mark }};"></span>{{ n.label }}
+        </button>
+      </sc-for>
+    </sc-for>
+  </nav>
+
+  <div style="min-width:0; min-height:0; overflow:auto; padding: 24px 40px 40px;">
+    <div style="max-width: {{ maxW }}; display:flex; flex-direction:column; gap: 20px;">
+      <sc-if value="{{ setupOn }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 12px 16px; padding: 12px 12px 12px 16px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep);">
+          <span style="width: 7px; height: 7px; flex-shrink:0; background: var(--info-deep);"></span>
+          <span style="flex:1; min-width: 260px; font-size: 15px;"><strong style="font-weight: 600;">{{ setupTitle }}</strong> {{ setupHint }}</span>
+          <button onClick="{{ setupDone }}" style="height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Mark as done and go back to Home</button>
+        </div>
+      </sc-if>
+
+      <div style="display:flex; flex-direction:column; gap: 6px;">
+        <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ secEyebrow }}</span>
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap: 12px;">
+          <h2 style="margin:0; font-size: 30px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1;">{{ secTitle }}</h2>
+          <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ openAdd }}" hint-size="auto,48px">Add an account</x-import>
+          </sc-if>
+        </div>
+        <p style="margin: 2px 0 0; max-width: 760px; font-size: 16px; color: var(--muted); text-wrap: pretty;">{{ secLede }}</p>
+      </div>
+
+      <sc-if value="{{ isStorage }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ diskFull }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex; gap: 12px; padding: 14px 16px; background: var(--warning-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--warning-deep); font-size: 15px; line-height: 1.5;">
+            <span style="width: 8px; height: 8px; margin-top: 7px; flex-shrink:0; background: var(--warning-deep);"></span>
+            <span><strong style="font-weight: 600;">The disk is 95% full, 7.6 TB of 8 TB.</strong> When it fills, the box removes the oldest day of clips first, starting with 28 Sep, so new events are always saved. To keep more room, keep clips for fewer days.</span>
+          </div>
+        </sc-if>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; align-items:start;">
+          <section style="display:flex; flex-direction:column; gap: 4px; padding: 22px 24px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+            <h3 style="margin: 0 0 10px; font-size: 18px; font-weight: 500; letter-spacing: -0.01em;">Keep clips for</h3>
+            <div onClick="{{ pickDays }}" role="radio" aria-checked="{{ isDays }}" style="display:grid; grid-template-columns: 22px minmax(0,1fr); gap: 14px; align-items:start; padding: 14px; border: 1px solid {{ daysBorder }}; border-radius: 8px; background: {{ daysBg }}; cursor:pointer;">
+              <span style="width: 20px; height: 20px; margin-top: 10px; border-radius: 50%; border: 1.5px solid {{ daysRing }}; display:flex; align-items:center; justify-content:center;"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{ daysDot }};"></span></span>
+              <div style="display:flex; flex-direction:column; gap: 8px;">
+                <div style="display:flex; align-items:center; gap: 10px; flex-wrap:wrap;">
+                  <button onClick="{{ minus }}" aria-label="One day fewer" style="width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 18px;" style-hover="border-color: var(--ink);">−</button>
+                  <input type="number" value="{{ daysVal }}" onChange="{{ onDays }}" aria-label="Days" style="width: 84px; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; text-align:center; font: 500 17px/1 var(--font-mono); outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+                  <button onClick="{{ plus }}" aria-label="One day more" style="width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 18px;" style-hover="border-color: var(--ink);">+</button>
+                  <span style="font-size: 16px; font-weight: 500;">days</span>
+                </div>
+                <span style="font-size: 14px; color: var(--muted);">Each night the box removes clips older than this, oldest day first.</span>
+              </div>
+            </div>
+            <div onClick="{{ pickDisk }}" role="radio" aria-checked="{{ isDisk }}" style="display:grid; grid-template-columns: 22px minmax(0,1fr); gap: 14px; align-items:start; margin-top: 8px; padding: 14px; border: 1px solid {{ diskBorder }}; border-radius: 8px; background: {{ diskBg }}; cursor:pointer;">
+              <span style="width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; border: 1.5px solid {{ diskRing }}; display:flex; align-items:center; justify-content:center;"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{ diskDot }};"></span></span>
+              <div style="display:flex; flex-direction:column; gap: 4px;">
+                <span style="font-size: 16px; font-weight: 500;">As long as the disk has room</span>
+                <span style="font-size: 14px; color: var(--muted);">The box removes the oldest day first whenever the disk fills.</span>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap: 10px; margin-top: 12px; padding: 12px 14px; background: var(--paper-2); border-radius: 8px; font-size: 15px;">
+              <span style="width: 6px; height: 6px; flex-shrink:0; background: var(--blue);"></span>About 90 days of clips fit at today’s activity.
+            </div>
+            <sc-if value="{{ keepDirty }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap: 12px; margin-top: 14px;">
+                <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ saveKeep }}" hint-size="auto,48px">Save changes</x-import>
+                <button onClick="{{ undoKeep }}" style="height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 500;" style-hover="border-color: var(--ink);">Undo</button>
+              </div>
+            </sc-if>
+          </section>
+          <section style="display:flex; flex-direction:column; gap: 14px; padding: 22px 24px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+            <h3 style="margin:0; font-size: 18px; font-weight: 500; letter-spacing: -0.01em;">Disk</h3>
+            <span style="display:flex; align-items:baseline; gap: 10px;"><span style="font-family: var(--font-serif); font-style: italic; font-size: 56px; line-height: .95;">{{ diskUsed }}</span><span style="font-size: 18px; color: var(--muted);">of 8 TB in use</span></span>
+            <div style="height: 12px; border-radius: 3px; background: var(--paper-3); overflow:hidden;"><div style="width: {{ diskW }}; height:100%; background: {{ diskFill }};"></div></div>
+            <dl style="margin:0; display:grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 16px; font-size: 14.5px;">
+              <dt style="color: var(--muted);">Clips kept</dt><dd style="margin:0; font-family: var(--font-mono);">{{ diskUsed }}</dd>
+              <dt style="color: var(--muted);">Free</dt><dd style="margin:0; font-family: var(--font-mono);">{{ diskFree }}</dd>
+              <dt style="color: var(--muted);">Oldest clip</dt><dd style="margin:0; font-family: var(--font-mono);">28 Sep</dd>
+              <dt style="color: var(--muted);">Clips a day at today’s activity</dt><dd style="margin:0; font-family: var(--font-mono);">About 77 GB</dd>
+            </dl>
+          </section>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSpace }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 10px;">
+          <div role="group" aria-label="Period" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+            <sc-for list="{{ periods }}" as="o" hint-placeholder-count="4">
+              <button onClick="{{ o.set }}" style="height: 38px; padding: 0 14px; border-radius: 6px; font-size: 14px; font-weight: {{ o.weight }}; background: {{ o.bg }}; color: {{ o.ink }}; box-shadow: {{ o.ring }}; white-space:nowrap;">{{ o.label }}</button>
+            </sc-for>
+          </div>
+          <select value="{{ camF }}" onChange="{{ onCamF }}" aria-label="Camera" style="height: 46px; padding: 0 34px 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14.5px;">
+            <sc-for list="{{ camOpts }}" as="o" hint-placeholder-count="17"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+          </select>
+        </div>
+        <section style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px 32px; align-items:center; padding: 26px 28px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+          <div style="display:flex; flex-direction:column; gap: 10px;">
+            <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ spScope }}</span>
+            <span style="display:flex; align-items:baseline; gap: 12px;"><span style="font-family: var(--font-serif); font-style: italic; font-size: 96px; line-height: .9; letter-spacing: -0.02em;">{{ spPct }}</span><span style="font-size: 18px; color: var(--muted);">saved</span></span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap: 14px;">
+            <p style="margin:0; font-size: 18px; line-height: 1.5; text-wrap: pretty;">{{ spSentence }}</p>
+            <div style="display:flex; flex-direction:column; gap: 6px;">
+              <div style="display:flex; justify-content:space-between; font-size: 14px;"><span>Recording all video</span><span style="font-family: var(--font-mono);">{{ spRecv }}</span></div>
+              <div style="height: 10px; border-radius: 3px; background: var(--paper-3);"></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap: 6px;">
+              <div style="display:flex; justify-content:space-between; font-size: 14px;"><span>Clips i-Netra kept</span><span style="font-family: var(--font-mono);">{{ spKept }}</span></div>
+              <div style="height: 10px; border-radius: 3px; background: var(--paper-2);"><div style="width: {{ spKeptW }}; height:100%; border-radius: 3px; background: var(--blue);"></div></div>
+            </div>
+          </div>
+        </section>
+        <sc-if value="{{ spTable }}" hint-placeholder-val="{{ true }}">
+          <section style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+            <div style="display:grid; grid-template-columns: minmax(170px, 1.4fr) 90px 90px 64px minmax(80px, 1fr) minmax(180px, 1.6fr); gap: 16px; align-items:center; height: 40px; padding: 0 20px; background: var(--bone); border-bottom: 1px solid var(--line); font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">
+              <span>Camera</span><span>Received</span><span>Kept</span><span>Saved</span><span></span><span>Why it differs</span>
+            </div>
+            <sc-for list="{{ spRows }}" as="r" hint-placeholder-count="16">
+              <div style="display:grid; grid-template-columns: minmax(170px, 1.4fr) 90px 90px 64px minmax(80px, 1fr) minmax(180px, 1.6fr); gap: 16px; align-items:center; min-height: 48px; padding: 6px 20px; border-bottom: 1px solid var(--line-soft); font-size: 14.5px;">
+                <span><span style="font-family: var(--font-mono); color: var(--muted); margin-right: 8px;">{{ r.num }}</span>{{ r.name }}</span>
+                <span style="font-family: var(--font-mono);">{{ r.recv }}</span>
+                <span style="font-family: var(--font-mono);">{{ r.kept }}</span>
+                <span style="font-family: var(--font-mono); font-weight: 600;">{{ r.pct }}</span>
+                <span style="height: 8px; border-radius: 2px; background: var(--paper-2);"><span style="display:block; width: {{ r.w }}; height:100%; border-radius: 2px; background: {{ r.fill }};"></span></span>
+                <span style="font-size: 13.5px; color: var(--muted); text-wrap: pretty;">{{ r.why }}</span>
+              </div>
+            </sc-for>
+          </section>
+        </sc-if>
+        <sc-if value="{{ spFromNote }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:0; font-size: 14.5px; color: var(--muted);">Opened from Search with the same camera and time. Pick a period above to see every camera.</p>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ isCapacity }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px;">
+          <section style="display:flex; flex-direction:column; gap: 12px; padding: 22px 24px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+            <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Capacity check</span>
+            <sc-if value="{{ capIdle }}" hint-placeholder-val="{{ true }}">
+              <h3 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.25;">This box can watch about 30 cameras at Standard detail.</h3>
+              <span style="font: 500 12.5px/1.3 var(--font-mono); color: var(--muted);">{{ capWhen }}</span>
+              <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 12px; margin-top: 4px;">
+                <button onClick="{{ askRun }}" style="height: 42px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Run the check again</button>
+                <span style="font-size: 13.5px; color: var(--muted);">Takes up to 15 minutes.</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ capRunning }}" hint-placeholder-val="{{ false }}">
+              <h3 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">Running the capacity check…</h3>
+              <div style="height: 6px; border-radius: 3px; background: var(--paper-3); overflow:hidden;"><div style="width: {{ capW }}; height:100%; background: var(--blue);"></div></div>
+              <span style="font: 500 12.5px/1.3 var(--font-mono); color: var(--muted);">{{ capLeft }} · Started {{ capStart }}</span>
+              <span style="font-size: 14px; color: var(--muted);">Cameras keep being watched while it runs.</span>
+            </sc-if>
+          </section>
+          <section style="display:flex; flex-direction:column; gap: 12px; padding: 22px 24px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+            <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">AI capacity</span>
+            <span style="display:flex; align-items:baseline; gap: 10px;"><span style="font-family: var(--font-serif); font-style: italic; font-size: 56px; line-height: .95;">{{ usedPct }}</span><span style="font-size: 18px; color: var(--muted);">in use</span></span>
+            <div style="height: 14px; display:flex; gap: 2px; border-radius: 3px; background: var(--paper-3); overflow:hidden;"><sc-for list="{{ usedParts }}" as="u" hint-placeholder-count="5"><div style="width: {{ u.w }}; height:100%; background: {{ u.c }};"></div></sc-for></div>
+            <div style="display:flex; flex-wrap:wrap; gap: 6px 14px;"><sc-for list="{{ usedParts }}" as="u" hint-placeholder-count="5"><span style="display:flex; align-items:center; gap: 6px; font-size: 13px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: {{ u.c }};"></span>{{ u.label }} · {{ u.n }}</span></sc-for></div>
+            <span style="font-size: 14.5px;">{{ freeText }}</span>
+          </section>
+        </div>
+        <sc-if value="{{ refused }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex; flex-direction:column; gap: 12px; padding: 16px 18px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep);">
+            <span style="font-size: 16px; font-weight: 600;">That change needs more than this box can give, so nothing was changed.</span>
+            <span style="font-size: 15px; line-height: 1.5; text-wrap: pretty;">{{ refusedText }}</span>
+            <div style="display:flex; flex-wrap:wrap; gap: 10px;">
+              <sc-if value="{{ hasWayOut }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ wayOut }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">{{ wayOutLabel }}</button>
+              </sc-if>
+              <button onClick="{{ dismissRefusal }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Keep the current levels</button>
+            </div>
+          </div>
+        </sc-if>
+        <div style="display:flex; flex-wrap:wrap; gap: 16px; align-items:flex-start;">
+          <section style="flex: 1 1 640px; min-width: 0; display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 10px 16px; padding: 14px 20px; border-bottom: 1px solid var(--line);">
+            <h3 style="margin:0; font-size: 17px; font-weight: 500;">Detail level for each camera</h3>
+            <div style="display:flex; align-items:center; gap: 10px;">
+              <span style="font-size: 14px; color: var(--muted);">Set every camera to</span>
+              <div role="group" aria-label="Set every camera to" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+                <sc-for list="{{ bulk }}" as="b" hint-placeholder-count="4"><button onClick="{{ b.set }}" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13.5px; color: var(--ink);" style-hover="background: var(--paper);">{{ b.label }}</button></sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: minmax(170px, 1.3fr) minmax(100px, 1fr) minmax(300px, 2fr) 150px; gap: 16px; align-items:center; height: 38px; padding: 0 20px; background: var(--bone); border-bottom: 1px solid var(--line); font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">
+            <span>Camera</span><span>Area</span><span>How often the AI checks</span><span>Priority</span>
+          </div>
+          <sc-for list="{{ capRows }}" as="r" hint-placeholder-count="16">
+            <div style="display:grid; grid-template-columns: minmax(170px, 1.3fr) minmax(100px, 1fr) minmax(300px, 2fr) 150px; gap: 16px; align-items:center; min-height: 64px; padding: 8px 20px; border-bottom: 1px solid var(--line-soft); font-size: 14.5px;">
+              <span><span style="font-family: var(--font-mono); color: var(--muted); margin-right: 8px;">{{ r.num }}</span>{{ r.name }}</span>
+              <span style="justify-self:start; padding: 4px 7px; border-radius: 4px; background: {{ r.areaBg }}; color: {{ r.areaInk }}; font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; white-space:nowrap;">{{ r.area }}</span>
+              <div style="display:flex; flex-direction:column; gap: 5px; min-width:0;">
+                <div role="group" aria-label="Detail level for {{ r.name }}" style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+                  <sc-for list="{{ r.levels }}" as="l" hint-placeholder-count="4"><button onClick="{{ l.set }}" style="height: 32px; border-radius: 6px; font-size: 13.5px; font-weight: {{ l.weight }}; background: {{ l.bg }}; color: {{ l.ink }}; box-shadow: {{ l.ring }};">{{ l.label }}</button></sc-for>
+                </div>
+                <span style="font-size: 12.5px; color: var(--muted);">{{ r.checksText }}</span>
+              </div>
+              <button onClick="{{ r.togglePrio }}" aria-pressed="{{ r.prio }}" style="display:flex; align-items:center; gap: 10px; font-size: 14px; text-align:left;">
+                <span style="position:relative; width: 36px; height: 22px; flex-shrink:0; border-radius: 999px; background: {{ r.prioBg }};"><span style="position:absolute; top: 3px; left: {{ r.prioKnob }}; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); box-shadow: 0 1px 2px rgba(10,10,11,.3);"></span></span>{{ r.prioText }}
+              </button>
+            </div>
+          </sc-for>
+        </section>
+          <aside aria-label="Technical details" style="flex: 1 1 340px; min-width: 300px; max-width: 460px; position: sticky; top: 0; display:flex; flex-direction:column; background: var(--bone); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+            <button onClick="{{ toggleTech }}" aria-expanded="{{ techOpen }}" style="display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 16px 18px; text-align:left;" style-hover="background: var(--paper);">
+              <span style="display:flex; flex-direction:column; gap: 5px; min-width:0;">
+                <span style="font-size: 16px; font-weight: 500;">Technical details</span>
+                <span style="font-size: 13px; color: var(--muted);">Exact numbers for INVR-01, for support calls</span>
+              </span>
+              <span style="flex-shrink:0; height: 30px; display:flex; align-items:center; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13px; font-weight: 500;">{{ techAction }}</span>
+            </button>
+            <sc-if value="{{ techOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap: 14px; padding: 14px 18px 18px; border-top: 1px solid var(--line-soft);">
+                <div style="display:flex; flex-direction:column; gap: 4px;"><span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Detector inference</span><span style="font: 600 15px/1.35 var(--font-mono);">{{ used }} of 300 frames a second on the GPU</span></div>
+                <div style="height: 8px; display:flex; gap: 2px; border-radius: 2px; background: var(--paper-3); overflow:hidden;">
+                  <sc-for list="{{ usedParts }}" as="u" hint-placeholder-count="5"><div style="width: {{ u.w }}; height:100%; background: {{ u.c }};"></div></sc-for>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap: 6px;">
+                  <span style="margin-right: 2px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">FPS by level</span>
+                  <sc-for list="{{ lvChips }}" as="lc" hint-placeholder-count="4"><span style="padding: 4px 7px; border-radius: 4px; background: var(--paper); border: 1px solid var(--line-soft); font: 500 11.5px/1 var(--font-mono);">{{ lc.t }}</span></sc-for>
+                </div>
+                <div role="table" aria-label="Inference frames a second per camera" style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 8px; overflow:hidden;">
+                  <div role="row" style="display:grid; grid-template-columns: 30px minmax(0,1fr) 44px 92px; gap: 10px; align-items:center; height: 32px; padding: 0 12px; background: var(--paper-2); font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);"><span>No.</span><span>Camera</span><span style="text-align:right;">FPS</span><span style="text-align:right;">Priority</span></div>
+                  <sc-for list="{{ techRows }}" as="tr" hint-placeholder-count="16">
+                    <div role="row" style="display:grid; grid-template-columns: 30px minmax(0,1fr) 44px 92px; gap: 10px; align-items:center; min-height: 36px; padding: 0 12px; border-top: 1px solid var(--line-soft); font-size: 13.5px;">
+                      <span style="font: 500 12.5px/1 var(--font-mono); color: var(--muted);">{{ tr.num }}</span>
+                      <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ tr.name }}</span>
+                      <span style="text-align:right; font: 600 13px/1 var(--font-mono);">{{ tr.fps }}</span>
+                      <span style="display:flex; justify-content:flex-end;"><sc-if value="{{ tr.prio }}" hint-placeholder-val="{{ false }}"><span style="padding: 3px 6px; border-radius: 4px; background: var(--blue-tint); color: var(--blue-deep); font: 500 10.5px/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; white-space:nowrap;">Served first</span></sc-if></span>
+                    </div>
+                  </sc-for>
+                </div>
+                <p style="margin:0; font-size: 13px; line-height: 1.45; color: var(--muted); text-wrap: pretty;">Priority cameras are served first when the box is busy. Change levels and priority in the table.</p>
+              </div>
+            </sc-if>
+          </aside>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+          <div style="display:grid; grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) 90px minmax(150px, 1.1fr) 160px 110px; gap: 16px; align-items:center; height: 40px; padding: 0 20px; background: var(--bone); border-bottom: 1px solid var(--line); border-radius: 14px 14px 0 0; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">
+            <span>Name</span><span>Username</span><span>Role</span><span>Last sign-in</span><span>Access</span><span></span>
+          </div>
+          <sc-for list="{{ users }}" as="u" hint-placeholder-count="4">
+            <div style="position:relative; display:grid; grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) 90px minmax(150px, 1.1fr) 160px 110px; gap: 16px; align-items:center; min-height: 64px; padding: 8px 20px; border-bottom: 1px solid var(--line-soft); font-size: 14.5px; z-index: {{ u.z }};">
+              <span style="display:flex; align-items:center; gap: 12px; min-width:0;">
+                <span style="width: 34px; height: 34px; flex-shrink:0; border-radius: 50%; display:flex; align-items:center; justify-content:center; background: {{ u.avBg }}; color: {{ u.avInk }}; font: 600 12px/1 var(--font-mono);">{{ u.initials }}</span>
+                <span style="display:flex; flex-direction:column; gap: 2px; min-width:0;"><span style="font-weight: 500;">{{ u.name }}</span><sc-if value="{{ u.you }}" hint-placeholder-val="{{ false }}"><span style="font-size: 12.5px; color: var(--muted);">You</span></sc-if></span>
+              </span>
+              <span style="font: 500 13px/1 var(--font-mono);">{{ u.username }}</span>
+              <span style="justify-self:start; padding: 4px 7px; border-radius: 4px; background: {{ u.roleBg }}; color: {{ u.roleInk }}; font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;">{{ u.role }}</span>
+              <span style="color: var(--muted);">{{ u.last }}</span>
+              <span style="display:flex; flex-wrap:wrap; gap: 6px;">
+                <span style="padding: 4px 7px; border-radius: 4px; background: {{ u.accBg }}; color: {{ u.accInk }}; font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;">{{ u.acc }}</span>
+                <sc-if value="{{ u.temp }}" hint-placeholder-val="{{ false }}"><span style="padding: 4px 7px; border-radius: 4px; background: var(--paper-2); font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;">Temporary password</span></sc-if>
+              </span>
+              <span style="position:relative; display:flex; justify-content:flex-end;">
+                <button onClick="{{ u.toggleMenu }}" aria-expanded="{{ u.menu }}" style="height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Manage ▾</button>
+                <sc-if value="{{ u.menu }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: 300px; padding: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+                    <sc-if value="{{ u.you }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin:0; padding: 10px 12px; font-size: 14px; line-height: 1.45; color: var(--muted);">This is your account. You can’t remove your own admin access or turn it off, so the box always keeps at least one admin.</p>
+                    </sc-if>
+                    <sc-for list="{{ u.actions }}" as="a" hint-placeholder-count="3">
+                      <button onClick="{{ a.go }}" style="width:100%; height: 40px; padding: 0 12px; border-radius: 8px; text-align:left; font-size: 14.5px; color: {{ a.ink }};" style-hover="background: var(--blue-tint);">{{ a.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </span>
+            </div>
+          </sc-for>
+        </section>
+        <p style="margin:0; font-size: 14px; color: var(--muted);">Every new or reset account starts with a temporary password, which the person replaces the next time they sign in.</p>
+      </sc-if>
+
+      <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex; flex-direction:column; padding: 6px 24px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+          <sc-for list="{{ about }}" as="a" hint-placeholder-count="6">
+            <div style="display:grid; grid-template-columns: 220px minmax(0,1fr); gap: 16px; align-items:baseline; padding: 14px 0; border-bottom: 1px solid var(--line-soft);">
+              <span style="font-size: 14.5px; color: var(--muted);">{{ a.k }}</span><span style="font: 500 15px/1.4 var(--font-mono);">{{ a.v }}</span>
+            </div>
+          </sc-for>
+        </section>
+        <section style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 14px; padding: 20px 24px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+          <span style="display:flex; flex-direction:column; gap: 4px;"><span style="font-size: 16px; font-weight: 500;">Setup checklist</span><span style="font-size: 14.5px; color: var(--muted);">Brings back the four first-time steps at the top of Home.</span></span>
+          <button onClick="{{ showChecklist }}" style="height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Show setup checklist</button>
+        </section>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ dlg }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDlg }}" style="position:absolute; inset:0; z-index: 80; background: rgba(10,10,11,.32);"></div>
+    <div role="dialog" aria-modal="true" style="position:absolute; z-index: 81; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 580px; max-width: calc(100% - 48px); display:flex; flex-direction:column; gap: 16px; padding: 28px 32px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+      <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: {{ dlgEyeInk }};">{{ dlgEye }}</span>
+      <h2 style="margin:0; font-size: 26px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.15;">{{ dlgTitle }}</h2>
+      <p style="margin:0; font-size: 16px; line-height: 1.5; text-wrap: pretty;">{{ dlgBody }}</p>
+      <sc-if value="{{ dlgTemp }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap: 6px; padding: 14px 16px; background: var(--paper-2); border-radius: 8px;">
+          <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Temporary password</span>
+          <span style="font: 600 18px/1.2 var(--font-mono);">{{ dlgTempText }}</span>
+        </div>
+      </sc-if>
+      <div style="display:flex; align-items:center; gap: 12px; margin-top: 6px;">
+        <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="{{ dlgVariant }}" href="#" onClick="{{ dlgOk }}" hint-size="auto,48px">{{ dlgOkLabel }}</x-import>
+        <button onClick="{{ closeDlg }}" style="height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 500;" style-hover="border-color: var(--ink);">Cancel</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeAdd }}" style="position:absolute; inset:0; z-index: 80; background: rgba(10,10,11,.16);"></div>
+    <aside role="dialog" aria-label="Add an account" style="position:absolute; top:0; right:0; bottom:0; z-index: 81; width: 520px; max-width: 100%; display:flex; flex-direction:column; gap: 18px; padding: 26px 30px; overflow:auto; background: var(--paper); border-left: 1px solid var(--line); box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 12px;">
+        <div style="display:flex; flex-direction:column; gap: 6px;">
+          <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Users</span>
+          <h2 style="margin:0; font-size: 26px; font-weight: 500; letter-spacing: -0.025em;">Add an account</h2>
+        </div>
+        <button onClick="{{ closeAdd }}" aria-label="Close" style="width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 8px; font-size: 18px;" style-hover="border-color: var(--ink);">×</button>
+      </div>
+      <label style="display:flex; flex-direction:column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Name</span><input value="{{ fName }}" onChange="{{ onFName }}" placeholder="Such as Priya Nair" style="height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);"></label>
+      <label style="display:flex; flex-direction:column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Username</span><input value="{{ fUser }}" onChange="{{ onFUser }}" spellcheck="false" placeholder="Such as priya.nair" style="height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font: 500 15px/1 var(--font-mono); outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);"><span style="font-size: 13.5px; color: var(--muted);">What the person types to sign in.</span></label>
+      <div style="display:flex; flex-direction:column; gap: 6px;">
+        <span style="font-size: 14px; font-weight: 500;">Temporary password</span>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; height: 50px; padding: 0 8px 0 14px; background: var(--paper-2); border-radius: 8px;">
+          <span style="font: 600 16px/1 var(--font-mono);">{{ fTemp }}</span>
+          <button onClick="{{ newTemp }}" style="height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Make a new one</button>
+        </div>
+        <span style="font-size: 13.5px; color: var(--muted);">Give it to the person. They replace it with their own the first time they sign in.</span>
+      </div>
+      <div role="radiogroup" aria-label="Role" style="display:flex; flex-direction:column; gap: 8px;">
+        <span style="font-size: 14px; font-weight: 500;">Role</span>
+        <sc-for list="{{ fRoles }}" as="r" hint-placeholder-count="2">
+          <div onClick="{{ r.set }}" role="radio" aria-checked="{{ r.on }}" style="display:grid; grid-template-columns: 22px minmax(0,1fr); gap: 12px; padding: 14px; border: 1px solid {{ r.border }}; border-radius: 8px; background: {{ r.bg }}; cursor:pointer;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid {{ r.ring }}; display:flex; align-items:center; justify-content:center;"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{ r.dot }};"></span></span>
+            <span style="display:flex; flex-direction:column; gap: 3px;"><span style="font-size: 15.5px; font-weight: 500;">{{ r.label }}</span><span style="font-size: 14px; color: var(--muted);">{{ r.sub }}</span></span>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ fErr }}" hint-placeholder-val="{{ false }}">
+        <span style="padding: 10px 12px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep); font-size: 14.5px;">{{ fErrText }}</span>
+      </sc-if>
+      <div style="display:flex; align-items:center; gap: 12px; margin-top: auto; padding-top: 12px;">
+        <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ addUser }}" hint-size="auto,48px">Add account</x-import>
+        <button onClick="{{ closeAdd }}" style="height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 500;" style-hover="border-color: var(--ink);">Cancel</button>
+      </div>
+    </aside>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:absolute; right: 24px; bottom: 24px; z-index: 90; max-width: 440px; display:flex; align-items:center; gap: 12px; padding: 14px 16px; background: var(--ink); color: var(--paper); border-radius: 8px; font-size: 14.5px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+      <span style="width: 7px; height: 7px; flex-shrink:0; background: var(--signal);"></span>{{ toastText }}
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1720,&quot;height&quot;:1024},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;operator&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;scen&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;now&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;edits&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onEdit&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(fn) =&gt; void&quot;},&quot;opts&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;optsKey&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;keepDays&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number | 'disk'&quot;},&quot;onKeep&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(v) =&gt; void&quot;},&quot;diskFull&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;setupStep&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;onStepDone&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k) =&gt; void&quot;},&quot;onStepProgress&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(k) =&gt; void&quot;},&quot;onShowChecklist&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;who&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = Object.assign({ ready: !!window.INVR, localEdits: {}, users: null }, this.fresh(this.props.opts || {}));
+  fresh(o) {
+    return { section: o.section || 'storage', keepDraft: null, period: o.from ? 'from' : 'today', camF: o.from && o.from.cam ? String(o.from.cam) : 'all', refusal: o.refused ? 'bulk-max' : null, refusalText: null, wayOut: null,
+      capState: o.running ? 'running' : 'idle', capPct: o.running ? 0.35 : 0, capDone: false, techOpen: false, menu: null, dlg: o.confirmKeep ? { type: 'keep', days: 14 } : null,
+      drawer: !!o.addUser, f: { name: '', user: '', userTouched: false, temp: null, role: 'Operator', err: null }, toast: null };
+  }
+  componentDidMount() { if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); } }
+  componentDidUpdate(prev) { if (prev.optsKey !== this.props.optsKey) this.setState(this.fresh(this.props.opts || {})); }
+  componentWillUnmount() { clearInterval(this.ci); clearTimeout(this.tt); }
+  say(t) { clearTimeout(this.tt); this.setState({ toast: t }); this.tt = setTimeout(() => this.setState({ toast: null }), 5000); }
+  edits() { return this.props.onEdit ? (this.props.edits || {}) : this.state.localEdits; }
+  edit(fn) { if (this.props.onEdit) this.props.onEdit(fn); else this.setState(st => ({ localEdits: fn(st.localEdits) })); }
+  setCams(patches) { this.edit(e => { const cams = Object.assign({}, e.cams); Object.keys(patches).forEach(n => { cams[n] = Object.assign({}, cams[n], patches[n]); }); return Object.assign({}, e, { cams }); }); }
+  users() { return this.state.users || window.INVR.USERS.map(u => Object.assign({}, u)); }
+  setUser(key, patch) { this.setState({ users: this.users().map(u => u.key === key ? Object.assign({}, u, patch) : u), menu: null }); }
+  runCheck() {
+    clearInterval(this.ci);
+    this.setState({ capState: 'running', capPct: 0, dlg: null });
+    this.ci = setInterval(() => this.setState(st => { const p = st.capPct + 0.04; if (p >= 1) { clearInterval(this.ci); this.say('Capacity check finished. This box can watch about 30 cameras at Standard detail.'); return { capState: 'idle', capPct: 0, capDone: true }; } return { capPct: p }; }), 300);
+  }
+
+  renderVals() {
+    const I = window.INVR, p = this.props, s = this.state;
+    const out = { groups: [], periods: [], camOpts: [], spRows: [], capRows: [], bulk: [], techRows: [], users: [], about: [], fRoles: [], isStorage: true };
+    if (!I || !s.ready) return out;
+    const pd = fn => e => { if (e && e.preventDefault) e.preventDefault(); fn(e); };
+    const seg = on => ({ bg: on ? 'var(--blue-tint)' : 'transparent', ink: on ? 'var(--blue-deep)' : 'var(--muted)', ring: on ? '0 0 0 1px var(--blue)' : 'none', weight: on ? 600 : 400 });
+    const radio = on => ({ border: on ? 'var(--blue)' : 'var(--line)', bg: on ? 'var(--blue-tint)' : 'var(--paper)', ring: on ? 'var(--blue)' : 'var(--line)', dot: on ? 'var(--blue)' : 'transparent' });
+    const scen = p.scen === 'first' ? 'day' : (p.scen || 'day');
+    const M = I.merge(this.edits(), scen), cams = p.scen === 'first' ? [] : M.cams;
+    const SECS = { storage: ['Storage', 'Recording', 'How long clips stay on the box before the oldest are removed.'], space: ['Space saved', 'Recording', 'How much disk the box did not use, compared with recording all video.'], capacity: ['Capacity and detail', 'Recording', 'How many cameras the box can watch, and how often the AI checks each one.'], users: ['Users', 'People', 'Accounts for everyone who uses i-Netra, with their role and whether their access is on.'], about: ['About this box', 'This box', 'Details to read out on a support call.'] };
+    const sec = SECS[s.section] ? s.section : 'storage', S = SECS[sec];
+    const nav = (k) => this.setState({ section: k, menu: null, refusal: null });
+    out.groups = [['Recording', ['storage', 'space', 'capacity']], ['People', ['users']], ['This box', ['about']]].map(([name, keys]) => ({ name, items: keys.map(k => { const on = sec === k; return { label: SECS[k][0], go: () => nav(k), bg: on ? 'var(--blue-tint)' : 'transparent', ink: on ? 'var(--blue-deep)' : 'var(--ink)', ring: 'none', weight: on ? 600 : 400, mark: on ? 'var(--blue)' : 'transparent' }; }) }));
+    const STEPSEC = { 2: 'capacity', 3: 'storage', 4: 'users' }, STEPT = { 2: ['Setup · step 2 of 4 · Check detail levels.', 'Most cameras are fine at Standard. Raise the ones that matter most, such as gates.'], 3: ['Setup · step 3 of 4 · Choose how long to keep clips.', 'Clips are kept for 30 days until you change it.'], 4: ['Setup · step 4 of 4 · Add the people who will use i-Netra.', 'Give operators their own accounts, so every download carries their name.'] };
+    const st = p.setupStep;
+    Object.assign(out, {
+      secTitle: S[0], secEyebrow: 'Settings · ' + S[1], secLede: S[2],
+      maxW: sec === 'capacity' ? '1640px' : '1180px', isStorage: sec === 'storage', isSpace: sec === 'space', isCapacity: sec === 'capacity', isUsers: sec === 'users', isAbout: sec === 'about',
+      setupOn: !!st && STEPSEC[st] === sec, setupTitle: st ? STEPT[st][0] : '', setupHint: st ? STEPT[st][1] : '', setupDone: () => p.onStepDone && p.onStepDone(st),
+      toast: !!s.toast, toastText: s.toast || ''
+    });
+
+    if (sec === 'storage') {
+      const saved = p.keepDays ?? 30, draft = s.keepDraft ?? saved, isDisk = draft === 'disk', days = isDisk ? (saved === 'disk' ? 30 : saved) : draft;
+      const setDraft = v => this.setState({ keepDraft: v === saved ? null : v });
+      const R1 = radio(!isDisk), R2 = radio(isDisk);
+      Object.assign(out, {
+        diskFull: !!p.diskFull, isDays: !isDisk, isDisk, daysVal: days,
+        daysBorder: R1.border, daysBg: R1.bg, daysRing: R1.ring, daysDot: R1.dot, diskBorder: R2.border, diskBg: R2.bg, diskRing: R2.ring, diskDot: R2.dot,
+        pickDays: () => setDraft(days), pickDisk: () => setDraft('disk'),
+        minus: e => { e.stopPropagation(); setDraft(Math.max(1, days - 1)); }, plus: e => { e.stopPropagation(); setDraft(Math.min(365, days + 1)); },
+        onDays: e => { const v = parseInt(e.target.value, 10); if (v > 0) setDraft(Math.min(365, v)); },
+        keepDirty: s.keepDraft != null,
+        undoKeep: () => this.setState({ keepDraft: null }),
+        saveKeep: pd(() => {
+          const old = saved === 'disk' ? 90 : saved;
+          if (draft !== 'disk' && draft < old && draft < 30) return this.setState({ dlg: { type: 'keep', days: draft } });
+          p.onKeep && p.onKeep(draft); this.setState({ keepDraft: null }); this.say(draft === 'disk' ? 'Clips are now kept for as long as the disk has room.' : `Clips are now kept for ${draft} days.`);
+        }),
+        diskUsed: p.diskFull ? '7.6 TB' : '2.3 TB', diskFree: p.diskFull ? '0.4 TB' : '5.7 TB', diskW: p.diskFull ? '95%' : '29%', diskFill: p.diskFull ? 'var(--warning)' : 'var(--blue)'
+      });
+    }
+
+    if (sec === 'space') {
+      const from = (p.opts || {}).from;
+      const PER = I.PERIODS.map(x => ({ key: x.key, label: x.label })); if (from) PER.unshift({ key: 'from', label: from.label });
+      const period = s.period === 'from' && !from ? 'today' : s.period;
+      out.periods = PER.map(x => Object.assign({ label: x.label, set: () => this.setState({ period: x.key }) }, seg(period === x.key)));
+      out.camOpts = [{ value: 'all', label: 'Every camera' }].concat(cams.map(c => ({ value: String(c.num), label: c.label })));
+      out.camF = s.camF; out.onCamF = e => this.setState({ camF: e.target.value });
+      const P = I.PERIODS.find(x => x.key === period) || I.PERIODS[0];
+      const rows = cams.filter(c => I.SPACE[c.num]).map(c => { const v = I.SPACE[c.num], r = v[0] * P.r, k = v[1] * P.k; return { num: c.num, name: c.name, label: c.label, r, k, pct: Math.round(100 * (1 - k / r)), why: v[2] || (c.num === 16 && period === 'today' ? 'Offline since 10:42 AM, so less video arrived today.' : '') }; });
+      const pick = s.camF === 'all' ? rows : rows.filter(r => String(r.num) === s.camF);
+      const R = pick.reduce((a, r) => a + r.r, 0), K = pick.reduce((a, r) => a + r.k, 0);
+      const scope = s.camF === 'all' ? 'every camera' : (pick[0] ? pick[0].label : '');
+      if (period === 'from' && from) {
+        Object.assign(out, { spScope: `${from.camLabel} · ${from.label}`, spPct: from.pct + '%', spRecv: from.recv, spKept: from.kept, spKeptW: (100 - from.pct) + '%', spSentence: `Recording everything on ${from.camLabel} ${from.phrase} would have used ${from.recv}. i-Netra kept ${from.kept} of clips.`, spTable: false, spFromNote: true });
+      } else {
+        const pct = R ? Math.round(100 * (1 - K / R)) : 0, ph = { today: 'today', yesterday: 'yesterday', week: 'over the last 7 days', month: 'over the last 30 days' }[P.key];
+        Object.assign(out, {
+          spScope: `${s.camF === 'all' ? 'Whole site' : scope} · ${P.label}`, spPct: pct + '%', spRecv: I.size(R), spKept: I.size(K), spKeptW: R ? (K / R * 100) + '%' : '0%',
+          spSentence: `Recording everything ${s.camF === 'all' ? '' : 'on ' + scope + ' '}${ph} would have used ${I.size(R)}. i-Netra kept ${I.size(K)} of clips.`,
+          spTable: pick.length > 0, spFromNote: false,
+          spRows: pick.map(r => ({ num: r.num, name: r.name, recv: I.size(r.r), kept: I.size(r.k), pct: r.pct + '%', w: r.pct + '%', fill: r.pct < 75 ? 'var(--honey)' : 'var(--blue)', why: r.why }))
+        });
+      }
+    }
+
+    if (sec === 'capacity') {
+      const used = M.used, free = I.CAPACITY - used;
+      const refuse = (text, wayOut) => this.setState({ refusal: 'one', refusalText: text, wayOut });
+      const tryLevels = (patch, okMsg, refuseText, wayOut) => {
+        const need = cams.reduce((a, c) => a + I.LV[(patch[c.num] && patch[c.num].level) || c.level].checks, 0);
+        if (need > I.CAPACITY) return refuse(refuseText(need), wayOut);
+        this.setCams(patch); this.setState({ refusal: null }); this.say(okMsg(need));
+        if (p.setupStep === 2 && p.onStepProgress) p.onStepProgress(2);
+      };
+      const bulkSet = l => {
+        const patch = {}; cams.forEach(c => { patch[c.num] = { level: l.key }; });
+        tryLevels(patch, need => `Every camera is now at ${l.label}. The box’s AI capacity is ${Math.round(need / I.CAPACITY * 100)}% in use.`,
+          need => `${l.label} on every camera needs ${Math.round(need / I.CAPACITY * 100)}% of the box’s AI capacity, ${Math.round((need - I.CAPACITY) / I.CAPACITY * 100)}% more than it has. Set every camera to a lower level, or keep ${l.label} for the cameras that matter most.`,
+          l.key === 'max' ? { label: 'Set every camera to High instead', go: () => bulkSet(I.LV.high) } : null);
+      };
+      let refusalText = s.refusalText, wayOut = s.wayOut;
+      if (s.refusal === 'bulk-max') { const need = cams.length * 30; refusalText = `Maximum on every camera needs ${Math.round(need / I.CAPACITY * 100)}% of the box’s AI capacity, ${Math.round((need - I.CAPACITY) / I.CAPACITY * 100)}% more than it has. Set every camera to High instead, which needs ${Math.round(cams.length * 15 / I.CAPACITY * 100)}%, or keep Maximum for the cameras that matter most.`; wayOut = { label: 'Set every camera to High instead', go: () => bulkSet(I.LV.high) }; }
+      Object.assign(out, {
+        capIdle: s.capState !== 'running', capRunning: s.capState === 'running', capW: Math.round(s.capPct * 100) + '%',
+        capLeft: `About ${Math.max(1, Math.round(15 * (1 - s.capPct)))} minutes left`, capStart: I.clock(p.now ?? 40800),
+        capWhen: s.capDone ? `Checked today at ${I.clock(p.now ?? 40800)}` : 'Checked at install · Mon 12 Oct, 3:40 PM',
+        askRun: () => this.setState({ dlg: { type: 'run' } }),
+        used, usedW: (used / I.CAPACITY * 100) + '%', usedParts: M.areas.map(a => { const k = a.cams.reduce((t, num) => t + (M.CAM[num] ? I.LV[M.CAM[num].level].checks : 0), 0); return { label: a.name, k, n: Math.round(k / I.CAPACITY * 100) + '%', w: (k / I.CAPACITY * 100) + '%', c: I.areaTone(a.id).base }; }).filter(x => x.k), usedFill: used / I.CAPACITY > 0.8 ? 'var(--warning)' : 'var(--blue)',
+        usedPct: Math.round(used / I.CAPACITY * 100) + '%', freeText: Math.floor(free / 10) > 0 ? `Room for ${Math.floor(free / 10)} more ${Math.floor(free / 10) === 1 ? 'camera' : 'cameras'} at Standard detail.` : 'No room for more cameras at Standard detail. Lower a camera’s detail level to make room.',
+        refused: !!s.refusal, refusedText: refusalText || '', hasWayOut: !!wayOut, wayOutLabel: wayOut ? wayOut.label : '', wayOut: () => wayOut && wayOut.go(),
+        dismissRefusal: () => this.setState({ refusal: null }),
+        bulk: I.LEVELS.map(l => ({ label: l.label, set: () => bulkSet(l) })),
+        capRows: cams.map(c => ({
+          num: c.num, name: c.name, checksText: `The AI checks this camera ${I.LV[c.level].checks} times a second`, area: c.areaName, areaBg: I.areaTone(c.area).bg, areaInk: I.areaTone(c.area).ink, prio: !!c.priority, prioBg: c.priority ? 'var(--blue)' : 'var(--paper-3)', prioKnob: c.priority ? '17px' : '3px', prioText: c.priority ? 'Served first' : 'Normal',
+          togglePrio: () => { this.setCams({ [c.num]: { priority: !c.priority } }); this.say(c.priority ? `${c.label} is no longer a priority camera.` : `${c.label} is served first when the box is busy.`); },
+          levels: I.LEVELS.map(l => Object.assign({ label: l.label, set: () => { if (l.key === c.level) return; tryLevels({ [c.num]: { level: l.key } }, need => `${c.label} is now at ${l.label}. The AI checks it ${l.checks} times a second, and the box’s AI capacity is ${Math.round(need / I.CAPACITY * 100)}% in use.`, need => `${l.label} on ${c.label} would bring the box to ${Math.round(need / I.CAPACITY * 100)}% of its AI capacity. Lower another camera’s detail level first, or keep this one at ${I.LV[c.level].label}.`, null); } }, seg(c.level === l.key)))
+        })),
+        techOpen: s.techOpen, techCaret: s.techOpen ? '▾' : '▸', toggleTech: () => this.setState(x => ({ techOpen: !x.techOpen })),
+        techRows: cams.map(c => ({ num: c.num, name: c.name, fps: I.LV[c.level].checks, prio: !!c.priority })), lvChips: I.LEVELS.map(l => ({ t: l.label + ' ' + l.checks })), techAction: s.techOpen ? 'Close' : 'Open'
+      });
+    }
+
+    if (sec === 'users') {
+      const us = this.users(), me = p.who || 'admin';
+      
+      out.users = us.map((u, i) => {
+        const you = u.key === me, first = u.name.split(' ')[0];
+        const actions = you ? [] : [
+          { label: u.role === 'Admin' ? 'Make operator' : 'Make admin', ink: 'var(--ink)', go: () => this.setState({ menu: null, dlg: { type: 'role', key: u.key } }) },
+          { label: 'Reset password', ink: 'var(--ink)', go: () => this.setState({ menu: null, dlg: { type: 'reset', key: u.key, temp: I.tempPassword(Date.now()) } }) },
+          u.on ? { label: 'Turn access off', ink: 'var(--danger-deep)', go: () => this.setState({ menu: null, dlg: { type: 'off', key: u.key } }) } : { label: 'Turn access back on', ink: 'var(--ink)', go: () => { this.setUser(u.key, { on: true }); this.say(`${u.name} can sign in again.`); } }
+        ];
+        return {
+          name: u.name, username: u.username, role: u.role, roleBg: u.role === 'Admin' ? 'var(--iris-tint)' : 'var(--teal-tint)', roleInk: u.role === 'Admin' ? 'var(--iris-deep)' : 'var(--teal-deep)', last: u.last, you, initials: u.name.split(' ').map(w => w[0]).join('').slice(0, 2),
+          avBg: I.avatarTone(i).bg, avInk: I.avatarTone(i).ink,
+          acc: u.on ? 'On' : 'Off', accBg: u.on ? 'var(--success-tint)' : 'var(--paper-2)', accInk: u.on ? 'var(--success-deep)' : 'var(--muted)', temp: !!u.temp || /temporary/.test(u.last),
+          menu: s.menu === u.key, z: s.menu === u.key ? 5 : 1, toggleMenu: () => this.setState(x => ({ menu: x.menu === u.key ? null : u.key })), actions
+        };
+      });
+      const f = s.f, temp = f.temp || I.tempPassword(42);
+      const setF = patch => this.setState(x => ({ f: Object.assign({}, x.f, patch) }));
+      Object.assign(out, {
+        openAdd: pd(() => this.setState({ drawer: true, menu: null, f: { name: '', user: '', userTouched: false, temp: I.tempPassword(Date.now()), role: 'Operator', err: null } })),
+        drawer: s.drawer, closeAdd: () => this.setState({ drawer: false }),
+        fName: f.name, fUser: f.user, fTemp: temp,
+        onFName: e => { const v = e.target.value; setF(f.userTouched ? { name: v, err: null } : { name: v, user: v.trim().toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean).join('.'), err: null }); },
+        onFUser: e => setF({ user: e.target.value.toLowerCase().replace(/\s/g, ''), userTouched: true, err: null }),
+        newTemp: () => setF({ temp: I.tempPassword(Date.now()) }),
+        fRoles: [['Operator', 'Watches cameras, searches events, plays and downloads clips.'], ['Admin', 'Everything an operator does, plus cameras, areas, settings and accounts.']].map(([r, sub]) => { const R = radio(f.role === r); return { label: r, sub, on: f.role === r, border: R.border, bg: R.bg, ring: R.ring, dot: R.dot, set: () => setF({ role: r }) }; }),
+        fErr: !!f.err, fErrText: f.err || '',
+        addUser: pd(() => {
+          if (!f.name.trim()) return setF({ err: 'Type the person’s name.' });
+          if (!f.user.trim()) return setF({ err: 'Choose a username for them to sign in with.' });
+          if (us.some(u => u.username === f.user.trim())) return setF({ err: `There is already an account called ${f.user.trim()}.` });
+          this.setState({ users: us.concat([{ key: 'u' + Date.now(), name: f.name.trim(), username: f.user.trim(), role: f.role, last: 'Not yet', on: true, temp: true }]), drawer: false });
+          this.say(`${f.name.trim()} was added as ${f.role === 'Admin' ? 'an admin' : 'an operator'}. Give them the temporary password ${temp}.`);
+          if (p.setupStep === 4 && p.onStepProgress) p.onStepProgress(4);
+        })
+      });
+    }
+
+    if (sec === 'about') {
+      out.about = [['Box name', 'INVR-01'], ['Site name', 'Plant 2'], ['Software version', 'i-Netra 1.0 · Milestone 1'], ['Time zone', 'India Standard Time · Asia/Kolkata'], ['Site time now', I.when(p.now ?? 40800)], ['Cameras watched', `${cams.length} of about 30 at Standard detail`], ['Disk', p.diskFull ? '7.6 TB of 8 TB in use' : '2.3 TB of 8 TB in use']].map(([k, v]) => ({ k, v }));
+      out.showChecklist = () => p.onShowChecklist ? p.onShowChecklist() : this.say('In the full prototype this brings the checklist back on Home.');
+    }
+
+    const d = s.dlg, us = this.users(), du = d && d.key ? us.find(u => u.key === d.key) : null;
+    out.dlg = !!d; out.closeDlg = () => this.setState({ dlg: null });
+    if (d) {
+      const fn = du ? du.name.split(' ')[0] : '';
+      const D = {
+        keep: () => { const n = d.days, rm = 30 - n; return ['Storage', 'var(--danger-deep)', `Keep clips for ${n} days instead of 30?`, `Tonight the box removes the clips from ${I.dateShort(-30)} to ${I.dateShort(-n - 1)}, about ${I.size(rm * 77)} across every camera. Removed clips can’t be brought back, so download anything you need from those days first.`, `Keep ${n} days and remove older clips`, () => { p.onKeep && p.onKeep(n); this.setState({ dlg: null, keepDraft: null }); this.say(`Clips are now kept for ${n} days. Older clips are removed tonight.`); }]; },
+        run: () => ['Capacity and detail', 'var(--muted)', 'Run the capacity check again?', 'It takes up to 15 minutes. Cameras keep being watched while it runs, and the result replaces the one from install.', 'Run the check', () => this.runCheck()],
+        reset: () => ['Users', 'var(--muted)', `Reset ${du.name}’s password?`, `${fn} is signed out within 15 minutes. Give them this temporary password, and they set their own the next time they sign in.`, 'Reset password', () => { this.setUser(du.key, { temp: true }); this.setState({ dlg: null }); this.say(`${du.name}’s password was reset. They’re signed out within 15 minutes.`); }],
+        off: () => ['Users', 'var(--danger-deep)', `Turn off ${du.name}’s access?`, `${fn} is signed out within 15 minutes and can’t sign in until an admin turns access back on. Their downloads stay on the box.`, 'Turn access off', () => { this.setUser(du.key, { on: false }); this.setState({ dlg: null }); this.say(`${du.name}’s access is off. They’re signed out within 15 minutes.`); }],
+        role: () => { const toAdmin = du.role !== 'Admin'; return ['Users', 'var(--muted)', toAdmin ? `Make ${du.name} an admin?` : `Make ${du.name} an operator?`, toAdmin ? `${fn} can then manage cameras, areas, settings and accounts, as well as watching, searching and downloading.` : `${fn} keeps watching cameras, searching events and downloading clips, and no longer sees Settings.`, toAdmin ? 'Make admin' : 'Make operator', () => { this.setUser(du.key, { role: toAdmin ? 'Admin' : 'Operator' }); this.setState({ dlg: null }); this.say(`${du.name} is now ${toAdmin ? 'an admin' : 'an operator'}.`); }]; }
+      };
+      const r = (D[d.type] || D.run)();
+      Object.assign(out, { dlgEye: r[0], dlgEyeInk: r[1], dlgTitle: r[2], dlgBody: r[3], dlgOkLabel: r[4], dlgVariant: (d.type === 'keep' || d.type === 'off') ? 'ink' : 'primary', dlgOk: pd(r[5]), dlgTemp: d.type === 'reset', dlgTempText: d.temp || '' });
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

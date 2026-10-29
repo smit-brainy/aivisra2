@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <script src="invr-data.js"></script>
+</helmet>
+<div ref="{{ rootRef }}" style="position:relative; font-family: var(--font-sans); color: var(--ink);">
+  <button onClick="{{ toggleOpen }}" aria-expanded="{{ open }}" style="height: 52px; min-width: 232px; max-width: 320px; padding: 0 14px; display:flex; align-items:center; gap: 12px; border: 1px solid {{ trigBorder }}; border-radius: 8px; background: var(--paper); text-align:left;" style-hover="border-color: var(--ink);">
+    <span style="display:flex; flex-direction:column; gap: 4px; flex:1; min-width:0;">
+      <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ label }}</span>
+      <span style="display:flex; align-items:center; gap: 8px; font-size: 15px; font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        <sc-if value="{{ hasDot }}" hint-placeholder-val="{{ false }}"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{ trigDot }}; flex-shrink:0;"></span></sc-if>{{ triggerText }}
+      </span>
+    </span>
+    <span style="font-size: 12px; color: var(--muted);">▾</span>
+  </button>
+  <sc-if value="{{ open }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; top: calc(100% + 6px); left: 0; z-index: 50; width: 420px; max-height: 560px; display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06); overflow:hidden;">
+      <div style="padding: 12px; border-bottom: 1px solid var(--line-soft);">
+        <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Find a camera by name or number" aria-label="Find a camera" style="width:100%; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bone); font-size: 14.5px; outline: none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+      </div>
+      <div style="flex:1; min-height:0; overflow:auto; padding: 6px 0 8px;">
+        <sc-if value="{{ showAll }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ pickAll }}" style="width:100%; height: 46px; display:flex; align-items:center; justify-content:space-between; padding: 0 16px; background: {{ allBg }}; text-align:left;" style-hover="background: var(--blue-tint); color: var(--blue-deep);">
+            <span style="display:flex; align-items:center; gap: 10px; font-size: 15px; font-weight: 500;"><span style="width: 6px; height: 6px; background: {{ allMark }};"></span>Every camera</span>
+            <span style="font: 500 11.5px/1 var(--font-mono); color: var(--muted);">{{ onlineText }}</span>
+          </button>
+        </sc-if>
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+          <div style="display:flex; align-items:center; gap: 8px; height: 36px; padding: 0 16px; margin-top: 6px; border-top: 1px solid var(--line-soft);">
+            <button onClick="{{ g.toggle }}" aria-expanded="{{ g.open }}" style="flex:1; height:100%; display:flex; align-items:center; gap: 8px; text-align:left;">
+              <span style="width: 10px; font-size: 10px; color: var(--muted);">{{ g.caret }}</span>
+              <span style="font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display:flex; align-items:center; gap: 8px;"><span style="padding: 4px 7px; border-radius: 4px; background: {{ g.toneBg }}; color: {{ g.toneInk }};">{{ g.name }}</span>{{ g.count }}</span>
+            </button>
+            <button onClick="{{ g.choose }}" style="font-size: 13px; font-weight: 500; padding-bottom: 1px; border-bottom: 1px solid var(--line);" style-hover="border-color: var(--ink);">{{ g.chooseLabel }}</button>
+          </div>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+              <div onClick="{{ r.pick }}" role="button" style="display:flex; align-items:center; gap: 10px; height: 42px; padding: 0 16px 0 14px; cursor:pointer; background: {{ r.bg }};" style-hover="background: var(--blue-tint); color: var(--blue-deep);">
+                <button onClick="{{ r.check }}" aria-label="Add {{ r.num }} {{ r.name }} to the choice" aria-pressed="{{ r.checked }}" style="width: 30px; height: 30px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                  <span style="width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid {{ r.cbBorder }}; background: {{ r.cbBg }}; color: var(--paper); font: 700 11px/15px var(--font-sans); text-align:center;">{{ r.mark }}</span>
+                </button>
+                <span style="width: 22px; font: 500 13px/1 var(--font-mono); color: var(--muted);">{{ r.num }}</span>
+                <span style="flex:1; min-width:0; font-size: 14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</span>
+                <span style="display:flex; align-items:center; gap: 6px; font-size: 12.5px; color: {{ r.statusInk }}; white-space:nowrap;"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{ r.dot }};"></span>{{ r.statusText }}</span>
+              </div>
+            </sc-for>
+          </sc-if>
+        </sc-for>
+        <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 20px 16px; font-size: 14px; color: var(--muted);">No camera matches “{{ q }}”. Try a number, such as 3, or part of a name.</div>
+        </sc-if>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line-soft); font-size: 13px; color: var(--muted);">
+        <span>{{ chosenText }}</span>
+        <span>Tick boxes to choose several</span>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:640},&quot;cameras&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Camera[]&quot;},&quot;areas&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Area[]&quot;},&quot;value&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{mode:'all'} | {mode:'area', area:string} | {mode:'cams', cams:number[]}&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Cameras&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;defaultOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;pinned&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;defaultQuery&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onChange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(value) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { open: !!this.props.defaultOpen, q: this.props.defaultQuery || '', collapsed: {}, ready: !!window.INVR };
+  rootRef = React.createRef();
+  componentDidMount() {
+    if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); }
+    this.onDoc = e => { if (this.state.open && !this.props.pinned && this.rootRef.current && !this.rootRef.current.contains(e.target)) this.setState({ open: false }); };
+    document.addEventListener('mousedown', this.onDoc);
+  }
+  componentWillUnmount() { document.removeEventListener('mousedown', this.onDoc); }
+  renderVals() {
+    const I = window.INVR, p = this.props, s = this.state;
+    if (!I) return { label: 'Cameras', triggerText: 'Every camera', groups: [], trigBorder: 'var(--line)' };
+    const cams = p.cameras || I.CAMS.map(c => Object.assign({}, c, { status: 'online' }));
+    const byNum = {}; cams.forEach(c => { byNum[c.num] = c; });
+    const areas = p.areas || I.AREAS;
+    const v = p.value || { mode: 'all' };
+    const all = cams.map(c => c.num);
+    const chosenNums = v.mode === 'all' ? all : v.mode === 'area' ? (areas.find(a => a.id === v.area) || { cams: [] }).cams : (v.cams || []);
+    const chosen = new Set(chosenNums);
+    const apply = (val, close) => { p.onChange && p.onChange(val); if (close) this.setState({ open: false, q: '' }); };
+    const fromSet = set => {
+      const arr = all.filter(n => set.has(n));
+      if (arr.length === 0 || arr.length === all.length) return { mode: 'all' };
+      const area = areas.find(a => a.cams.length === arr.length && a.cams.every(n => set.has(n)));
+      return area ? { mode: 'area', area: area.id } : { mode: 'cams', cams: arr };
+    };
+    const area = v.mode === 'area' ? areas.find(a => a.id === v.area) : null;
+    const single = v.mode === 'cams' && v.cams.length === 1 ? byNum[v.cams[0]] : null;
+    const triggerText = v.mode === 'all' ? 'Every camera' : area ? `${area.name} · ${area.cams.length} cameras` : single ? single.label : `${chosenNums.length} cameras`;
+    const q = s.q.trim().toLowerCase();
+    const match = c => !q || String(c.num).startsWith(q) || c.name.toLowerCase().includes(q) || c.label.toLowerCase().includes(q);
+    const groups = areas.map(a => {
+      const rows = a.cams.map(n => byNum[n]).filter(Boolean).filter(match).map(c => {
+        const on = chosen.has(c.num) && v.mode !== 'all';
+        const off = c.status === 'offline';
+        return {
+          num: c.num, name: c.name, checked: on,
+          bg: on ? 'var(--blue-tint)' : 'transparent',
+          cbBorder: on ? 'var(--blue)' : 'var(--line)', cbBg: on ? 'var(--blue)' : 'var(--paper)', mark: on ? '✓' : '',
+          statusText: off ? 'Offline since ' + c.since : 'Online', statusInk: off ? 'var(--danger-deep)' : 'var(--muted)', dot: off ? 'var(--danger)' : 'var(--success)',
+          pick: () => apply({ mode: 'cams', cams: [c.num] }, true),
+          check: ev => {
+            ev.stopPropagation();
+            const set = new Set(v.mode === 'all' ? [] : chosenNums);
+            set.has(c.num) ? set.delete(c.num) : set.add(c.num);
+            apply(fromSet(set), false);
+          }
+        };
+      });
+      const open = q ? true : !s.collapsed[a.id];
+      return {
+        id: a.id, name: a.name, toneBg: I.areaTone(a.id).bg, toneInk: I.areaTone(a.id).ink, count: a.cams.length, rows, open, caret: open ? '▾' : '▸',
+        chooseLabel: v.mode === 'area' && v.area === a.id ? 'Chosen' : 'Choose area',
+        toggle: () => this.setState(st => ({ collapsed: Object.assign({}, st.collapsed, { [a.id]: !st.collapsed[a.id] }) })),
+        choose: () => apply({ mode: 'area', area: a.id }, true)
+      };
+    }).filter(g => g.rows.length);
+    const offline = cams.filter(c => c.status === 'offline').length;
+    return {
+      rootRef: this.rootRef,
+      label: p.label || 'Cameras', triggerText,
+      hasDot: !!single, trigDot: single && single.status === 'offline' ? 'var(--danger)' : 'var(--success)',
+      trigBorder: s.open ? 'var(--blue)' : 'var(--line)',
+      open: s.open, toggleOpen: () => this.setState(st => ({ open: !st.open })),
+      q: s.q, onQ: e => this.setState({ q: e.target.value }),
+      showAll: !q, allBg: v.mode === 'all' ? 'var(--blue-tint)' : 'transparent', allMark: v.mode === 'all' ? 'var(--blue)' : 'transparent',
+      onlineText: `${cams.length - offline} of ${cams.length} online`,
+      pickAll: () => apply({ mode: 'all' }, true),
+      groups, noMatch: !!q && groups.length === 0,
+      chosenText: v.mode === 'all' ? `Every camera · ${cams.length}` : `${chosenNums.length} of ${cams.length} cameras chosen`
+    };
+  }
+}
+</script>
+</body>
+</html>

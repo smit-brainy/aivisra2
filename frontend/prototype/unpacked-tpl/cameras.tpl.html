@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/brainyneurals.css">
+  <script src="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/_ds_bundle.js"></script>
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.45;">
+
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
+    <div style="display:flex; flex-direction:column; gap: 14px; padding: 18px 32px 10px;">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap: 12px 16px;">
+        <div style="display:flex; flex-direction:column; gap: 6px;">
+          <h1 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">Cameras</h1>
+          <span style="display:flex; align-items:center; gap: 8px; font-size: 15px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ sumDot }};"></span>{{ summary }}</span>
+        </div>
+        <sc-if value="{{ admin }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; align-items:center; gap: 10px;">
+            <button onClick="{{ goAreas }}" style="height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Manage areas</button>
+            <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ goAdd }}" hint-size="auto,48px">Add cameras</x-import>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ long }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 8px 8px 8px 14px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep); font-size: 14.5px;">
+          <span>A sample site with 200 cameras across 12 areas, to show how the list loads as you scroll.</span>
+          <button onClick="{{ exitLong }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">Back to Plant 2’s 16 cameras</button>
+        </div>
+      </sc-if>
+      <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 10px;">
+        <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Find a camera by name or number" aria-label="Find a camera" style="width: 320px; max-width:100%; height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 15px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+        <select value="{{ areaF }}" onChange="{{ onArea }}" aria-label="Area" style="height: 44px; padding: 0 34px 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14.5px; appearance:none; -webkit-appearance:none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 17px) 20px, calc(100% - 12px) 20px; background-size: 5px 5px; background-repeat: no-repeat;">
+          <sc-for list="{{ areaOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+        </select>
+        <div role="group" aria-label="Status" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+          <sc-for list="{{ statuses }}" as="st" hint-placeholder-count="3">
+            <button onClick="{{ st.set }}" style="height: 36px; display:flex; align-items:center; gap: 7px; padding: 0 12px; border-radius: 6px; font-size: 14px; font-weight: {{ st.weight }}; background: {{ st.bg }}; color: {{ st.ink }}; box-shadow: {{ st.ring }};">{{ st.label }}<span style="font: 500 11.5px/1 var(--font-mono); color: var(--muted);">{{ st.n }}</span></button>
+          </sc-for>
+        </div>
+        <div role="group" aria-label="Show cameras as" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+          <sc-for list="{{ layouts }}" as="ly" hint-placeholder-count="2"><button onClick="{{ ly.set }}" style="height: 36px; padding: 0 12px; border-radius: 6px; font-size: 14px; font-weight: {{ ly.weight }}; background: {{ ly.bg }}; color: {{ ly.ink }}; box-shadow: {{ ly.ring }};">{{ ly.label }}</button></sc-for>
+        </div>
+        <div style="flex:1;"></div>
+        <span style="font: 500 12.5px/1 var(--font-mono); color: var(--muted);">{{ countText }}</span>
+      </div>
+    </div>
+    <div onScroll="{{ onScroll }}" style="flex:1; min-height:0; overflow:auto; padding: 0 32px 24px;">
+      <sc-if value="{{ isRows }}" hint-placeholder-val="{{ true }}">
+      <div style="position:sticky; top:0; z-index: 2; display:grid; grid-template-columns: {{ cols }}; gap: 16px; align-items:center; height: 36px; background: var(--paper); border-bottom: 1px solid var(--line); font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">
+        <span>Picture</span><span>Camera</span><span>Status</span><span>Events today</span>
+        <span style="display: {{ adminCell }};">Detail level</span><span style="display: {{ adminCell }};">Connects</span>
+        <span style="text-align:right;">Open</span>
+      </div>
+      </sc-if>
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+        <div style="display:flex; align-items:center; gap: 10px; padding: 20px 0 8px; font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: {{ g.ink }};">
+          <span style="padding: 4px 7px; border-radius: 4px; background: {{ g.toneBg }}; color: {{ g.toneInk }};">{{ g.name }}</span>{{ g.countText }}
+        </div>
+        <sc-if value="{{ isRows }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+          <div onClick="{{ r.open }}" role="button" aria-label="Open {{ r.num }} {{ r.name }}" style="display:grid; grid-template-columns: {{ cols }}; gap: 16px; align-items:center; min-height: 70px; padding: 8px 0; border-top: 1px solid var(--line-soft); cursor:pointer;" style-hover="background: var(--bone);">
+            <div style="width: 96px; aspect-ratio: 16 / 9; border-radius: 4px; background: {{ r.scene }}; filter: {{ r.filter }};"></div>
+            <span style="display:flex; align-items:baseline; gap: 10px; min-width:0;">
+              <span style="width: 28px; flex-shrink:0; font: 500 13.5px/1 var(--font-mono); color: var(--muted);">{{ r.num }}</span>
+              <span style="font-size: 15.5px; font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</span>
+            </span>
+            <span style="display:flex; align-items:center; gap: 8px; font-size: 14.5px; color: {{ r.statusInk }};"><span style="width: 8px; height: 8px; flex-shrink:0; border-radius: 50%; background: {{ r.dot }};"></span>{{ r.statusText }}</span>
+            <span style="font: 500 14px/1 var(--font-mono);">{{ r.events }}</span>
+            <span style="display: {{ adminCell }}; font-size: 14.5px;">{{ r.level }}</span>
+            <span style="display: {{ adminCell }}; font-size: 14px; color: var(--muted);">{{ r.via }}</span>
+            <span style="display:flex; justify-content:flex-end; gap: 8px;">
+              <button onClick="{{ r.live }}" style="height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Live</button>
+              <button onClick="{{ r.search }}" style="height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Search</button>
+            </span>
+          </div>
+        </sc-for>
+        </sc-if>
+        <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 14px; padding: 4px 0 14px;">
+            <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+              <div onClick="{{ r.open }}" role="button" aria-label="Open {{ r.num }} {{ r.name }}" style="display:flex; flex-direction:column; background: var(--bone); border: 1px solid var(--line); border-radius: 14px; overflow:hidden; cursor:pointer;" style-hover="background: var(--paper); border-color: var(--ink);">
+                <div style="aspect-ratio: 16 / 9; background: {{ r.scene }}; background-size: cover; filter: {{ r.filter }};"></div>
+                <div style="display:flex; flex-direction:column; gap: 8px; padding: 12px 14px 14px;">
+                  <span style="display:flex; align-items:baseline; gap: 8px; min-width:0;"><span style="flex-shrink:0; font: 500 13px/1 var(--font-mono); color: var(--muted);">{{ r.num }}</span><span style="font-size: 15.5px; font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</span></span>
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap: 8px;">
+                    <span style="display:flex; align-items:center; gap: 7px; min-width:0; font-size: 13.5px; color: {{ r.statusInk }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><span style="width: 8px; height: 8px; flex-shrink:0; border-radius: 50%; background: {{ r.dot }};"></span>{{ r.statusText }}</span>
+                    <span style="flex-shrink:0; font: 500 12.5px/1 var(--font-mono); color: var(--muted);">{{ r.events }} today</span>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-for>
+      <sc-if value="{{ hasMoreLong }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; justify-content:center; gap: 12px; padding: 20px 0; border-top: 1px solid var(--line-soft); font-size: 14px; color: var(--muted);">
+          <span style="width: 120px; height: 4px; border-radius: 2px; background: var(--paper-3); overflow:hidden;"><span style="display:block; width: {{ moreW }}; height:100%; background: var(--blue);"></span></span>{{ moreText }}
+        </div>
+      </sc-if>
+      <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width: 520px; margin: 48px auto 0; display:flex; flex-direction:column; align-items:center; gap: 10px; text-align:center;">
+          <h3 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">{{ noMatchText }}</h3>
+          <p style="margin:0; font-size: 15.5px; color: var(--muted);">Try a camera number, part of a name, or every area.</p>
+          <button onClick="{{ clearFilters }}" style="height: 42px; margin-top: 6px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Show every camera</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isPage }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 12px 16px; padding: 14px 32px;">
+      <button onClick="{{ backToList }}" style="height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">← All cameras</button>
+      <div style="display:flex; flex-direction:column; gap: 4px; margin-left: 4px; min-width:0;">
+        <h1 style="margin:0; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1;"><span style="font-family: var(--font-mono); font-weight: 500;">{{ c.num }}</span> {{ c.name }}</h1>
+        <span style="display:flex; align-items:center; gap: 8px; font-size: 14px; color: var(--muted);"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ c.dot }}; box-shadow: 0 0 0 1px var(--ink);"></span><span style="color: {{ c.statusInk }};">{{ c.statusText }}</span> · {{ c.area }}</span>
+      </div>
+      <div style="flex:1;"></div>
+      <button onClick="{{ c.live }}" style="height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Open in Live view</button>
+      <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ c.search }}" hint-size="auto,48px">Search this camera</x-import>
+    </div>
+    <div style="flex:1; min-height:0; display:grid; grid-template-columns: minmax(0,1fr) 400px; gap: 20px; padding: 0 32px 24px;">
+      <div style="min-width:0; min-height:0; display:flex; flex-direction:column; gap: 14px;">
+        <div style="flex:1; min-height: 220px; position:relative;">
+          <dc-import name="LiveTile" cam="{{ c.cam }}" status="{{ c.status }}" since="{{ c.since }}" radius="{{ 8 }}" style="position:absolute; top:0; left:0; width:100%; height:100%;" hint-size="100%,100%"></dc-import>
+        </div>
+        <section style="flex-shrink:0; display:flex; flex-direction:column; gap: 12px; padding: 16px 18px 12px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px;">
+            <h2 style="margin:0; font-size: 15px; font-weight: 500;">Today on this camera</h2>
+            <span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">{{ c.countText }} · Click a mark to search that minute</span>
+          </div>
+          <dc-import name="ActivityStrip" times="{{ c.times }}" start="{{ 0 }}" end="{{ 86400 }}" now="{{ c.now }}" bin="{{ 300 }}" offline="{{ c.offline }}" height="{{ 22 }}" axis="{{ true }}" on-pick="{{ c.pick }}" hint-size="100%,45px"></dc-import>
+        </section>
+      </div>
+      <aside style="min-height:0; overflow:auto; display:flex; flex-direction:column; gap: 14px; padding-right: 2px;">
+        <sc-if value="{{ c.off }}" hint-placeholder-val="{{ false }}">
+          <section style="display:flex; flex-direction:column; gap: 10px; padding: 16px 18px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep);">
+            <h2 style="margin:0; font-size: 15.5px; font-weight: 600;">{{ c.offTitle }}</h2>
+            <ol style="margin:0; padding: 0 0 0 20px; display:flex; flex-direction:column; gap: 6px; font-size: 14.5px; line-height: 1.45;">
+              <sc-for list="{{ c.offSteps }}" as="t" hint-placeholder-count="3"><li>{{ t.text }}</li></sc-for>
+            </ol>
+          </section>
+        </sc-if>
+        <section style="display:flex; flex-direction:column; gap: 4px; padding: 16px 8px 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+          <h2 style="margin: 0 8px 6px; font-size: 15px; font-weight: 500;">Latest from this camera</h2>
+          <sc-for list="{{ c.latest }}" as="e" hint-placeholder-count="4">
+            <dc-import name="EventCard" ev="{{ e }}" variant="row" on-play="{{ c.play }}" hint-size="100%,79px"></dc-import>
+          </sc-for>
+          <sc-if value="{{ c.noLatest }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0 8px 8px; font-size: 14px; color: var(--muted);">No events from this camera today yet.</p>
+          </sc-if>
+        </section>
+        <sc-if value="{{ c.showSettings }}" hint-placeholder-val="{{ true }}">
+          <section style="display:flex; flex-direction:column; gap: 16px; padding: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+            <h2 style="margin:0; font-size: 15px; font-weight: 500;">Camera settings</h2>
+            <label style="display:flex; flex-direction:column; gap: 6px;">
+              <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Name</span>
+              <span style="display:flex; gap: 8px;">
+                <input value="{{ c.draft }}" onChange="{{ c.onDraft }}" style="flex:1; min-width:0; height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 15px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+                <sc-if value="{{ c.nameChanged }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ c.saveName }}" style="height: 42px; padding: 0 14px; border-radius: 8px; background: var(--blue); color: var(--paper); font-size: 14px; font-weight: 500;" style-hover="background: var(--blue-2);">Save</button>
+                </sc-if>
+              </span>
+            </label>
+            <label style="display:flex; flex-direction:column; gap: 6px;">
+              <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Area</span>
+              <select value="{{ c.areaValue }}" onChange="{{ c.onArea }}" style="height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 15px;">
+                <sc-for list="{{ c.areaOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+              </select>
+            </label>
+            <div style="display:flex; flex-direction:column; gap: 6px;">
+              <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Detail level · how often the AI checks</span>
+              <div role="group" aria-label="Detail level" style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+                <sc-for list="{{ c.levels }}" as="l" hint-placeholder-count="4">
+                  <button onClick="{{ l.set }}" style="height: 46px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 3px; border-radius: 6px; font-size: 13.5px; font-weight: {{ l.weight }}; background: {{ l.bg }}; color: {{ l.ink }}; box-shadow: {{ l.ring }};">{{ l.label }}<span style="font: 500 10.5px/1 var(--font-mono); color: var(--muted);">{{ l.sub }}</span></button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ c.levelMsg }}" hint-placeholder-val="{{ false }}">
+                <span style="padding: 10px 12px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep); font-size: 14px;">{{ c.levelMsgText }}</span>
+              </sc-if>
+            </div>
+            <button onClick="{{ c.togglePrio }}" aria-pressed="{{ c.prioOn }}" style="display:flex; align-items:center; gap: 12px; text-align:left;">
+              <span style="position:relative; width: 36px; height: 22px; flex-shrink:0; border-radius: 999px; background: {{ c.prioBg }};"><span style="position:absolute; top: 3px; left: {{ c.prioKnob }}; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); box-shadow: 0 1px 2px rgba(10,10,11,.3);"></span></span>
+              <span style="display:flex; flex-direction:column; gap: 2px;"><span style="font-size: 14.5px; font-weight: 500;">Priority camera</span><span style="font-size: 13px; color: var(--muted);">Served first when the box is busy.</span></span>
+            </button>
+            <div style="padding-top: 14px; border-top: 1px solid var(--line-soft);">
+              <button onClick="{{ c.askRemove }}" style="font-size: 14.5px; font-weight: 500; color: var(--danger-deep); padding-bottom: 1px; border-bottom: 1px solid var(--danger-deep);">Remove this camera</button>
+            </div>
+          </section>
+          <section style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+            <button onClick="{{ c.toggleTech }}" aria-expanded="{{ c.techOpen }}" style="height: 52px; display:flex; align-items:center; justify-content:space-between; padding: 0 18px; text-align:left;" style-hover="background: var(--bone);">
+              <span style="font-size: 15px; font-weight: 500;">Technical details</span><span style="font-size: 12px; color: var(--muted);">{{ c.techCaret }}</span>
+            </button>
+            <sc-if value="{{ c.techOpen }}" hint-placeholder-val="{{ false }}">
+              <dl style="margin:0; padding: 4px 18px 14px; display:grid; grid-template-columns: 130px minmax(0,1fr); gap: 10px 12px; border-top: 1px solid var(--line-soft);">
+                <sc-for list="{{ c.tech }}" as="t" hint-placeholder-count="7">
+                  <dt style="padding-top: 10px; font-size: 13px; color: var(--muted);">{{ t.k }}</dt>
+                  <dd style="margin:0; padding-top: 10px; font: 500 12.5px/1.45 var(--font-mono); word-break: break-all;">{{ t.v }}</dd>
+                </sc-for>
+              </dl>
+            </sc-if>
+          </section>
+        </sc-if>
+      </aside>
+    </div>
+  </div>
+  <sc-if value="{{ c.confirmRemove }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ c.cancelRemove }}" style="position:absolute; inset:0; z-index: 80; background: rgba(10,10,11,.32);"></div>
+    <div role="dialog" aria-modal="true" style="position:absolute; z-index: 81; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 560px; max-width: calc(100% - 48px); display:flex; flex-direction:column; gap: 16px; padding: 28px 32px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+      <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--danger-deep);">Remove camera</span>
+      <h2 style="margin:0; font-size: 26px; font-weight: 500; letter-spacing: -0.025em;">{{ c.removeTitle }}</h2>
+      <p style="margin:0; font-size: 16px; line-height: 1.5; text-wrap: pretty;">{{ c.removeBody }}</p>
+      <div style="display:flex; align-items:center; gap: 12px; margin-top: 6px;">
+        <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="ink" href="#" onClick="{{ c.doRemove }}" hint-size="auto,48px">Remove camera and its clips</x-import>
+        <button onClick="{{ c.cancelRemove }}" style="height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 500;" style-hover="border-color: var(--ink);">Keep it</button>
+      </div>
+    </div>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{ isAreas }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 12px 16px; padding: 14px 32px;">
+      <button onClick="{{ backToList }}" style="height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">← All cameras</button>
+      <div style="display:flex; flex-direction:column; gap: 4px; margin-left: 4px;">
+        <h1 style="margin:0; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1;">Areas</h1>
+        <span style="font-size: 14px; color: var(--muted);">Cameras in an area sit together in pickers, on Home and in Live view.</span>
+      </div>
+      <div style="flex:1;"></div>
+      <input value="{{ newArea }}" onChange="{{ onNewArea }}" onKeyDown="{{ onNewKey }}" placeholder="New area name, such as Canteen" aria-label="New area name" style="width: 280px; height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 15px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+      <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ addArea }}" hint-size="auto,48px">Add area</x-import>
+    </div>
+    <sc-if value="{{ areaErr }}" hint-placeholder-val="{{ false }}">
+      <div style="margin: 0 32px 12px; padding: 10px 14px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep); font-size: 14.5px;">{{ areaErrText }}</div>
+    </sc-if>
+    <div style="flex:1; min-height:0; overflow:auto; padding: 4px 32px 24px;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items:start;">
+        <sc-for list="{{ areas }}" as="a" hint-placeholder-count="5">
+          <section style="display:flex; flex-direction:column; background: {{ a.bg }}; border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+            <div style="display:flex; flex-direction:column; gap: 10px; padding: 16px 18px 12px;">
+              <sc-if value="{{ a.notRenaming }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 10px;">
+                  <span style="display:flex; flex-direction:column; gap: 3px;"><span style="display:flex; align-items:center; gap: 10px; font-size: 17px; font-weight: 500; letter-spacing: -0.01em;"><span style="width: 12px; height: 12px; flex-shrink:0; border-radius: 3px; background: {{ a.toneBase }};"></span>{{ a.name }}</span><span style="font: 500 11.5px/1 var(--font-mono); color: var(--muted);">{{ a.countText }}</span></span>
+                  <sc-if value="{{ a.canEdit }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:flex; gap: 6px;">
+                      <button onClick="{{ a.startRename }}" style="height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13px; font-weight: 500;" style-hover="border-color: var(--ink);">Rename</button>
+                      <button onClick="{{ a.askRemove }}" style="height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13px; font-weight: 500;" style-hover="border-color: var(--ink);">Remove</button>
+                    </span>
+                  </sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{ a.renaming }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; gap: 6px;">
+                  <input value="{{ a.draft }}" onChange="{{ a.onDraft }}" aria-label="Area name" style="flex:1; min-width:0; height: 38px; padding: 0 10px; border: 1px solid var(--blue); border-radius: 8px; background: var(--paper); font-size: 15px; outline:none; box-shadow: 0 0 0 3px var(--blue-tint);">
+                  <button onClick="{{ a.saveRename }}" style="height: 38px; padding: 0 12px; border-radius: 8px; background: var(--blue); color: var(--paper); font-size: 13.5px; font-weight: 500;" style-hover="background: var(--blue-2);">Save</button>
+                  <button onClick="{{ a.cancelRename }}" style="height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px;" style-hover="border-color: var(--ink);">Cancel</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ a.isUn }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 13.5px; color: var(--muted);">Cameras from removed areas wait here until you move them.</span>
+              </sc-if>
+            </div>
+            <div style="display:flex; flex-direction:column; border-top: 1px solid var(--line-soft);">
+              <sc-for list="{{ a.rows }}" as="r" hint-placeholder-count="3">
+                <div style="display:grid; grid-template-columns: 28px minmax(0,1fr) 150px; gap: 10px; align-items:center; min-height: 48px; padding: 4px 12px 4px 18px; border-bottom: 1px solid var(--line-soft);">
+                  <span style="font: 500 12.5px/1 var(--font-mono); color: var(--muted);">{{ r.num }}</span>
+                  <span style="font-size: 14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</span>
+                  <select value="{{ r.value }}" onChange="{{ r.onMove }}" aria-label="Move {{ r.num }} {{ r.name }} to" style="height: 36px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13.5px;">
+                    <sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="5"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+                  </select>
+                </div>
+              </sc-for>
+              <sc-if value="{{ a.empty }}" hint-placeholder-val="{{ false }}">
+                <span style="padding: 14px 18px; font-size: 14px; color: var(--muted);">No cameras yet. Move cameras here from another area.</span>
+              </sc-if>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <sc-if value="{{ confirmArea }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ cancelRemoveArea }}" style="position:absolute; inset:0; z-index: 80; background: rgba(10,10,11,.32);"></div>
+    <div role="dialog" aria-modal="true" style="position:absolute; z-index: 81; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 540px; max-width: calc(100% - 48px); display:flex; flex-direction:column; gap: 16px; padding: 28px 32px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+      <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Remove area</span>
+      <h2 style="margin:0; font-size: 26px; font-weight: 500; letter-spacing: -0.025em;">{{ confirmAreaTitle }}</h2>
+      <p style="margin:0; font-size: 16px; line-height: 1.5; text-wrap: pretty;">{{ confirmAreaBody }}</p>
+      <div style="display:flex; align-items:center; gap: 12px; margin-top: 6px;">
+        <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="ink" href="#" onClick="{{ doRemoveArea }}" hint-size="auto,48px">Remove area</x-import>
+        <button onClick="{{ cancelRemoveArea }}" style="height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 500;" style-hover="border-color: var(--ink);">Keep it</button>
+      </div>
+    </div>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:absolute; right: 24px; bottom: 24px; z-index: 70; max-width: 420px; display:flex; align-items:center; gap: 12px; padding: 14px 16px; background: var(--ink); color: var(--paper); border-radius: 8px; font-size: 14.5px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+    <span style="width: 7px; height: 7px; flex-shrink:0; background: var(--signal);"></span>{{ toastText }}
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1720,&quot;height&quot;:1024},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;operator&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;'admin' | 'operator'&quot;},&quot;scen&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;now&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;edits&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onEdit&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(fn) =&gt; void&quot;},&quot;nav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(target, opts) =&gt; void&quot;},&quot;opts&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;optsKey&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  state = this.fresh(this.props.opts || {});
+  fresh(o) {
+    return { view: o.view || 'list', layout: o.layout || 'list', cam: o.cam || null, q: '', areaF: 'all', statusF: 'all', offlineFirst: !!o.offlineFirst, long: !!o.long, shown: 40, loadingMore: false,
+      nameDraft: null, levelMsg: null, confirmRemove: !!o.confirmRemove, techOpen: false, newArea: '', areaErr: null, renameArea: null, confirmArea: null, toast: null,
+      localEdits: (this.state && this.state.localEdits) || {}, ready: !!window.INVR };
+  }
+  componentDidMount() { if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); } }
+  componentDidUpdate(prev) { if (prev.optsKey !== this.props.optsKey) this.setState(this.fresh(this.props.opts || {})); }
+  componentWillUnmount() { clearTimeout(this.tt); clearTimeout(this.lt); }
+  edits() { return this.props.onEdit ? (this.props.edits || {}) : this.state.localEdits; }
+  edit(fn) { if (this.props.onEdit) this.props.onEdit(fn); else this.setState(st => ({ localEdits: fn(st.localEdits) })); }
+  setCam(num, patch) { this.edit(e => Object.assign({}, e, { cams: Object.assign({}, e.cams, { [num]: Object.assign({}, (e.cams || {})[num], patch) }) })); }
+  setAreas(fn) { const I = window.INVR; this.edit(e => Object.assign({}, e, { areas: fn(e.areas || I.AREAS.map(a => ({ id: a.id, name: a.name }))) })); }
+  say(msg) { clearTimeout(this.tt); this.setState({ toast: msg }); this.tt = setTimeout(() => this.setState({ toast: null }), 5000); }
+  nav(t, o) { if (this.props.nav) this.props.nav(t, o); else this.say('In the full prototype this opens ' + t + '.'); }
+
+  renderVals() {
+    const I = window.INVR, p = this.props, s = this.state;
+    const out = { isList: false, isPage: false, isAreas: false, groups: [], areas: [], statuses: [], areaOpts: [], cols: '1fr', adminCell: 'none', c: {} };
+    if (!I || !s.ready) return out;
+    const admin = (p.role || 'admin') === 'admin', now = p.now ?? 40800, scen = p.scen || 'day';
+    const M = I.merge(this.edits(), scen), times = I.camTimes(0), L = s.long ? I.longSite() : null;
+    const src = L || M;
+    const evCount = c => L ? c.events : (times[c.num] || []).filter(t => t <= now).length;
+    const stop = fn => e => { if (e && e.stopPropagation) e.stopPropagation(); if (e && e.preventDefault) e.preventDefault(); fn(e); };
+    const seg = on => ({ bg: on ? 'var(--blue-tint)' : 'transparent', ink: on ? 'var(--blue-deep)' : 'var(--muted)', ring: on ? '0 0 0 1px var(--blue)' : 'none', weight: on ? 600 : 400 });
+    const sampleOnly = () => this.say('The 200-camera sample is for scrolling only. Plant 2’s own cameras open in Live view and Search.');
+    const offN = src.cams.filter(c => c.status === 'offline').length, total = src.cams.length;
+    Object.assign(out, {
+      admin, operator: !admin, adminCell: admin ? 'block' : 'none', toast: !!s.toast, toastText: s.toast || '',
+      summary: `${total - offN} of ${total} online`, sumDot: offN ? 'var(--danger)' : 'var(--success)',
+      isList: s.view === 'list', isPage: s.view === 'page' && !!src.CAM[s.cam], isAreas: s.view === 'areas' && !L,
+      long: !!L, exitLong: () => this.setState({ long: false, shown: 40, areaF: 'all' }),
+      goAdd: stop(() => this.nav('addcams', {})), goAreas: () => this.setState({ view: 'areas' }),
+      backToList: () => this.setState({ view: 'list', nameDraft: null, levelMsg: null, confirmRemove: false, techOpen: false, renameArea: null, areaErr: null })
+    });
+
+    if (s.view === 'list') {
+      const q = s.q.trim().toLowerCase();
+      const pool = src.cams.filter(c => (!q || String(c.num).startsWith(q) || c.name.toLowerCase().includes(q)) && (s.areaF === 'all' || c.area === s.areaF) && (s.statusF === 'all' || c.status === s.statusF));
+      const inPool = new Set(pool.map(c => c.num));
+      const row = c => {
+        const off = c.status === 'offline';
+        return {
+          num: c.num, name: c.name, scene: c.scene, filter: off ? 'grayscale(1) brightness(.7)' : 'none',
+          statusText: off ? 'Offline since ' + c.since : 'Online', statusInk: off ? 'var(--danger-deep)' : 'var(--ink)', dot: off ? 'var(--danger)' : 'var(--success)',
+          events: evCount(c), level: I.LV[c.level].label, via: c.via === 'recorder' ? 'From the recorder' : 'Direct to camera',
+          open: () => this.setState({ view: 'page', cam: c.num, nameDraft: null, levelMsg: null, techOpen: false }),
+          live: stop(() => L ? sampleOnly() : this.nav('live', { cam: c.num })),
+          search: stop(() => L ? sampleOnly() : this.nav('search', { cams: [c.num], preset: 'today' }))
+        };
+      };
+      const first = s.offlineFirst && !L;
+      let groups = [];
+      if (first) {
+        const off = pool.filter(c => c.status === 'offline');
+        if (off.length) groups.push({ name: 'Offline now', countText: off.length + (off.length === 1 ? ' camera' : ' cameras'), rows: off.map(row), ink: 'var(--danger-deep)', mark: 'var(--danger-deep)', toneBg: 'var(--danger-tint)', toneInk: 'var(--danger-deep)' });
+      }
+      src.areas.forEach(a => {
+        const rs = a.cams.map(n => src.CAM[n]).filter(c => c && inPool.has(c.num) && !(first && c.status === 'offline'));
+        if (rs.length) groups.push({ name: a.name, countText: a.cams.length + (a.cams.length === 1 ? ' camera' : ' cameras'), rows: rs.map(row), ink: 'var(--muted)', mark: 'transparent', toneBg: I.areaTone(a.id).bg, toneInk: I.areaTone(a.id).ink });
+      });
+      let budget = L ? s.shown : Infinity, shownN = 0;
+      groups = groups.map(g => { const rows = g.rows.slice(0, Math.max(0, budget)); budget -= rows.length; shownN += rows.length; return Object.assign({}, g, { rows }); }).filter(g => g.rows.length);
+      Object.assign(out, {
+        isRows: s.layout !== 'grid', isGrid: s.layout === 'grid', layouts: [['list', 'List'], ['grid', 'Pictures']].map(([k, l]) => Object.assign({ label: l, set: () => this.setState({ layout: k }) }, seg(s.layout === k))),
+        q: s.q, onQ: e => this.setState({ q: e.target.value }),
+        areaOpts: [{ value: 'all', label: 'All areas' }].concat(src.areas.map(a => ({ value: a.id, label: a.name }))), areaF: s.areaF, onArea: e => this.setState({ areaF: e.target.value }),
+        statuses: [['all', 'All', total], ['online', 'Online', total - offN], ['offline', 'Offline', offN]].map(([k, l, n]) => Object.assign({ label: l, n, set: () => this.setState({ statusF: k }) }, seg(s.statusF === k))),
+        groups, countText: L ? `Showing ${shownN} of ${pool.length}` : `${pool.length} of ${total} shown`,
+        hasMoreLong: !!L && shownN < pool.length, moreW: Math.round(shownN / Math.max(1, pool.length) * 100) + '%',
+        moreText: s.loadingMore ? 'Loading the next 40 cameras…' : `${pool.length - shownN} more load as you scroll`,
+        noMatch: pool.length === 0, noMatchText: q ? `No camera matches “${s.q}”.` : 'No cameras match these filters.',
+        clearFilters: () => this.setState({ q: '', areaF: 'all', statusF: 'all' }),
+        cols: admin ? '96px minmax(170px, 1.6fr) minmax(170px, 1.2fr) 96px 104px 140px 150px' : '96px minmax(200px, 2fr) minmax(180px, 1.4fr) 120px 150px',
+        onScroll: e => {
+          const el = e.currentTarget;
+          if (!L || s.loadingMore || shownN >= pool.length || el.scrollTop + el.clientHeight < el.scrollHeight - 260) return;
+          this.setState({ loadingMore: true });
+          this.lt = setTimeout(() => this.setState(st => ({ shown: st.shown + 40, loadingMore: false })), 450);
+        }
+      });
+    }
+
+    const c = src.CAM[s.cam];
+    if (s.view === 'page' && c) {
+      const off = c.status === 'offline';
+      const evs = L ? [] : I.day(0).filter(e => e.cam === c.num && e.t <= now);
+      const latest = L
+        ? c.times.slice(-5).reverse().map((t, i) => ({ id: 'L' + c.num + '-' + i, kind: 'Person', type: 'person', camLabel: c.label, when: I.when(t), dur: I.dur(8 + (t % 40)), durS: 8 + (t % 40), scene: c.scene, x: 0.4, t }))
+        : evs.slice(-5).reverse().map(e => ({ id: e.id, kind: e.kind, type: e.type, camLabel: c.label, when: I.when(e.t), dur: I.dur(e.dur), durS: e.dur, scene: c.scene, x: e.x, t: e.t }));
+      const cnt = L ? c.events : evs.length, clips = Math.round(cnt * 58 + 40);
+      const draft = s.nameDraft == null ? c.name : s.nameDraft;
+      const areaList = M.areaList;
+      out.c = {
+        num: c.num, name: c.name, area: c.areaName, off, cam: c, status: off ? 'offline' : 'live', since: c.since, now,
+        statusText: off ? 'Offline since ' + c.since : 'Live now', statusInk: off ? 'var(--danger-deep)' : 'var(--ink)', dot: off ? 'var(--danger)' : 'var(--signal)',
+        times: L ? c.times : (times[c.num] || []), offline: L ? [] : ((I.SCEN[scen] || I.SCEN.day).gaps[c.num] || []), countText: `${cnt} events today`,
+        latest, noLatest: latest.length === 0,
+        play: ev => L ? sampleOnly() : this.nav('search', { cams: [c.num], focusT: ev.t }),
+        pick: t => L ? sampleOnly() : this.nav('search', { cams: [c.num], focusT: t }),
+        search: stop(() => L ? sampleOnly() : this.nav('search', { cams: [c.num], preset: 'today' })),
+        live: () => L ? sampleOnly() : this.nav('live', { cam: c.num }),
+        offTitle: `This camera stopped sending pictures at ${c.since}.`,
+        offSteps: (admin ? ["Check the camera's power and network cable.", 'Check that it is on the same network as the box.', 'Restart the camera if it still does not come back. i-Netra reconnects on its own once pictures arrive.'] : ['Nothing is saved from this camera until it is back.', 'Tell your admin, Karan Joshi, so they can check its power and network cable.']).map(text => ({ text })),
+        showSettings: admin && !L,
+        draft, onDraft: e => this.setState({ nameDraft: e.target.value }), nameChanged: !!draft.trim() && draft.trim() !== c.name,
+        saveName: () => { const n = draft.trim(); if (!n) return; this.setCam(c.num, { name: n }); this.setState({ nameDraft: null }); this.say(`Renamed to ${c.num} ${n}.`); },
+        areaValue: c.area, areaOpts: areaList.map(a => ({ value: a.id, label: a.name })).concat(c.area === 'unassigned' ? [{ value: 'unassigned', label: 'Unassigned' }] : []),
+        onArea: e => { const v = e.target.value, a = areaList.find(x => x.id === v); this.setCam(c.num, { area: v }); this.say(`Moved to ${a ? a.name : 'Unassigned'}.`); },
+        levels: I.LEVELS.map(l => Object.assign({ label: l.label, sub: l.checks + ' times a second', set: () => {
+          const need = M.used - I.LV[c.level].checks + l.checks;
+          if (need > I.CAPACITY) return this.setState({ levelMsg: `${l.label} on this camera would bring the box to ${Math.round(need / I.CAPACITY * 100)}% of its AI capacity. Lower another camera's detail level first, or keep this one at ${I.LV[c.level].label}.` });
+          this.setCam(c.num, { level: l.key }); this.setState({ levelMsg: null }); this.say(`Detail level set to ${l.label}. The AI checks this camera ${l.checks} times a second, and the box’s AI capacity is ${Math.round(need / I.CAPACITY * 100)}% in use.`);
+        } }, seg(c.level === l.key))),
+        levelMsg: !!s.levelMsg, levelMsgText: s.levelMsg || '',
+        prioOn: !!c.priority, prioBg: c.priority ? 'var(--blue)' : 'var(--paper-3)', prioKnob: c.priority ? '17px' : '3px',
+        togglePrio: () => this.setCam(c.num, { priority: !c.priority }),
+        techOpen: s.techOpen, techCaret: s.techOpen ? '▾' : '▸', toggleTech: () => this.setState(st => ({ techOpen: !st.techOpen })),
+        tech: c.tech.map(([k, v]) => ({ k, v })).concat([{ k: 'Detail level', v: `${I.LV[c.level].label}, ${I.LV[c.level].checks} inference frames a second` }]),
+        confirmRemove: s.confirmRemove && admin && !L, askRemove: () => this.setState({ confirmRemove: true }), cancelRemove: () => this.setState({ confirmRemove: false }),
+        removeTitle: `Remove ${c.label}?`,
+        removeBody: `It stops appearing on Home, in Live view and in Search. Its ${clips.toLocaleString('en-IN')} saved clips, about ${(clips * 0.045).toFixed(1)} GB, are removed from the box as well. Download any you need before you remove it.`,
+        doRemove: stop(() => { this.setCam(c.num, { removed: true }); this.setState({ confirmRemove: false, view: 'list' }); this.say(`${c.label} was removed, with its ${clips.toLocaleString('en-IN')} saved clips.`); })
+      };
+    }
+
+    if (s.view === 'areas' && !L) {
+      const areaList = M.areaList;
+      const moveOpts = areaList.map(a => ({ value: a.id, label: a.name }));
+      out.areas = M.areas.map(a => {
+        const isUn = a.id === 'unassigned', ren = !!s.renameArea && s.renameArea.id === a.id;
+        return {
+          name: a.name, toneBase: I.areaTone(a.id).base, countText: a.cams.length + (a.cams.length === 1 ? ' camera' : ' cameras'), isUn, canEdit: !isUn, renaming: ren, notRenaming: !ren,
+          bg: isUn ? 'var(--bone)' : 'var(--paper)', draft: ren ? s.renameArea.draft : a.name, empty: a.cams.length === 0,
+          startRename: () => this.setState({ renameArea: { id: a.id, draft: a.name } }), onDraft: e => this.setState({ renameArea: { id: a.id, draft: e.target.value } }),
+          saveRename: () => { const n = (s.renameArea.draft || '').trim(); if (!n) return; this.setAreas(list => list.map(x => x.id === a.id ? Object.assign({}, x, { name: n }) : x)); this.setState({ renameArea: null }); this.say(`Renamed to ${n}.`); },
+          cancelRename: () => this.setState({ renameArea: null }),
+          askRemove: () => this.setState({ confirmArea: a.id }),
+          rows: a.cams.map(n => { const cc = M.CAM[n]; return { num: n, name: cc.name, value: cc.area, opts: isUn ? [{ value: 'unassigned', label: 'Unassigned' }].concat(moveOpts) : moveOpts,
+            onMove: e => { const v = e.target.value, t = areaList.find(x => x.id === v); if (!t) return; this.setCam(n, { area: v }); this.say(`${cc.label} moved to ${t.name}.`); } }; })
+        };
+      });
+      const ca = s.confirmArea ? M.areas.find(a => a.id === s.confirmArea) : null;
+      const addArea = () => {
+        const n = s.newArea.trim();
+        if (!n) return this.setState({ areaErr: 'Type a name for the new area first.' });
+        if (areaList.some(a => a.name.toLowerCase() === n.toLowerCase())) return this.setState({ areaErr: `There is already an area called ${n}.` });
+        this.setAreas(list => list.concat([{ id: 'a' + Date.now(), name: n }])); this.setState({ newArea: '', areaErr: null }); this.say(`${n} added. Move cameras into it from any area.`);
+      };
+      Object.assign(out, {
+        newArea: s.newArea, onNewArea: e => this.setState({ newArea: e.target.value, areaErr: null }), onNewKey: e => { if (e.key === 'Enter') addArea(); },
+        addArea: stop(addArea), areaErr: !!s.areaErr, areaErrText: s.areaErr || '',
+        confirmArea: !!ca, confirmAreaTitle: ca ? `Remove ${ca.name}?` : '',
+        confirmAreaBody: ca ? (ca.cams.length ? `Its ${ca.cams.length} ${ca.cams.length === 1 ? 'camera moves' : 'cameras move'} to Unassigned. Their clips, names and detail levels stay the same, and you can move them into another area at any time.` : 'It has no cameras, so nothing else changes.') : '',
+        cancelRemoveArea: () => this.setState({ confirmArea: null }),
+        doRemoveArea: stop(() => { const name = ca.name; this.setAreas(list => list.filter(x => x.id !== ca.id)); this.setState({ confirmArea: null }); this.say(`${name} removed.`); })
+      });
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

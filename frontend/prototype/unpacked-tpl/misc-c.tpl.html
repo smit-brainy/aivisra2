@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="display:flex; flex-direction:column; flex: 1 1 auto; min-height:0; max-height: 100%; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden; font-family: var(--font-sans); color: var(--ink);">
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 16px; padding: 14px 16px 12px;">
+    <div style="display:flex; flex-direction:column; gap: 4px; min-width:0;">
+      <span style="font-size: 17px; font-weight: 500; letter-spacing: -0.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ kind }} · {{ camLabel }}</span>
+      <span style="font: 500 12.5px/1.3 var(--font-mono); color: var(--muted);">{{ when }} · {{ dur }} in view</span>
+    </div>
+    <div style="display:flex; align-items:center; gap: 12px; flex-shrink:0;">
+      <sc-if value="{{ hasBig }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ toggleBig }}" style="height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">{{ bigLabel }}</button>
+      </sc-if>
+      <span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">{{ countText }}</span>
+      <sc-if value="{{ hasClose }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ close }}" aria-label="Close the player" style="width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; font-size: 18px; line-height: 1;" style-hover="border-color: var(--ink);">×</button>
+      </sc-if>
+    </div>
+  </div>
+  <div style="position:relative; aspect-ratio: 16 / 9; flex-shrink: 0; max-height: max(180px, calc(100cqh - 350px)); background: {{ scene }}; background-size: cover;">
+    <sc-if value="{{ inView }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute; left: {{ boxLeft }}; top: {{ boxTop }}; width: {{ boxW }}; height: {{ boxH }}; border: 2px solid {{ boxColor }}; border-radius: 2px; background: radial-gradient(ellipse at 50% 42%, rgba(225,230,236,.28), transparent 72%);">
+        <span style="position:absolute; left:-2px; bottom:100%; background: {{ boxColor }}; color: var(--ink); font: 500 12px/1 var(--font-mono); padding: 3px 6px; border-radius: 2px 2px 0 0; white-space:nowrap;">{{ kind }}</span>
+      </div>
+    </sc-if>
+    <span style="position:absolute; top: 10px; left: 10px; background: rgba(10,10,11,.72); color: var(--paper); font: 500 12px/1 var(--font-mono); padding: 6px 8px; border-radius: 4px;">{{ clockAt }}</span>
+    <sc-if value="{{ notInView }}" hint-placeholder-val="{{ false }}">
+      <span style="position:absolute; top: 10px; right: 10px; background: rgba(10,10,11,.72); color: var(--paper); font: 500 12px/1 var(--font-mono); padding: 6px 8px; border-radius: 4px;">{{ edgeNote }}</span>
+    </sc-if>
+  </div>
+  <div style="padding: 14px 16px 2px;">
+    <div onClick="{{ seek }}" style="position:relative; height: 20px; cursor:pointer;">
+      <div style="position:absolute; left:0; right:0; top: 7px; height: 6px; border-radius: 3px; background: var(--paper-3);"></div>
+      <div style="position:absolute; top: 4px; height: 12px; left: {{ spanLeft }}; width: {{ spanW }}; border-radius: 2px; background: {{ spanTint }}; box-shadow: inset 0 0 0 1px {{ spanEdge }};"></div>
+      <div style="position:absolute; left:0; top: 7px; height: 6px; width: {{ progW }}; border-radius: 3px; background: var(--blue);"></div>
+      <div style="position:absolute; top: 2px; left: {{ progW }}; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink);"></div>
+    </div>
+    <div style="position:relative; height: 16px; margin-top: 6px; font: 500 11.5px/1 var(--font-mono); color: var(--muted);">
+      <span style="position:absolute; left:0;">{{ posText }}</span>
+      <span style="position:absolute; left: {{ spanMid }}; transform: translateX(-50%); color: var(--blue-deep); white-space:nowrap;">{{ inViewText }}</span>
+      <span style="position:absolute; right:0;">{{ lenText }}</span>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 8px; padding: 10px 16px 16px;">
+    <button onClick="{{ prev }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 500; opacity: {{ prevOp }};" style-hover="border-color: var(--ink);">← Previous event</button>
+    <button onClick="{{ togglePlay }}" aria-label="{{ playLabel }}" style="width: 48px; height: 48px; border-radius: 50%; background: var(--blue); color: var(--paper); display:flex; align-items:center; justify-content:center; gap: 4px;" style-hover="background: var(--blue-2);">
+      <sc-if value="{{ playing }}" hint-placeholder-val="{{ false }}">
+        <span style="width: 4px; height: 16px; background: currentColor; border-radius: 1px;"></span><span style="width: 4px; height: 16px; background: currentColor; border-radius: 1px;"></span>
+      </sc-if>
+      <sc-if value="{{ paused }}" hint-placeholder-val="{{ true }}">
+        <span style="width:0; height:0; margin-left: 3px; border-left: 14px solid currentColor; border-top: 9px solid transparent; border-bottom: 9px solid transparent;"></span>
+      </sc-if>
+    </button>
+    <button onClick="{{ next }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 500; opacity: {{ nextOp }};" style-hover="border-color: var(--ink);">Next event →</button>
+    <div style="flex:1;"></div>
+    <div role="group" aria-label="Speed" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+      <sc-for list="{{ speeds }}" as="sp" hint-placeholder-count="4">
+        <button onClick="{{ sp.set }}" style="height: 32px; min-width: 38px; padding: 0 8px; border-radius: 6px; font: 500 12.5px/1 var(--font-mono); background: {{ sp.bg }}; color: {{ sp.ink }}; box-shadow: {{ sp.ring }};">{{ sp.label }}</button>
+      </sc-for>
+    </div>
+    <button onClick="{{ download }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Download this clip</button>
+    <button onClick="{{ copyLink }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: {{ copyBg }}; color: {{ copyInk }}; font-size: 14px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">{{ copyLabel }}</button>
+  </div>
+  <div aria-label="Keyboard shortcuts" style="display:flex; align-items:center; flex-wrap:wrap; gap: 6px 16px; padding: 0 16px 14px; font-size: 12.5px; color: var(--muted);">
+    <sc-for list="{{ keysHint }}" as="k" hint-placeholder-count="4">
+      <span style="display:flex; align-items:center; gap: 4px; white-space:nowrap;">
+        <sc-for list="{{ k.caps }}" as="cap" hint-placeholder-count="1"><span style="min-width: 22px; height: 22px; display:inline-flex; align-items:center; justify-content:center; padding: 0 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--paper); color: var(--ink); font: 500 11px/1 var(--font-mono);">{{ cap.t }}</span></sc-for>
+        <span style="margin-left: 3px;">{{ k.label }}</span>
+      </span>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:720,&quot;height&quot;:600},&quot;ev&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;EventView&quot;},&quot;index&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:7,&quot;tsType&quot;:&quot;number&quot;},&quot;total&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:47,&quot;tsType&quot;:&quot;number&quot;},&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;startFrac&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;onPrev&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onNext&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onDownload&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(ev) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { pos: null, playing: false, speed: 1, id: null, ready: !!window.INVR, copied: false };
+  componentDidMount() {
+    if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); }
+    this.sync();
+    this.iv = setInterval(() => {
+      if (!this.state.playing) return;
+      const L = this.len();
+      this.setState(s => { const pos = (s.pos ?? 4) + 0.1 * s.speed; return pos >= L ? { pos: L, playing: false } : { pos }; });
+    }, 100);
+    this.onKey = e => {
+      if (this.props.keys === false || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+      const tg = e.target, tag = tg && tg.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (tg && tg.isContentEditable)) return;
+      const p = this.props, L = this.len();
+      if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); this.setState(st => st.playing ? { playing: false } : { playing: true, pos: (st.pos ?? 4) >= L - 0.05 ? 4 : st.pos }); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); if ((p.index ?? 1) > 1 && p.onPrev) p.onPrev(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); if ((p.index ?? 1) < (p.total ?? 1) && p.onNext) p.onNext(); }
+      else if ((e.key === 'f' || e.key === 'F') && p.onBig) { e.preventDefault(); p.onBig(); }
+      else if (['1', '2', '4', '8'].includes(e.key)) this.setState({ speed: +e.key });
+    };
+    window.addEventListener('keydown', this.onKey);
+  }
+  componentWillUnmount() { clearInterval(this.iv); clearTimeout(this.ct); window.removeEventListener('keydown', this.onKey); }
+  componentDidUpdate() { this.sync(); }
+  ev() {
+    const I = window.INVR;
+    return this.props.ev || (I ? { id: 'demo', kind: 'Person', type: 'person', camLabel: '3 Lobby corridor', when: 'Today 9:14 AM', dur: '38 s', durS: 38, t: 33248, scene: I.CAM[3].scene, x: 0.4 } : null);
+  }
+  sync() {
+    const e = this.ev();
+    if (!e || e.id === this.state.id) return;
+    const d = e.durS || 20, sf = this.props.startFrac;
+    this.setState({ id: e.id, pos: sf != null ? 4 + d * sf : 4, playing: !!this.props.autoplay });
+  }
+  len() { const e = this.ev(); return ((e && e.durS) || 20) + 8; }
+  renderVals() {
+    const I = window.INVR, p = this.props, s = this.state, e = this.ev() || {};
+    const d = e.durS || 20, L = d + 8, pos = s.pos ?? 4;
+    const isP = e.type !== 'vehicle', w = isP ? 0.12 : 0.3;
+    const inView = pos >= 4 && pos <= 4 + d;
+    const travel = Math.min(1, Math.max(0, (pos - 4) / d));
+    const left = Math.min(1 - w - 0.02, Math.max(0.02, (e.x ?? 0.4) - 0.08 + travel * 0.16));
+    const mmss = t => { t = Math.max(0, Math.round(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+    const clockAt = I && e.t != null ? (() => { const at = e.t + (pos - 4), h = Math.floor((((at % 86400) + 86400) % 86400) / 3600), m = Math.floor((at % 3600 + 3600) % 3600 / 60), sec = Math.floor(((at % 60) + 60) % 60); return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + (h < 12 ? ' AM' : ' PM'); })() : '';
+    const hasPrev = !!p.onPrev && (p.index ?? 1) > 1, hasNext = !!p.onNext && (p.index ?? 1) < (p.total ?? 1);
+    return {
+      kind: e.kind, camLabel: e.camLabel, when: e.when, dur: e.dur, scene: e.scene,
+      countText: p.total ? `${p.index} of ${p.total}` : '',
+      hasClose: !!p.onClose, close: () => p.onClose && p.onClose(),
+      inView, notInView: !inView, edgeNote: pos < 4 ? 'Before they appear' : 'After they left',
+      boxLeft: (left * 100) + '%', boxTop: isP ? '20%' : '38%', boxW: (w * 100) + '%', boxH: isP ? '62%' : '40%', boxColor: isP ? 'var(--sky)' : 'var(--honey)', spanTint: isP ? 'var(--sky-tint)' : 'var(--honey-tint)', spanEdge: isP ? 'var(--sky)' : 'var(--honey)',
+      clockAt,
+      spanLeft: (4 / L * 100) + '%', spanW: (d / L * 100) + '%', spanMid: ((4 + d / 2) / L * 100) + '%',
+      progW: (pos / L * 100) + '%',
+      posText: mmss(pos), lenText: mmss(L), inViewText: `In view ${mmss(4)} to ${mmss(4 + d)}`,
+      seek: ev => { const r = ev.currentTarget.getBoundingClientRect(); this.setState({ pos: Math.min(L, Math.max(0, (ev.clientX - r.left) / r.width * L)) }); },
+      playing: s.playing, paused: !s.playing, playLabel: s.playing ? 'Pause' : 'Play',
+      togglePlay: () => this.setState(st => st.playing ? { playing: false } : { playing: true, pos: (st.pos ?? 4) >= L - 0.05 ? 4 : st.pos }),
+      prev: () => hasPrev && p.onPrev(), next: () => hasNext && p.onNext(),
+      prevOp: hasPrev ? 1 : 0.4, nextOp: hasNext ? 1 : 0.4,
+      speeds: [1, 2, 4, 8].map(v => ({ label: v + '×', bg: v === s.speed ? 'var(--blue-tint)' : 'transparent', ink: v === s.speed ? 'var(--blue-deep)' : 'var(--muted)', ring: v === s.speed ? '0 0 0 1px var(--blue)' : 'none', set: () => this.setState({ speed: v }) })),
+      download: () => p.onDownload && p.onDownload(e),
+      hasBig: !!p.onBig, bigLabel: p.big ? 'Back to results' : 'Full size', toggleBig: () => p.onBig && p.onBig(),
+      copyLabel: s.copied ? 'Link copied' : 'Copy link', copyBg: s.copied ? 'var(--success-tint)' : 'var(--paper)', copyInk: s.copied ? 'var(--success-deep)' : 'var(--ink)',
+      copyLink: () => {
+        const link = location.href.split('#')[0] + '#clip=' + (e.cam || 3) + '_' + Math.round(e.t || 0);
+        const fb = () => { try { const ta = document.createElement('textarea'); ta.value = link; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch (x) {} };
+        try { if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(link).catch(fb); else fb(); } catch (x) { fb(); }
+        clearTimeout(this.ct); this.setState({ copied: true }); this.ct = setTimeout(() => this.setState({ copied: false }), 2500);
+        if (p.onCopy) p.onCopy(link);
+      },
+      keysHint: [[['Space'], 'Play or pause'], [['←', '→'], 'Previous or next'], p.onBig ? [['F'], 'Full size'] : null, [['1', '2', '4', '8'], 'Speed']].filter(Boolean).map(([caps, label]) => ({ caps: caps.map(t => ({ t })), label }))
+    };
+  }
+}
+</script>
+</body>
+</html>

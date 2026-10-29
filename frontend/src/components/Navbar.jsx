@@ -1,14 +1,16 @@
 import React from 'react';
 
-export default function Navbar({ activeTab, setActiveTab, theme, onToggleTheme }) {
+export default function Navbar({ activeTab, setActiveTab, theme, onToggleTheme, session, onSignOut }) {
   const navTabs = [
+    { id: 'inetra', label: 'i-Netra (Demo UI)' },
     { id: 'demo', label: 'Camera View' },
     { id: 'grid', label: 'Multi-Grid Camera' },
     { id: 'onboarding', label: 'Camera Setup' },
     { id: 'spatial', label: 'Spatial Rules & Zones' },
     { id: 'events', label: 'Visual Search & Clips' },
-    { id: 'inetra', label: 'i-Netra (Demo UI)' },
   ];
+
+  const signedInAs = session ? (session.who || `${session.name || 'user'}`) : 'karan.joshi';
 
   return (
     <header className="app-header">
@@ -17,6 +19,24 @@ export default function Navbar({ activeTab, setActiveTab, theme, onToggleTheme }
       </div>
 
       <div className="header-right">
+        {/* Verbatim i-Netra account pill (prototype top-bar user affordance) */}
+        <button
+          type="button"
+          onClick={onSignOut}
+          title="Sign out"
+          style={{
+            height: 30,
+            padding: '0 12px',
+            border: '1px solid var(--line)',
+            borderRadius: 999,
+            background: 'var(--paper-2, #F4F4F2)',
+            font: '500 12px/1 var(--font-mono)',
+            letterSpacing: '.04em',
+            cursor: 'pointer',
+          }}
+        >
+          {signedInAs} · sign out
+        </button>
         <nav className="nav-tab-bar">
           {navTabs.map((tab) => (
             <button

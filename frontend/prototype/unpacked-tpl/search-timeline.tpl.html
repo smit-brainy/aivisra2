@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/brainyneurals.css">
+  <script src="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/_ds_bundle.js"></script>
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="display:flex; flex-direction:column; gap: 8px; font-family: var(--font-sans); color: var(--ink); user-select:none;">
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 8px 16px;">
+    <span style="font-size: 13.5px; color: var(--muted);">Drag across the lanes to narrow the time. Click a mark to play it.</span>
+    <span style="display:flex; align-items:center; gap: 14px; font-size: 12.5px; color: var(--muted);">
+      <span style="display:flex; align-items:center; gap: 6px;"><span style="width: 14px; height: 8px; border-radius: 2px; background: var(--sky);"></span>Person</span>
+      <span style="display:flex; align-items:center; gap: 6px;"><span style="width: 14px; height: 8px; border-radius: 2px; background: var(--honey);"></span>Vehicle</span>
+      <span style="display:flex; align-items:center; gap: 6px;"><span style="width: 14px; height: 8px; border-radius: 2px; background: var(--teal);"></span>Other</span>
+    </span>
+  </div>
+  <div style="display:grid; grid-template-columns: 180px minmax(0,1fr); column-gap: 12px;">
+    <span></span>
+    <div style="position:relative; height: 22px; border-bottom: 1px solid var(--line);">
+      <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="7">
+        <span style="position:absolute; left: {{ t.left }}; bottom: 6px; transform: translateX({{ t.tx }}); font: 500 11px/1 var(--font-mono); color: var(--muted); white-space:nowrap;">{{ t.label }}</span>
+      </sc-for>
+    </div>
+    <div style="display:flex; flex-direction:column;">
+      <sc-for list="{{ lanes }}" as="ln" hint-placeholder-count="4">
+        <div style="height: 40px; display:flex; align-items:center; justify-content:space-between; gap: 8px; min-width:0; border-bottom: 1px solid var(--line-soft);">
+          <span style="font-size: 14px; font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ ln.label }}</span>
+          <span style="font: 500 11.5px/1 var(--font-mono); color: var(--muted);">{{ ln.n }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div ref="{{ areaRef }}" onMouseDown="{{ down }}" onMouseMove="{{ move }}" style="position:relative; cursor: crosshair;">
+      <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="7">
+        <span style="position:absolute; top:0; bottom:0; left: {{ t.left }}; width: 1px; background: var(--line-soft);"></span>
+      </sc-for>
+      <sc-for list="{{ lanes }}" as="ln" hint-placeholder-count="4">
+        <div style="position:relative; height: 40px; border-bottom: 1px solid var(--line-soft);">
+          <sc-for list="{{ ln.marks }}" as="m" hint-placeholder-count="0">
+            <button onMouseDown="{{ stop }}" onClick="{{ m.play }}" title="{{ m.title }}" aria-label="Play {{ m.title }}" style="position:absolute; top: 10px; height: 20px; left: {{ m.left }}; width: max(4px, {{ m.w }}); padding:0; border-radius: 3px; background: {{ m.bg }}; box-shadow: {{ m.ring }}; z-index: {{ m.z }};" style-hover="z-index: 4; box-shadow: 0 0 0 2px var(--ink);"></button>
+          </sc-for>
+        </div>
+      </sc-for>
+      <sc-if value="{{ nowOn }}" hint-placeholder-val="{{ false }}">
+        <span aria-hidden="true" style="position:absolute; top: -22px; bottom: 0; left: {{ nowLeft }}; width: 2px; background: var(--ink); pointer-events:none;"></span>
+      </sc-if>
+      <sc-if value="{{ dragOn }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; top:0; bottom:0; left: {{ selLeft }}; width: {{ selW }}; z-index: 5; background: color-mix(in oklch, var(--blue) 14%, transparent); box-shadow: inset 0 0 0 1px var(--blue); pointer-events:none;">
+          <span style="position:absolute; top: 6px; left: 6px; padding: 4px 7px; border-radius: 4px; background: var(--blue); color: var(--paper); font: 500 11.5px/1 var(--font-mono); white-space:nowrap;">{{ selText }}</span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:360},&quot;lanes&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{label:string, events:{id,t,dur,type,kind}[]}[]&quot;},&quot;a&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:21600,&quot;tsType&quot;:&quot;number&quot;},&quot;b&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:43200,&quot;tsType&quot;:&quot;number&quot;},&quot;now&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;playing&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;onPlay&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(id) =&gt; void&quot;},&quot;onRange&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(fa, fb) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { ready: !!window.INVR, drag: null };
+  areaRef = React.createRef();
+  componentDidMount() {
+    if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); }
+    this.up = () => this.finish();
+    window.addEventListener('mouseup', this.up);
+  }
+  componentWillUnmount() { window.removeEventListener('mouseup', this.up); }
+  frac(e) { const el = this.areaRef.current; if (!el) return 0; const r = el.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); }
+  finish() {
+    const d = this.state.drag; if (!d) return;
+    this.setState({ drag: null });
+    if (Math.abs(d.b - d.a) > 0.004 && this.props.onRange) this.props.onRange(Math.min(d.a, d.b), Math.max(d.a, d.b));
+  }
+  renderVals() {
+    const I = window.INVR, p = this.props, s = this.state;
+    if (!I || !s.ready) return { lanes: [], ticks: [] };
+    const a = p.a ?? 0, b = p.b ?? 86400, span = Math.max(60, b - a);
+    const step = span <= 7200 ? 900 : span <= 21600 ? 1800 : span <= 50400 ? 3600 : span <= 108000 ? 10800 : 86400;
+    const ticks = [];
+    for (let t = Math.ceil(a / step) * step; t <= b; t += step) {
+      const f = (t - a) / span;
+      ticks.push({ left: (f * 100) + '%', tx: f < 0.03 ? '0' : f > 0.97 ? '-100%' : '-50%', label: step >= 86400 ? I.dateShort(I.dayOff(t)) : step >= 3600 ? I.hourLabel(t) : I.clock(t) });
+    }
+    const COL = { person: ['var(--sky)', 'var(--sky-deep)'], vehicle: ['var(--honey)', 'var(--honey-deep)'], other: ['var(--teal)', 'var(--teal-deep)'] };
+    const lanes = (p.lanes || []).map(L => ({
+      label: L.label, n: L.events.length,
+      marks: L.events.map(e => {
+        const C = COL[e.type] || COL.other, on = e.id === p.playing;
+        return { left: ((e.t - a) / span * 100) + '%', w: ((e.dur || 10) / span * 100) + '%', bg: C[0], ring: on ? '0 0 0 2px var(--ink)' : 'inset 0 0 0 1px ' + C[1], z: on ? 3 : 1, title: `${e.kind || 'Event'} at ${I.clock(e.t)}, ${I.dur(e.dur || 10)} in view`, play: () => p.onPlay && p.onPlay(e.id) };
+      })
+    }));
+    const d = s.drag, now = p.now;
+    return {
+      areaRef: this.areaRef, ticks, lanes,
+      nowOn: now != null && now > a && now < b, nowLeft: now != null ? ((now - a) / span * 100) + '%' : '0',
+      down: e => { if (e.button !== 0) return; const f = this.frac(e); this.setState({ drag: { a: f, b: f } }); },
+      move: e => { if (!this.state.drag) return; const f = this.frac(e); this.setState(st => ({ drag: Object.assign({}, st.drag, { b: f }) })); },
+      stop: e => e.stopPropagation(),
+      dragOn: !!d && Math.abs(d.b - d.a) > 0.002,
+      selLeft: d ? (Math.min(d.a, d.b) * 100) + '%' : '0', selW: d ? (Math.abs(d.b - d.a) * 100) + '%' : '0',
+      selText: d ? `${I.clock(a + Math.min(d.a, d.b) * span)} to ${I.clock(a + Math.max(d.a, d.b) * span)}` : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

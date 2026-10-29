@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/brainyneurals.css">
+  <script src="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/_ds_bundle.js"></script>
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="display:flex; flex-direction:column; gap: 10px; font-family: var(--font-sans); color: var(--ink);">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap: 8px;">
+    <button onClick="{{ prev }}" aria-label="Previous month" style="width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; visibility: {{ prevVis }};" style-hover="border-color: var(--ink);">←</button>
+    <span style="font-size: {{ titleSize }}; font-weight: 500; letter-spacing: -0.01em;">{{ title }}</span>
+    <button onClick="{{ next }}" aria-label="Next month" style="width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; visibility: {{ nextVis }};" style-hover="border-color: var(--ink);">→</button>
+  </div>
+  <div role="grid" aria-label="{{ title }}" style="display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: {{ gap }};">
+    <sc-for list="{{ wd }}" as="w" hint-placeholder-count="7">
+      <span style="padding-bottom: 2px; text-align:center; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ w.l }}</span>
+    </sc-for>
+    <sc-for list="{{ cells }}" as="c" hint-placeholder-count="35">
+      <button onClick="{{ c.pick }}" aria-label="{{ c.aria }}" aria-pressed="{{ c.sel }}" title="{{ c.title }}" style="position:relative; height: {{ cellH }}; min-width:0; display:flex; flex-direction:column; align-items: {{ align }}; justify-content: {{ justify }}; gap: 4px; padding: {{ pad }}; border-radius: 6px; background: {{ c.bg }}; color: {{ c.ink }}; box-shadow: {{ c.ring }}; cursor: {{ c.cursor }}; pointer-events: {{ c.pe }}; visibility: {{ c.vis }}; text-align:left; overflow:hidden;" style-hover="outline: 2px solid var(--blue); outline-offset: -2px;">
+        <span style="display:flex; align-items:baseline; gap: 6px; font: {{ numFont }}; text-decoration: {{ c.deco }}; text-underline-offset: 3px; text-decoration-thickness: 2px;">{{ c.d }}<sc-if value="{{ c.tag }}" hint-placeholder-val="{{ false }}"><span style="font: 500 10px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;">Today</span></sc-if></span>
+        <sc-if value="{{ c.hasSub }}" hint-placeholder-val="{{ false }}"><span style="max-width:100%; font: 500 11px/1.2 var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.sub }}</span></sc-if>
+        <sc-if value="{{ c.offMark }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position:absolute; top: 4px; right: 4px; width: 7px; height: 7px; background: var(--danger); box-shadow: 0 0 0 1.5px var(--paper);"></span></sc-if>
+      </button>
+    </sc-for>
+  </div>
+  <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted);">
+    <span style="display:flex; align-items:center; gap: 4px;">Quieter<span style="width: 12px; height: 12px; border-radius: 3px; background: var(--blue-tint);"></span><span style="width: 12px; height: 12px; border-radius: 3px; background: var(--blue);"></span><span style="width: 12px; height: 12px; border-radius: 3px; background: var(--blue-deep);"></span>Busier</span>
+    <span style="display:flex; align-items:center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: repeating-linear-gradient(135deg, var(--paper-2) 0 4px, var(--paper-3) 4px 5px);"></span>Clips removed</span>
+    <sc-if value="{{ hasOff }}" hint-placeholder-val="{{ false }}">
+      <span style="display:flex; align-items:center; gap: 6px;"><span style="width: 8px; height: 8px; background: var(--danger);"></span>A camera was offline</span>
+    </sc-if>
+  </div>
+  <sc-if value="{{ hasRemovedNote }}" hint-placeholder-val="{{ false }}">
+    <span style="font-size: 12.5px; color: var(--muted); text-wrap: pretty;">{{ removedNote }}</span>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:420},&quot;cams&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number[]&quot;},&quot;types&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;selA&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:-1,&quot;tsType&quot;:&quot;number&quot;},&quot;selB&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;month&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;nav&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;compact&quot;,&quot;large&quot;],&quot;default&quot;:&quot;compact&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;keepDays&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:30,&quot;tsType&quot;:&quot;number&quot;},&quot;onPick&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(off) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { ready: !!window.INVR, mo: null };
+  componentDidMount() { if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); } }
+  renderVals() {
+    const I = window.INVR, p = this.props, s = this.state;
+    if (!I || !s.ready) return { cells: [], wd: [] };
+    const large = p.size === 'large', keep = p.keepDays ?? 30, nav = p.nav !== false;
+    const base = p.month != null ? p.month : I.monthOf(p.selA != null ? p.selA : 0);
+    const mo = nav ? (s.mo ?? base) : base;
+    const flat = [].concat(...I.monthWeeks(mo));
+    const cams = p.cams && p.cams.length ? p.cams : null, types = p.types || null;
+    const kept = c => c && c.off <= 0 && c.off >= -keep;
+    const counts = {}; let mx = 0, mn = Infinity, anyOff = false, anyRem = false;
+    flat.forEach(c => { if (kept(c)) { const n = I.dayCount(c.off, cams, types); counts[c.off] = n; if (n > mx) mx = n; if (n > 0 && n < mn) mn = n; } });
+    if (mn === Infinity) mn = 0;
+    const lv0 = n => !mx ? 0 : !n ? 0 : (n - mn) / Math.max(1, mx - mn) < 0.3 ? 1 : (n - mn) / Math.max(1, mx - mn) < 0.75 ? 2 : 3;
+    const a = p.selA, b = p.selB ?? p.selA;
+    const lo = a == null ? null : Math.min(a, b), hi = a == null ? null : Math.max(a, b);
+    const cells = flat.map(c => {
+      if (!c) return { vis: 'hidden', d: '', bg: 'transparent', ink: 'var(--ink)', ring: 'none', cursor: 'default', pe: 'none', deco: 'none', pick: () => {}, aria: '', title: '', sel: false };
+      const fut = c.off > 0, rem = c.off < -keep, n = counts[c.off] || 0;
+      const lv = !kept(c) ? -1 : lv0(n);
+      const off = kept(c) && I.offlineOn(c.off, cams);
+      if (off) anyOff = true; if (rem) anyRem = true;
+      const sel = lo != null && c.off >= lo && c.off <= hi;
+      const ok = kept(c);
+      return {
+        vis: 'visible', d: c.d, sel, tag: large && c.off === 0, offMark: off,
+        bg: rem ? 'repeating-linear-gradient(135deg, var(--paper-2) 0 5px, var(--paper-3) 5px 6px)' : fut ? 'transparent' : ['var(--paper)', 'var(--blue-tint)', 'var(--blue)', 'var(--blue-deep)'][lv],
+        ink: rem || fut ? 'var(--muted)' : lv >= 2 ? 'var(--paper)' : lv === 1 ? 'var(--blue-deep)' : 'var(--ink)',
+        ring: sel ? 'inset 0 0 0 2px var(--ink), inset 0 0 0 4px var(--paper)' : (ok && lv === 0) ? 'inset 0 0 0 1px var(--line)' : 'none',
+        deco: !large && c.off === 0 ? 'underline' : 'none',
+        hasSub: large && !fut, sub: rem ? 'Clips removed' : `${n.toLocaleString('en-IN')} ${n === 1 ? 'event' : 'events'}`,
+        cursor: ok ? 'pointer' : 'default', pe: ok ? 'auto' : 'none',
+        title: rem ? 'Clips removed' : fut ? '' : `${I.dayLong(c.off)} · ${n} events${off ? ' · a camera was offline' : ''}`,
+        aria: `${I.dayLong(c.off)}, ${rem ? 'clips removed' : fut ? 'not yet' : n + ' events'}${off ? ', a camera was offline' : ''}`,
+        pick: () => { if (ok && p.onPick) p.onPick(c.off); }
+      };
+    });
+    return {
+      title: I.monthTitle(mo), titleSize: large ? '17px' : '15px',
+      prevVis: nav && mo > -2 ? 'visible' : 'hidden', nextVis: nav && mo < 0 ? 'visible' : 'hidden',
+      prev: () => this.setState({ mo: mo - 1 }), next: () => this.setState({ mo: mo + 1 }),
+      wd: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(l => ({ l })),
+      cells, gap: large ? '6px' : '4px', cellH: large ? '84px' : '38px', pad: large ? '9px 10px' : '0',
+      align: large ? 'flex-start' : 'center', justify: large ? 'space-between' : 'center',
+      numFont: large ? '600 15px/1 var(--font-sans)' : '500 14px/1 var(--font-sans)',
+      hasOff: anyOff, hasRemovedNote: anyRem, removedNote: `Clips before ${I.dateLong(-keep)} were removed, so those days can’t be opened.`
+    };
+  }
+}
+</script>
+</body>
+</html>

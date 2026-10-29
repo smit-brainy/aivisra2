@@ -6,9 +6,11 @@ import OnboardingPage from './pages/setup/OnboardingPage';
 import SpatialRulesPage from './pages/vision/SpatialRulesPage';
 import EventsPage from './pages/vision/EventsPage';
 import IIntraPrototype from './pages/inetra/IIntraPrototype';
+import SignInPage from './pages/auth/SignInPage';
 import { fetchCameras, fetchStatus } from './utils/api';
 import './styles/fonts.css';
 import './styles/foundations.css';
+import './styles/buttons.css';
 import './styles/theme.css';
 
 export default function App() {
@@ -19,6 +21,20 @@ export default function App() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('aivisra_theme') || 'light';
   });
+  // Ported i-Netra auth (prototype sample users; any non-empty password works)
+  const [session, setSession] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('aivisra_session')); } catch (e) { return null; }
+  });
+
+  const handleSignedIn = (user) => {
+    setSession(user);
+    localStorage.setItem('aivisra_session', JSON.stringify(user));
+  };
+
+  const handleSignOut = () => {
+    setSession(null);
+    localStorage.removeItem('aivisra_session');
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -50,6 +66,15 @@ export default function App() {
     setActiveTab('demo');
   };
 
+  // Auth gate (i-Netra flow: sign in → set own password → app)
+  if (!session) {
+    return (
+      <div style={{ position: 'fixed', inset: 0 }}>
+        <SignInPage onSignedIn={handleSignedIn} />
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       <Navbar
@@ -57,6 +82,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         theme={theme}
         onToggleTheme={toggleTheme}
+        session={session}
+        onSignOut={handleSignOut}
       />
 
       <main className="main-content">

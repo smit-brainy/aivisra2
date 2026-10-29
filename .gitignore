@@ -202,6 +202,7 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/.vite-inspect/
+demo_ui
 
 # ─── Backend (FastAPI / Python) ───────────────────────────────
 backend/__pycache__/

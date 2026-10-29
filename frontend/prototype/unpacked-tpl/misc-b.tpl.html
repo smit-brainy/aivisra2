@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="position:relative; width:100%; height:100%; min-height:0; background: var(--ink-2); overflow:hidden; border-radius: {{ radius }}; container-type: size; font-family: var(--font-sans); color: var(--paper);">
+  <div style="position:absolute; inset:0; background: {{ scene }}; filter: {{ filter }};"></div>
+  <sc-for list="{{ boxes }}" as="b" hint-placeholder-count="0">
+    <div style="position:absolute; left: {{ b.l }}; top: {{ b.t }}; width: {{ b.w }}; height: {{ b.h }}; border: 2px solid {{ b.color }}; border-radius: 2px; background: radial-gradient(ellipse at 50% 42%, rgba(225,230,236,.26), transparent 72%);">
+      <span style="position:absolute; left:-2px; bottom:100%; background: {{ b.color }}; color: var(--ink); font: 500 clamp(9.5px, 2.6cqw, 13px)/1 var(--font-mono); padding: 3px 5px; border-radius: 2px 2px 0 0; white-space:nowrap;">{{ b.label }}</span>
+    </div>
+  </sc-for>
+  <sc-if value="{{ isOffline }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 6px; background: rgba(10,10,11,.45); text-align:center; padding: 12px;">
+      <span style="display:flex; align-items:center; gap: 8px; font-size: clamp(12.5px, 4cqw, 20px); font-weight:500;"><span style="width:8px; height:8px; border-radius:50%; background: var(--coral);"></span>Offline since {{ since }}</span>
+      <span style="font: 500 clamp(9.5px, 2.6cqw, 12px)/1.2 var(--font-mono); letter-spacing:.08em; text-transform:uppercase; color: var(--muted-dark);">Last picture shown</span>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isConnecting }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: 6px; text-align:center; padding: 12px;">
+      <span style="font-size: clamp(12.5px, 4cqw, 20px); font-weight:500;">Connecting to the camera</span>
+      <span style="font: 500 clamp(9.5px, 2.6cqw, 12px)/1.2 var(--font-mono); letter-spacing:.08em; text-transform:uppercase; color: var(--muted-dark);">Started {{ since }}</span>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showName }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap: 8px; padding: clamp(14px, 6cqh, 28px) clamp(8px, 2.4cqw, 16px) clamp(6px, 2.6cqh, 12px); background: linear-gradient(180deg, transparent, rgba(10,10,11,.82)); pointer-events:none;">
+      <span style="font: 600 clamp(11px, 3cqw, 15px)/1 var(--font-mono);">{{ num }}</span>
+      <span style="font-size: clamp(12px, 3.4cqw, 17px); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ name }}</span>
+    </div>
+  </sc-if>
+  <sc-if value="{{ clickable }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ open }}" aria-label="Open {{ num }} {{ name }} full size" style="position:absolute; inset:0; width:100%; height:100%; border-radius: inherit; cursor:pointer;" style-hover="box-shadow: inset 0 0 0 2px var(--blue);"></button>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:480,&quot;height&quot;:270},&quot;cam&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Camera&quot;},&quot;status&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;offline&quot;,&quot;connecting&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;'live' | 'offline' | 'connecting'&quot;},&quot;since&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;10:42 AM&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showBoxes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;numbered&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showName&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;radius&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:4,&quot;tsType&quot;:&quot;number&quot;},&quot;onOpen&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(num: number) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { ready: !!window.INVR };
+  componentDidMount() {
+    if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); }
+  }
+  renderVals() {
+    const p = this.props, I = window.INVR;
+    const c = p.cam || (I ? I.CAM[3] : { num: 3, name: 'Lobby corridor', boxes: [], scene: 'none' });
+    const st = !p.status || p.status === 'online' ? 'live' : p.status;
+    const live = st === 'live';
+    const on = live && p.showBoxes !== false;
+    const boxes = on ? (c.boxes || []).map(b => ({
+      l: (b.l * 100) + '%', t: (b.t * 100) + '%', w: (b.w * 100) + '%', h: (b.h * 100) + '%',
+      color: b.kind === 'Person' ? 'var(--sky)' : 'var(--honey)',
+      label: p.numbered ? b.kind + ' ' + b.n : b.kind
+    })) : [];
+    return {
+      num: c.num, name: c.name, scene: st === 'connecting' ? 'none' : c.scene, boxes,
+      filter: st === 'offline' ? 'grayscale(1) brightness(.6)' : 'none',
+      radius: (p.radius ?? 4) + 'px',
+      isOffline: st === 'offline', isConnecting: st === 'connecting', since: p.since || '',
+      showName: p.showName !== false,
+      clickable: !!p.onOpen, open: () => p.onOpen && p.onOpen(c.num)
+    };
+  }
+}
+</script>
+</body>
+</html>

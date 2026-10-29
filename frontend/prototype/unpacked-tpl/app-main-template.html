@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/brainyneurals.css">
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/styles.css">
+  <script src="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/_ds_bundle.js"></script>
+  <script src="invr-data.js"></script>
+  <style>body { margin: 0; background: var(--paper); } a:not(.btn):not(.btn-text) { color: var(--ink); } a:not(.btn):not(.btn-text):hover { color: var(--blue); } a.btn-primary, a.btn-primary:hover, a.btn-ink, a.btn-ink:hover { color: var(--paper); }</style>
+</helmet>
+<div onMouseDown="{{ activate }}" data-screen-label="i-Netra" style="position:relative; width:100%; height: {{ rootH }}; overflow:hidden; background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased;">
+<sc-if value="{{ notFull }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid; grid-template-columns: 224px minmax(0,1fr); grid-template-rows: 56px minmax(0,1fr); width:100%; height:100%;">
+
+  <header style="grid-column: 1 / 3; grid-row: 1; display:grid; grid-template-columns: 224px minmax(0,1fr); align-items:center; border-bottom: 1px solid var(--line-dark); background: var(--ink); color: var(--paper); position:relative; z-index: 20;">
+    <div style="display:flex; align-items:center; gap: 12px; height:100%; padding: 0 20px; border-right: 1px solid var(--line-dark);">
+      <span style="display:flex; align-items:center; gap: 9px; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; white-space:nowrap;"><img src="{{ logoMark }}" alt="Brainy Neurals" style="width: 28px; height: auto; display:block; flex-shrink:0;">i-Netra</span>
+      <span style="width: 1px; height: 22px; background: var(--line-dark);"></span>
+      <span style="display:flex; flex-direction:column; gap: 3px;">
+        <span style="font-size: 14px; font-weight: 500; line-height: 1.1;">Plant 2</span>
+        <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .06em; color: var(--muted-dark);">INVR-01</span>
+      </span>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:flex-end; gap: 8px; padding: 0 16px 0 20px; min-width:0;">
+      <button onClick="{{ goCameras }}" style="height: 38px; display:flex; align-items:center; gap: 8px; padding: 0 12px; border: 1px solid var(--line-dark); border-radius: 8px; background: var(--ink-2); color: var(--paper); font-size: 14px; white-space:nowrap;" style-hover="border-color: var(--paper);">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: {{ camDot }};"></span>{{ camSummary }}
+      </button>
+      <div style="position:relative;">
+        <button onClick="{{ toggleDl }}" aria-expanded="{{ dlOpen }}" style="height: 38px; display:flex; align-items:center; gap: 8px; padding: 0 12px; border: 1px solid {{ dlBorder }}; border-radius: 8px; background: var(--ink-2); color: var(--paper); font-size: 14px;" style-hover="border-color: var(--paper);">
+          Downloads<sc-if value="{{ dlBusy }}" hint-placeholder-val="{{ false }}"><span style="font: 500 11px/1 var(--font-mono); padding: 3px 6px; border-radius: 4px; background: var(--blue-deep); color: var(--blue-tint);">{{ dlBadge }}</span></sc-if>
+        </button>
+        <sc-if value="{{ dlOpen }}" hint-placeholder-val="{{ false }}">
+          <div role="dialog" aria-label="Downloads" style="position:absolute; right: 0; top: calc(100% + 6px); z-index: 60; width: 470px; max-height: 640px; display:flex; flex-direction:column; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06); overflow:hidden;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px; padding: 16px 18px 12px; border-bottom: 1px solid var(--line-soft);">
+              <span style="font-size: 17px; font-weight: 500;">Downloads</span>
+              <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ dlScope }}</span>
+            </div>
+            <div style="flex:1; min-height:0; overflow:auto;">
+              <sc-for list="{{ dls }}" as="d" hint-placeholder-count="4">
+                <div style="display:flex; flex-direction:column; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line-soft);">
+                  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 12px;">
+                    <span style="display:flex; flex-direction:column; gap: 3px; min-width:0;">
+                      <span style="font-size: 15px; font-weight: 500;">{{ d.name }}</span>
+                      <span style="font-size: 13px; color: var(--muted); text-wrap: pretty;">{{ d.meta }}</span>
+                    </span>
+                    <span style="flex-shrink:0; padding: 4px 7px; border-radius: 4px; background: {{ d.chipBg }}; color: {{ d.chipInk }}; font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; white-space:nowrap;">{{ d.status }}</span>
+                  </div>
+                  <sc-if value="{{ d.preparing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; flex-direction:column; gap: 6px;">
+                      <div style="height: 4px; border-radius: 2px; background: var(--paper-3); overflow:hidden;"><div style="width: {{ d.w }}; height:100%; background: var(--blue);"></div></div>
+                      <span style="font-size: 12.5px; color: var(--muted);">Keeps going if you leave this page.</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ d.ready }}" hint-placeholder-val="{{ false }}">
+                    <div><button onClick="{{ d.save }}" style="height: 36px; padding: 0 14px; border-radius: 8px; background: var(--blue); color: var(--paper); font-size: 14px; font-weight: 500;" style-hover="background: var(--blue-2);">Download</button></div>
+                  </sc-if>
+                  <sc-if value="{{ d.failed }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 8px 8px 8px 12px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep); font-size: 13.5px;">
+                      <span>{{ d.reason }}</span>
+                      <button onClick="{{ d.retry }}" style="flex-shrink:0; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); font-size: 13.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Try again</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ dlEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap: 6px; padding: 28px 22px 30px;">
+                  <span style="font-size: 16px; font-weight: 500;">No downloads yet.</span>
+                  <span style="font-size: 14.5px; color: var(--muted);">Select events in Search to download them.</span>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="position:relative;">
+        <button onClick="{{ toggleMenu }}" aria-expanded="{{ menu }}" style="height: 38px; display:flex; align-items:center; gap: 10px; padding: 0 10px 0 5px; border: 1px solid var(--line-dark); border-radius: 8px; background: var(--ink-2); color: var(--paper);" style-hover="border-color: var(--paper);">
+          <span style="width: 28px; height: 28px; border-radius: 50%; display:flex; align-items:center; justify-content:center; background: {{ avatarBg }}; color: {{ avatarInk }}; font: 600 11px/1 var(--font-mono);">{{ initials }}</span>
+          <span style="display:flex; flex-direction:column; align-items:flex-start; gap: 3px; line-height: 1;">
+            <span style="font-size: 13.5px; font-weight: 500;">{{ userName }}</span>
+            <span style="font: 500 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-dark);">{{ userRole }}</span>
+          </span>
+          <span style="font-size: 11px; color: var(--muted-dark);">▾</span>
+        </button>
+        <sc-if value="{{ menu }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; right: 0; top: calc(100% + 6px); width: 260px; padding: 8px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06); z-index: 60;">
+            <div style="display:flex; flex-direction:column; gap: 3px; padding: 10px 10px 12px; border-bottom: 1px solid var(--line-soft);">
+              <span style="font-size: 15px; font-weight: 500;">{{ userName }}</span>
+              <span style="font-size: 13.5px; color: var(--muted);">{{ roleLine }}</span>
+            </div>
+            <button onClick="{{ signOut }}" style="width:100%; height: 40px; margin-top: 6px; padding: 0 10px; border-radius: 8px; text-align:left; font-size: 14.5px;" style-hover="background: var(--blue-tint); color: var(--blue-deep);">Sign out</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </header>
+
+  <nav aria-label="Main" style="grid-column: 1; grid-row: 2; display:flex; flex-direction:column; gap: 2px; padding: 16px 12px; border-right: 1px solid var(--line-dark); background: var(--ink);">
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+      <button onClick="{{ n.go }}" style="height: 44px; display:flex; align-items:center; gap: 12px; padding: 0 12px; border-radius: 8px; text-align:left; font-size: 15px; font-weight: {{ n.weight }}; background: {{ n.bg }}; color: {{ n.ink }}; box-shadow: {{ n.ring }};" style-hover="background: var(--ink-2); color: var(--paper);">
+        <span style="width: 6px; height: 6px; flex-shrink:0; background: {{ n.mark }};"></span>{{ n.label }}
+      </button>
+    </sc-for>
+  </nav>
+
+  <main style="grid-column: 2; grid-row: 2; position:relative; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
+    <sc-if value="{{ lost }}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="flex-shrink:0; display:flex; align-items:center; gap: 14px; margin: 14px 24px 0; padding: 10px 12px 10px 16px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep);">
+        <span style="width: 8px; height: 8px; flex-shrink:0; background: var(--danger-deep);"></span>
+        <span style="flex:1; font-size: 15px;"><strong style="font-weight: 600;">Lost connection to the box.</strong> Trying again in 6 s. Pictures pause until it reconnects, and the box keeps saving clips meanwhile.</span>
+        <button onClick="{{ retryConn }}" style="height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Try now</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap: 20px; padding: 24px 32px 32px;">
+        <sc-if value="{{ h.checklist }}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Setup checklist" style="display:grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 40px; padding: 24px 28px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+            <div style="display:flex; flex-direction:column; gap: 14px;">
+              <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Set up i-Netra · {{ h.doneText }}</span>
+              <h2 style="margin:0; font-size: 26px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.15;">{{ h.checkTitle }}</h2>
+              <sc-if value="{{ h.canHide }}" hint-placeholder-val="{{ false }}"><div><button onClick="{{ h.hideChecklist }}" style="height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Hide checklist</button></div></sc-if>
+              <div style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 4px;">
+                <sc-for list="{{ h.steps }}" as="st" hint-placeholder-count="4"><span style="height: 6px; border-radius: 2px; background: {{ st.bar }};"></span></sc-for>
+              </div>
+              <div style="display:flex; gap: 12px; padding: 12px 14px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep); font-size: 14.5px; line-height: 1.45;">
+                <span style="width: 7px; height: 7px; margin-top: 7px; flex-shrink:0; background: var(--info-deep);"></span>
+                <span><strong style="font-weight: 600;">Capacity check at install:</strong> This box can watch about 30 cameras at Standard detail.</span>
+              </div>
+              <span style="font-size: 13.5px; line-height: 1.5; color: var(--muted); text-wrap: pretty;">Any step can be skipped and done later. The checklist hides once every step is done, and About this box in Settings can bring it back.</span>
+            </div>
+            <ol style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; border-top: 1px solid var(--line);">
+              <sc-for list="{{ h.steps }}" as="st" hint-placeholder-count="4">
+                <li style="display:grid; grid-template-columns: 40px minmax(0,1fr) auto; align-items:center; gap: 16px; min-height: 72px; padding: 12px 0; border-bottom: 1px solid var(--line);">
+                  <span style="font: 500 13px/1 var(--font-mono); color: var(--muted);">{{ st.idx }}</span>
+                  <span style="display:flex; flex-direction:column; gap: 3px; min-width:0;">
+                    <span style="font-size: 16.5px; font-weight: 500; letter-spacing: -0.01em;">{{ st.title }}</span>
+                    <span style="font-size: 14px; color: var(--muted); text-wrap: pretty;">{{ st.sub }}</span>
+                  </span>
+                  <span style="display:flex; align-items:center; justify-content:flex-end; gap: 14px;">
+                    <span style="padding: 4px 7px; border-radius: 4px; background: {{ st.chipBg }}; color: {{ st.chipInk }}; font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; white-space:nowrap;">{{ st.status }}</span>
+                    <sc-if value="{{ st.isNext }}" hint-placeholder-val="{{ false }}">
+                      <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ st.go }}" hint-size="auto,48px">{{ st.action }}</x-import>
+                    </sc-if>
+                    <sc-if value="{{ st.isLater }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ st.go }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">{{ st.action }} →</button>
+                    </sc-if>
+                    <sc-if value="{{ st.canSkip }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ st.skip }}" style="font-size: 14px; padding-bottom: 1px; border-bottom: 1px solid var(--line);" style-hover="border-color: var(--ink);">Skip</button>
+                    </sc-if>
+                  </span>
+                </li>
+              </sc-for>
+            </ol>
+          </section>
+        </sc-if>
+        <sc-if value="{{ h.notice }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display:flex; align-items:center; gap: 14px; padding: 10px 12px 10px 16px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep);">
+            <span style="width: 8px; height: 8px; flex-shrink:0; background: var(--danger-deep);"></span>
+            <span style="flex:1; font-size: 15px;"><strong style="font-weight: 600;">{{ h.noticeCam }}</strong> has been offline since {{ h.noticeSince }}. {{ h.noticeAdvice }}</span>
+            <sc-if value="{{ admin }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ h.openOffline }}" style="height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">Open camera →</button>
+            </sc-if>
+          </div>
+        </sc-if>
+        <div style="display:flex; flex-direction:column; gap: 6px;">
+          <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ h.dateLine }}</span>
+          <h1 style="margin:0; font-size: 30px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1;">Today so far</h1>
+        </div>
+        <sc-if value="{{ h.firstRun }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; align-items:flex-start; gap: 12px; padding: 40px 44px; border: 1px dashed var(--line); border-radius: 14px; background: var(--paper);">
+            <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Nothing to show yet</span>
+            <h2 style="margin:0; font-size: 24px; font-weight: 500; letter-spacing: -0.02em;">Home fills in once the first camera is added.</h2>
+            <p style="margin: 0 0 8px; max-width: 720px; font-size: 16px; color: var(--muted); text-wrap: pretty;">People seen, vehicles seen, cameras online and space saved start counting from then, with an activity strip for every camera.</p>
+            <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ goAdd }}" hint-size="auto,48px">Add cameras</x-import>
+          </div>
+        </sc-if>
+        <sc-if value="{{ h.hasData }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px;">
+          <button onClick="{{ h.goPeople }}" style="display:flex; flex-direction:column; align-items:flex-start; gap: 10px; padding: 20px 22px; text-align:left; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;" style-hover="background: var(--paper); border-color: var(--ink);">
+            <span style="align-self:flex-start; padding: 5px 8px; border-radius: 4px; background: var(--sky-tint); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--sky-deep);">People seen</span>
+            <span style="font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 60px; line-height: .95; letter-spacing: -0.02em;">{{ h.people }}</span>
+            <div aria-hidden="true" style="display:flex; align-items:flex-end; gap: 2px; width:100%; height: 34px;"><sc-for list="{{ h.pBars }}" as="b" hint-placeholder-count="24"><span style="flex:1; height: {{ b.h }}; border-radius: 1px; background: {{ b.c }};"></span></sc-for></div>
+            <span style="font-size: 13.5px; color: var(--muted); text-wrap: pretty;">{{ h.pCmp }}</span>
+            <span style="font-size: 14px; color: var(--muted);">{{ h.statSince }}</span>
+          </button>
+          <button onClick="{{ h.goVehicles }}" style="display:flex; flex-direction:column; align-items:flex-start; gap: 10px; padding: 20px 22px; text-align:left; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;" style-hover="background: var(--paper); border-color: var(--ink);">
+            <span style="align-self:flex-start; padding: 5px 8px; border-radius: 4px; background: var(--honey-tint); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--honey-deep);">Vehicles seen</span>
+            <span style="font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 60px; line-height: .95; letter-spacing: -0.02em;">{{ h.vehicles }}</span>
+            <div aria-hidden="true" style="display:flex; align-items:flex-end; gap: 2px; width:100%; height: 34px;"><sc-for list="{{ h.vBars }}" as="b" hint-placeholder-count="24"><span style="flex:1; height: {{ b.h }}; border-radius: 1px; background: {{ b.c }};"></span></sc-for></div>
+            <span style="font-size: 13.5px; color: var(--muted); text-wrap: pretty;">{{ h.vCmp }}</span>
+            <span style="font-size: 14px; color: var(--muted);">{{ h.statSince }}</span>
+          </button>
+          <button onClick="{{ goCameras }}" style="display:flex; flex-direction:column; align-items:flex-start; gap: 10px; padding: 20px 22px; text-align:left; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;" style-hover="background: var(--paper); border-color: var(--ink);">
+            <span style="align-self:flex-start; padding: 5px 8px; border-radius: 4px; background: {{ h.camChipBg }}; font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: {{ h.camChipInk }};">Cameras online</span>
+            <span style="display:flex; align-items:baseline; gap: 10px;"><span style="font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 60px; line-height: .95; letter-spacing: -0.02em;">{{ h.online }}</span><span style="font-size: 22px; color: var(--muted); white-space:nowrap;">of {{ h.total }}</span></span>
+            <div aria-hidden="true" style="display:flex; gap: 3px; width:100%; height: 34px; align-items:flex-end;"><sc-for list="{{ h.camCells }}" as="b" hint-placeholder-count="16"><span style="flex:1; height: 14px; border-radius: 2px; background: {{ b.c }};"></span></sc-for></div>
+            <span style="font-size: 14px; color: var(--muted);">{{ h.camSub }} · Open Cameras →</span>
+          </button>
+          <sc-if value="{{ admin }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ h.goStorage }}" style="display:flex; flex-direction:column; align-items:flex-start; gap: 10px; padding: 20px 22px; text-align:left; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;" style-hover="background: var(--paper); border-color: var(--ink);">
+              <span style="align-self:flex-start; padding: 5px 8px; border-radius: 4px; background: var(--blue-tint); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue-deep);">Space saved</span>
+              <span style="font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 60px; line-height: .95; letter-spacing: -0.02em;">{{ h.spacePct }}</span>
+              <div aria-hidden="true" style="display:flex; flex-direction:column; justify-content:flex-end; gap: 4px; width:100%; height: 34px;"><div style="height: 9px; border-radius: 2px; background: var(--paper-3);"></div><div style="height: 9px; border-radius: 2px; background: var(--paper-2);"><div style="width: {{ h.keptW }}; height:100%; border-radius: 2px; background: var(--blue);"></div></div></div>
+              <span style="font-size: 14px; color: var(--muted);">{{ h.spaceSub }} · Open Storage →</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ operator }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap: 10px; padding: 20px 22px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+              <span style="align-self:flex-start; padding: 5px 8px; border-radius: 4px; background: var(--blue-tint); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue-deep);">Space saved</span>
+              <span style="font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 60px; line-height: .95; letter-spacing: -0.02em;">{{ h.spacePct }}</span>
+              <div aria-hidden="true" style="display:flex; flex-direction:column; justify-content:flex-end; gap: 4px; width:100%; height: 34px;"><div style="height: 9px; border-radius: 2px; background: var(--paper-3);"></div><div style="height: 9px; border-radius: 2px; background: var(--paper-2);"><div style="width: {{ h.keptW }}; height:100%; border-radius: 2px; background: var(--blue);"></div></div></div>
+              <span style="font-size: 14px; color: var(--muted);">{{ h.spaceSub }}. The box keeps only the moments people or vehicles appear.</span>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display:grid; grid-template-columns: minmax(0,1fr) minmax(320px, 30%); gap: 16px; align-items:start;">
+          <section aria-label="Activity by camera" style="min-width:0; display:flex; flex-direction:column; gap: 12px; padding: 18px 20px 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap: 12px 16px;">
+              <div style="display:flex; flex-direction:column; gap: 4px; min-width: 260px; flex: 1;">
+                <h2 style="margin:0; display:flex; align-items:center; gap: 12px; font-size: 17px; font-weight: 500; letter-spacing: -0.01em;">Activity by camera<sc-if value="{{ h.hasSince }}" hint-placeholder-val="{{ false }}"><span style="padding: 4px 7px; border-radius: 4px; background: var(--paper-2); font: 500 11px/1 var(--font-mono); letter-spacing: .04em; color: var(--ink);">{{ h.sinceText }}</span></sc-if></h2>
+                <span style="font-size: 13.5px; color: var(--muted); text-wrap: pretty;">Each mark is a moment people or vehicles appeared, and darker marks are busier. Click one to open it in Search.</span>
+              </div>
+              <div style="display:flex; align-items:center; gap: 8px;">
+                <div role="group" aria-label="Day" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+                  <sc-for list="{{ h.days }}" as="d" hint-placeholder-count="3">
+                    <button onClick="{{ d.set }}" style="height: 34px; padding: 0 12px; border-radius: 6px; font-size: 14px; font-weight: {{ d.weight }}; background: {{ d.bg }}; color: {{ d.ink }}; box-shadow: {{ d.ring }};">{{ d.label }}</button>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ h.isDate }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:relative;">
+                    <button onClick="{{ h.toggleCal }}" aria-expanded="{{ h.calOpen }}" style="height: 40px; display:flex; align-items:center; gap: 10px; padding: 0 12px; border: 1px solid {{ h.calBorder }}; border-radius: 8px; background: var(--paper); font-size: 14px; white-space:nowrap;" style-hover="border-color: var(--ink);">{{ h.dateText }}<span style="font-size: 11px; color: var(--muted);">▾</span></button>
+                    <sc-if value="{{ h.calOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute; top: calc(100% + 6px); right: 0; z-index: 40; width: 380px; padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+                        <dc-import name="MonthCalendar" size="compact" cams="{{ h.calCams }}" sel-a="{{ h.dOffV }}" sel-b="{{ h.dOffV }}" on-pick="{{ h.pickDay }}" hint-size="100%,330px"></dc-import>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <select value="{{ h.areaValue }}" onChange="{{ h.onArea }}" aria-label="Area" style="height: 40px; padding: 0 32px 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 16px) 18px, calc(100% - 11px) 18px; background-size: 5px 5px; background-repeat: no-repeat;">
+                  <sc-for list="{{ h.areaOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+                </select>
+              </div>
+            </div>
+            <sc-if value="{{ h.midnightNote }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 8px 8px 8px 14px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep); font-size: 14.5px;">
+                <span>Today started at 12:00 AM, so only a few minutes show so far.</span>
+                <button onClick="{{ h.showYesterday }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Show yesterday</button>
+              </div>
+            </sc-if>
+            <div style="display:grid; grid-template-columns: 184px minmax(0,1fr) 44px; gap: 12px; align-items:end; margin-top: 4px;">
+              <span></span>
+              <div style="position:relative; height: 12px;">
+                <sc-for list="{{ h.ticks }}" as="k" hint-placeholder-count="9">
+                  <span style="position:absolute; top:0; left: {{ k.left }}; transform: translateX({{ k.tx }}); font: 500 11px/1 var(--font-mono); color: var(--muted); white-space:nowrap;">{{ k.label }}</span>
+                </sc-for>
+              </div>
+              <span style="text-align:right; font: 500 10px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);">Events</span>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ h.groups }}" as="g" hint-placeholder-count="5">
+                <div style="height: 32px; display:flex; align-items:flex-end; gap: 8px; padding-bottom: 6px; margin-top: 8px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);"><span style="padding: 4px 7px; border-radius: 4px; background: {{ g.toneBg }}; color: {{ g.toneInk }};">{{ g.name }}</span><span style="padding-bottom: 4px;">{{ g.count }}</span></div>
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3">
+                  <div style="display:grid; grid-template-columns: 184px minmax(0,1fr) 44px; gap: 12px; align-items:center; height: 27px;">
+                    <button onClick="{{ r.open }}" title="Search {{ r.num }} {{ r.name }}" style="height: 100%; min-width:0; display:flex; align-items:center; gap: 8px; text-align:left; font-size: 14px;" style-hover="text-decoration: underline;">
+                      <span style="width: 20px; flex-shrink:0; font: 500 12.5px/1 var(--font-mono); color: var(--muted);">{{ r.num }}</span>
+                      <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ r.name }}</span>
+                      <sc-if value="{{ r.isOff }}" hint-placeholder-val="{{ false }}"><span style="flex-shrink:0; padding: 3px 5px; border-radius: 4px; background: var(--danger-tint); color: var(--danger-deep); font: 500 10px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;">Offline</span></sc-if>
+                    </button>
+                    <dc-import name="ActivityStrip" times="{{ r.times }}" start="{{ h.dStart }}" end="{{ h.dEnd }}" now="{{ h.stripNow }}" bin="{{ 300 }}" offline="{{ r.offline }}" height="{{ 18 }}" on-pick="{{ r.pick }}" hint-size="100%,18px"></dc-import>
+                    <span style="text-align:right; font: 500 13px/1 var(--font-mono);">{{ r.cnt }}</span>
+                  </div>
+                </sc-for>
+              </sc-for>
+            </div>
+            <sc-if value="{{ h.hasNow }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid; grid-template-columns: 184px minmax(0,1fr) 44px; gap: 12px;">
+                <span></span>
+                <div style="position:relative; height: 22px;">
+                  <span style="position:absolute; top: 2px; left: {{ h.nowLeft }}; transform: translateX({{ h.nowTx }}); padding: 4px 7px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 500 11px/1 var(--font-mono); white-space:nowrap;">Now · {{ h.nowText }}</span>
+                </div>
+                <span></span>
+              </div>
+            </sc-if>
+          </section>
+          <section aria-label="Latest events" style="min-width:0; display:flex; flex-direction:column; gap: 6px; padding: 18px 12px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; padding: 0 8px 6px;">
+              <h2 style="margin:0; font-size: 17px; font-weight: 500; letter-spacing: -0.01em;">Latest events</h2>
+              <span style="display:flex; align-items:center; gap: 7px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 1px var(--ink);"></span>Updates as they arrive</span>
+            </div>
+            <sc-if value="{{ h.latestNote }}" hint-placeholder-val="{{ false }}">
+              <div style="margin: 0 8px 6px; padding: 10px 12px; border-radius: 8px; background: var(--paper-2); font-size: 14px;">{{ h.latestNoteText }}</div>
+            </sc-if>
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ h.latest }}" as="e" hint-placeholder-count="8">
+                <dc-import name="EventCard" ev="{{ e }}" variant="row" on-play="{{ h.playLatest }}" hint-size="100%,79px"></dc-import>
+              </sc-for>
+            </div>
+            <div style="margin-top: 4px; padding: 12px 8px 4px; border-top: 1px solid var(--line-soft);">
+              <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="text" href="#" onClick="{{ h.goAll }}" hint-size="auto,26px">See all of today's events in Search</x-import>
+            </div>
+          </section>
+        </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLiveWall }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; flex-wrap:nowrap; gap: 10px; padding: 12px 20px 8px; position:relative; z-index: 11; min-width:0;">
+          <h1 style="margin: 0 4px 0 0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; white-space:nowrap;">Live view</h1>
+          <span style="display:flex; align-items:center; gap: 8px; height: 28px; padding: 0 10px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; white-space:nowrap;"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--signal);"></span>Live</span>
+          <div role="group" aria-label="Layout" style="height: 44px; display:flex; align-items:center; gap: 2px; padding: 3px; flex-shrink:0; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+            <sc-for list="{{ l.layouts }}" as="o" hint-placeholder-count="5">
+              <button onClick="{{ o.set }}" style="height: 36px; min-width: 38px; padding: 0 9px; border-radius: 6px; font: 500 13px/1 var(--font-mono); white-space:nowrap; background: {{ o.bg }}; color: {{ o.ink }}; box-shadow: {{ o.ring }};">{{ o.label }}</button>
+            </sc-for>
+          </div>
+          <button onClick="{{ l.toggleBoxes }}" aria-pressed="{{ l.boxes }}" style="height: 44px; display:flex; align-items:center; gap: 10px; padding: 0 12px; flex-shrink:0; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; white-space:nowrap;" style-hover="border-color: var(--ink);">
+            <span style="position:relative; width: 34px; height: 20px; flex-shrink:0; border-radius: 999px; background: {{ l.swBg }};"><span style="position:absolute; top: 2px; left: {{ l.swKnob }}; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); box-shadow: 0 1px 2px rgba(10,10,11,.3);"></span></span>Show boxes
+          </button>
+          <div style="flex:1; min-width: 8px;"></div>
+          <button onClick="{{ l.toggleRail }}" aria-pressed="{{ l.rail }}" style="height: 44px; display:flex; align-items:center; gap: 10px; padding: 0 12px; flex-shrink:0; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; white-space:nowrap;" style-hover="border-color: var(--ink);">
+            <span style="position:relative; width: 34px; height: 20px; flex-shrink:0; border-radius: 999px; background: {{ l.railSwBg }};"><span style="position:absolute; top: 2px; left: {{ l.railKnob }}; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); box-shadow: 0 1px 2px rgba(10,10,11,.3);"></span></span>Latest events
+          </button>
+          <button onClick="{{ l.goFull }}" style="height: 44px; padding: 0 14px; flex-shrink:0; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">Full screen</button>
+        </div>
+        <div style="display:flex; align-items:center; gap: 10px; padding: 0 20px 10px; position:relative; z-index: 10; min-width:0;">
+          <div role="tablist" aria-label="Areas" style="flex:1; min-width:0; display:flex; gap: 4px; overflow-x:auto; padding: 2px;">
+            <sc-for list="{{ l.tabs }}" as="tb" hint-placeholder-count="6">
+              <button role="tab" aria-selected="{{ tb.on }}" onClick="{{ tb.set }}" style="height: 38px; flex-shrink:0; display:flex; align-items:center; gap: 8px; padding: 0 12px; border-radius: 8px; font-size: 14px; font-weight: {{ tb.weight }}; background: {{ tb.bg }}; color: {{ tb.ink }}; box-shadow: {{ tb.ring }}; white-space:nowrap;" style-hover="background: var(--blue-tint); color: var(--blue-deep);">
+                <span style="width: 9px; height: 9px; flex-shrink:0; border-radius: 2px; background: {{ tb.dot }};"></span>{{ tb.label }}<span style="font: 500 11.5px/1 var(--font-mono); opacity: .8;">{{ tb.n }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <span style="width: 1px; height: 26px; flex-shrink:0; background: var(--line);"></span>
+          <dc-import name="CameraPicker" cameras="{{ l.pickCams }}" areas="{{ l.pickAreas }}" value="{{ l.camsValue }}" on-change="{{ l.setCams }}" label="Custom wall" hint-size="220px,52px"></dc-import>
+        </div>
+        <div style="flex:1; min-height:0; display:flex; gap: 12px; padding: 0 20px 16px;">
+          <div style="flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; gap: 8px;">
+            <div style="flex:1; min-height:0; display:grid; grid-template-columns: {{ l.gridCols }}; grid-template-rows: {{ l.gridCols }}; gap: 6px;">
+              <sc-for list="{{ l.tiles }}" as="t" hint-placeholder-count="16">
+                <div style="grid-column: {{ t.span }}; grid-row: {{ t.span }}; min-width:0; min-height:0;">
+                  <dc-import name="LiveTile" cam="{{ t.cam }}" status="{{ t.status }}" since="{{ t.since }}" show-boxes="{{ l.boxes }}" on-open="{{ l.openTile }}" style="width:100%; height:100%;" hint-size="100%,100%"></dc-import>
+                </div>
+              </sc-for>
+              <sc-for list="{{ l.blanks }}" as="b" hint-placeholder-count="0">
+                <div style="border: 1px dashed var(--line); border-radius: 4px; background: var(--bone);"></div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ l.hasPages }}" hint-placeholder-val="{{ false }}">
+              <div style="flex-shrink:0; display:flex; align-items:center; justify-content:center; gap: 12px;">
+                <button onClick="{{ l.prevPage }}" aria-label="Previous cameras" style="width: 36px; height: 32px; border: 1px solid var(--line); border-radius: 8px;" style-hover="border-color: var(--ink);">←</button>
+                <span style="font: 500 12.5px/1 var(--font-mono); white-space:nowrap;">{{ l.pageText }}</span>
+                <button onClick="{{ l.nextPage }}" aria-label="Next cameras" style="width: 36px; height: 32px; border: 1px solid var(--line); border-radius: 8px;" style-hover="border-color: var(--ink);">→</button>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ l.rail }}" hint-placeholder-val="{{ false }}">
+            <aside aria-label="Latest events" style="width: 300px; flex-shrink:0; min-height:0; display:flex; flex-direction:column; background: var(--bone); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 10px; padding: 14px 14px 10px 16px; border-bottom: 1px solid var(--line-soft);">
+                <div style="display:flex; flex-direction:column; gap: 4px; min-width:0;">
+                  <span style="display:flex; align-items:center; gap: 8px; font-size: 15.5px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 1px var(--ink);"></span>Latest events</span>
+                  <span style="font-size: 12.5px; color: var(--muted); text-wrap: pretty;">{{ l.railNote }}</span>
+                </div>
+                <button onClick="{{ l.toggleRail }}" aria-label="Fold away Latest events" style="height: 30px; padding: 0 10px; flex-shrink:0; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13px; font-weight: 500;" style-hover="border-color: var(--ink);">Hide</button>
+              </div>
+              <div style="flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column;">
+                <sc-for list="{{ l.railEv }}" as="e" hint-placeholder-count="6">
+                  <dc-import name="EventCard" ev="{{ e }}" variant="row" on-play="{{ l.playRail }}" hint-size="100%,79px"></dc-import>
+                </sc-for>
+                <sc-if value="{{ l.railEmpty }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:0; padding: 18px 16px; font-size: 14px; color: var(--muted); text-wrap: pretty;">{{ l.railEmptyText }}</p>
+                </sc-if>
+              </div>
+            </aside>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLiveSingle }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 12px 16px; padding: 14px 24px;">
+          <button onClick="{{ ls.back }}" style="height: 44px; display:flex; align-items:center; gap: 10px; padding: 0 12px 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">← Back to the wall<span style="padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; font: 500 10.5px/1 var(--font-mono); color: var(--muted);">Esc</span></button>
+          <div style="display:flex; flex-direction:column; gap: 4px; margin-left: 4px;">
+            <h1 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1;"><span style="font-family: var(--font-mono); font-weight: 500;">{{ ls.num }}</span> {{ ls.name }}</h1>
+            <span style="display:flex; align-items:center; gap: 8px; font-size: 13.5px; color: var(--muted);"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{ ls.dot }}; box-shadow: 0 0 0 1px var(--ink);"></span>{{ ls.statusText }} · {{ ls.area }}</span>
+          </div>
+          <div style="flex:1;"></div>
+          <button onClick="{{ l.toggleBoxes }}" aria-pressed="{{ l.boxes }}" style="height: 44px; display:flex; align-items:center; gap: 10px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px;" style-hover="border-color: var(--ink);">
+            <span style="position:relative; width: 34px; height: 20px; flex-shrink:0; border-radius: 999px; background: {{ l.swBg }};"><span style="position:absolute; top: 2px; left: {{ l.swKnob }}; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); box-shadow: 0 1px 2px rgba(10,10,11,.3);"></span></span>Show boxes
+          </button>
+        </div>
+        <div style="flex:1; min-height:0; display:grid; grid-template-columns: minmax(0,1fr) 380px; gap: 16px; padding: 0 24px 24px;">
+          <div style="min-width:0; min-height:0; display:flex; flex-direction:column; gap: 10px;">
+            <div style="width:100%; max-height: calc(100% - 30px); aspect-ratio: 16 / 9;">
+              <dc-import name="LiveTile" cam="{{ ls.cam }}" status="{{ ls.status }}" since="{{ ls.since }}" show-boxes="{{ l.boxes }}" numbered="{{ true }}" radius="{{ 8 }}" style="width:100%; height:100%;" hint-size="100%,100%"></dc-import>
+            </div>
+            <span style="font-size: 13.5px; color: var(--muted);">Each person or vehicle keeps its number while it stays in view, so Person 4 stays Person 4 as they cross the frame.</span>
+          </div>
+          <aside style="min-height:0; overflow:auto; display:flex; flex-direction:column; gap: 14px;">
+            <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ ls.search }}" hint-size="auto,48px">Search this camera</x-import>
+            <section style="display:flex; flex-direction:column; gap: 12px; padding: 16px 16px 12px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap: 12px;">
+                <h2 style="margin:0; font-size: 15px; font-weight: 500;">Today on this camera</h2>
+                <span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">{{ ls.countText }}</span>
+              </div>
+              <dc-import name="ActivityStrip" times="{{ ls.times }}" start="{{ 0 }}" end="{{ 86400 }}" now="{{ now }}" bin="{{ 600 }}" offline="{{ ls.offline }}" height="{{ 22 }}" axis="{{ true }}" tick-step="{{ 21600 }}" on-pick="{{ ls.pick }}" hint-size="100%,45px"></dc-import>
+            </section>
+            <section style="display:flex; flex-direction:column; gap: 4px; padding: 16px 8px 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+              <h2 style="margin: 0 8px 6px; font-size: 15px; font-weight: 500;">Latest from this camera</h2>
+              <sc-for list="{{ ls.latest }}" as="e" hint-placeholder-count="5">
+                <dc-import name="EventCard" ev="{{ e }}" variant="row" on-play="{{ ls.playLatest }}" hint-size="100%,79px"></dc-import>
+              </sc-for>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLiveEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; min-height: 80px; padding: 14px 24px;">
+          <h1 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">Live view</h1>
+          <span style="display:flex; align-items:center; gap: 8px; height: 28px; padding: 0 10px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; white-space:nowrap;"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--signal);"></span>Live</span>
+        </div>
+        <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding: 0 24px 24px;">
+          <div style="position:relative; height:100%; max-width:100%; aspect-ratio: 16 / 9; display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); grid-template-rows: repeat(4, minmax(0,1fr)); gap: 6px;">
+            <sc-for list="{{ emptyCells }}" as="c" hint-placeholder-count="16">
+              <div style="border: 1px dashed var(--line); border-radius: 4px; background: var(--bone);"></div>
+            </sc-for>
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding: 24px;">
+              <div style="max-width: 480px; display:flex; flex-direction:column; align-items:center; gap: 12px; padding: 36px 40px; text-align:center; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;">
+                <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Live view</span>
+                <h2 style="margin:0; font-size: 28px; font-weight: 500; letter-spacing: -0.025em;">No cameras yet.</h2>
+                <sc-if value="{{ admin }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: 0 0 8px; font-size: 16px; color: var(--muted); text-wrap: pretty;">Add your cameras and each one appears here as a live tile, with a box on every person and vehicle.</p>
+                  <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ goAdd }}" hint-size="auto,48px">Add cameras</x-import>
+                </sc-if>
+                <sc-if value="{{ operator }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:0; font-size: 16px; color: var(--muted);">Ask your admin to add them. The admin for Plant 2 is Karan Joshi.</p>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; display:flex; flex-direction:column; position:relative;">
+        <div style="display:flex; flex-direction:column; gap: 14px; padding: 18px 32px 0; position:relative; z-index: 10;">
+          <h1 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">Search</h1>
+          <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 10px;">
+            <dc-import name="CameraPicker" cameras="{{ camsStatus }}" areas="{{ pickAreas }}" value="{{ q.camsValue }}" on-change="{{ q.setCams }}" hint-size="232px,52px"></dc-import>
+            <dc-import name="TimePicker" value="{{ q.timeValue }}" now="{{ now }}" cams="{{ q.pickCams }}" default-open="{{ q.pickOpen }}" custom-open="{{ q.pickOpen }}" pinned="{{ q.pickOpen }}" on-change="{{ q.setTime }}" hint-size="260px,52px"></dc-import>
+            <div role="group" aria-label="What to find" style="height: 52px; display:flex; align-items:center; gap: 2px; padding: 4px; background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px;">
+              <sc-for list="{{ q.chips }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.toggle }}" aria-pressed="{{ c.on }}" style="height: 42px; display:flex; align-items:center; gap: 7px; padding: 0 14px; border-radius: 6px; font-size: 14.5px; font-weight: {{ c.weight }}; background: {{ c.bg }}; color: {{ c.ink }}; box-shadow: {{ c.ring }};">
+                  <span style="width: 10px; height: 10px; flex-shrink:0; border-radius: 50%; background: {{ c.tone }}; box-shadow: inset 0 0 0 1.5px {{ c.toneEdge }};"></span>{{ c.label }}<sc-if value="{{ c.on }}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; font-weight: 700; color: var(--blue-deep);">✓</span></sc-if>
+                </button>
+              </sc-for>
+            </div>
+            <div style="position:relative;">
+              <button onClick="{{ q.toggleMore }}" style="height: 52px; display:flex; align-items:center; gap: 8px; padding: 0 14px; border: 1px solid {{ q.moreBorder }}; border-radius: 8px; background: var(--paper); font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">
+                More filters<sc-if value="{{ q.hasMin }}" hint-placeholder-val="{{ false }}"><span style="padding: 3px 6px; border-radius: 4px; background: var(--blue-tint); color: var(--blue-deep); font: 500 11px/1 var(--font-mono);">1</span></sc-if><span style="font-size: 12px; color: var(--muted);">▾</span>
+              </button>
+              <sc-if value="{{ q.moreOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute; top: calc(100% + 6px); left: 0; z-index: 50; width: 280px; padding: 8px 0; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+                  <div style="padding: 8px 16px 8px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Stayed at least</div>
+                  <sc-for list="{{ q.stays }}" as="o" hint-placeholder-count="5">
+                    <button onClick="{{ o.set }}" style="width:100%; height: 42px; display:flex; align-items:center; gap: 12px; padding: 0 16px; text-align:left; font-size: 14.5px; background: {{ o.bg }};" style-hover="background: var(--blue-tint); color: var(--blue-deep);">
+                      <span style="width: 16px; height: 16px; flex-shrink:0; border-radius: 50%; border: 1.5px solid {{ o.ring }}; display:flex; align-items:center; justify-content:center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ o.dot }};"></span></span>{{ o.label }}
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ q.hasMin }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ q.clearMin }}" aria-label="Remove this filter" style="height: 36px; display:flex; align-items:center; gap: 8px; padding: 0 10px 0 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper-2); font-size: 13.5px;" style-hover="border-color: var(--ink);">Stayed at least {{ q.minLabel }}<span style="font-size: 15px; color: var(--muted);">×</span></button>
+            </sc-if>
+          </div>
+          <sc-if value="{{ q.hasRecent }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 6px;">
+              <span style="margin-right: 4px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Recent</span>
+              <sc-for list="{{ q.recent }}" as="rc" hint-placeholder-count="3">
+                <button onClick="{{ rc.go }}" style="height: 32px; display:flex; align-items:center; gap: 8px; padding: 0 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); font-size: 13.5px; white-space:nowrap;" style-hover="background: var(--blue-tint); color: var(--blue-deep); border-color: var(--blue);"><span style="width: 6px; height: 6px; background: var(--blue);"></span>{{ rc.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <div style="flex:1; min-height:0; display:grid; grid-template-columns: {{ q.bodyCols }}; gap: 16px; padding: 14px 32px 24px;">
+          <div style="min-width:0; min-height:0; display: {{ q.listDisp }}; flex-direction:column; gap: 12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 10px 24px;">
+            <h2 aria-live="polite" style="margin:0; font-size: 20px; font-weight: 500; letter-spacing: -0.015em; text-wrap: pretty;">{{ q.summary }}</h2>
+            <sc-if value="{{ q.hasSpace }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ q.openSpace }}" style="height: 40px; display:flex; align-items:center; gap: 10px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bone); font-size: 14px; white-space:nowrap;" style-hover="border-color: var(--ink); background: var(--paper);">
+                <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Space saved</span>{{ q.spaceText }}<span>→</span>
+              </button>
+            </sc-if>
+          </div>
+          <sc-if value="{{ q.loading }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:center; gap: 12px;">
+              <div style="flex:1; height: 4px; border-radius: 2px; background: var(--paper-3); overflow:hidden;"><div style="width: 50%; height:100%; background: var(--blue);"></div></div>
+              <span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">Checked 3 of 6 hours</span>
+            </div>
+          </sc-if>
+          <sc-for list="{{ q.notes }}" as="nt" hint-placeholder-count="0">
+            <div role="note" style="display:flex; align-items:center; gap: 12px; padding: 10px 14px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep); font-size: 14.5px;">
+              <span style="width: 7px; height: 7px; flex-shrink:0; background: var(--info-deep);"></span>{{ nt.text }}
+            </div>
+          </sc-for>
+          <sc-if value="{{ q.stripOn }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap: 10px; padding: 12px 16px 10px; background: var(--bone); border: 1px solid var(--line); border-radius: 8px;">
+              <div style="display:flex; justify-content:space-between; gap: 12px;">
+                <span style="font: 500 10.5px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Activity on {{ q.stripCam }}</span>
+                <span style="font-size: 13px; color: var(--muted);">Click a mark to narrow the time</span>
+              </div>
+              <dc-import name="ActivityStrip" times="{{ q.stripTimes }}" start="{{ q.a }}" end="{{ q.b0 }}" now="{{ q.stripNow }}" bin="{{ q.stripBin }}" offline="{{ q.stripOffline }}" height="{{ 22 }}" axis="{{ true }}" on-pick="{{ q.narrow }}" hint-size="100%,45px"></dc-import>
+            </div>
+          </sc-if>
+            <div style="min-height: 48px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 10px 16px;">
+              <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 10px;">
+                <div role="group" aria-label="View" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+                  <sc-for list="{{ q.views }}" as="o" hint-placeholder-count="4">
+                    <button onClick="{{ o.set }}" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13.5px; font-weight: {{ o.weight }}; background: {{ o.bg }}; color: {{ o.ink }}; box-shadow: {{ o.ring }};">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ q.showSort }}" hint-placeholder-val="{{ true }}">
+                  <div role="group" aria-label="Order" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+                    <sc-for list="{{ q.sorts }}" as="o" hint-placeholder-count="2">
+                      <button onClick="{{ o.set }}" style="height: 32px; padding: 0 12px; border-radius: 6px; font-size: 13.5px; font-weight: {{ o.weight }}; background: {{ o.bg }}; color: {{ o.ink }}; box-shadow: {{ o.ring }};">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="display:flex; align-items:center; gap: 14px;">
+                <sc-if value="{{ q.hasSel }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 14.5px; font-weight: 500;">{{ q.selText }}</span>
+                  <button onClick="{{ q.clearSel }}" style="font-size: 14px; padding-bottom: 1px; border-bottom: 1px solid var(--line);" style-hover="border-color: var(--ink);">Clear</button>
+                  <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ q.download }}" hint-size="auto,48px">Download {{ q.selN }}</x-import>
+                </sc-if>
+                <sc-if value="{{ q.noSel }}" hint-placeholder-val="{{ true }}">
+                  <span style="font-size: 14px; color: var(--muted);">Select events to download them.</span>
+                </sc-if>
+              </div>
+            </div>
+            <div style="flex:1; min-height:0; overflow:auto; padding-right: 4px;">
+              <sc-if value="{{ q.isCards }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ q.groups }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap: 10px; padding: 12px 0 10px; border-top: 1px solid var(--line-soft);">
+                  <span style="font: 600 13px/1 var(--font-mono);">{{ g.label }}</span>
+                  <span style="font-size: 13.5px; color: var(--muted);">{{ g.count }}</span>
+                  <button onClick="{{ g.selAll }}" style="margin-left: auto; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">{{ g.selLabel }}</button>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding-bottom: 10px;">
+                  <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="4">
+                    <dc-import name="EventCard" ev="{{ c }}" selected="{{ c.sel }}" playing="{{ c.play }}" on-play="{{ q.play }}" on-toggle="{{ q.toggle }}" hint-size="100%,226px"></dc-import>
+                  </sc-for>
+                </div>
+              </sc-for>
+              </sc-if>
+              <sc-if value="{{ q.isList }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ q.groups }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap: 10px; padding: 12px 0 10px; border-top: 1px solid var(--line-soft);">
+                  <span style="font: 600 13px/1 var(--font-mono);">{{ g.label }}</span>
+                  <span style="font-size: 13.5px; color: var(--muted);">{{ g.count }}</span>
+                  <button onClick="{{ g.selAll }}" style="margin-left: auto; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); font-size: 13px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">{{ g.selLabel }}</button>
+                </div>
+                <div role="list" style="display:flex; flex-direction:column; gap: 2px; padding-bottom: 10px;">
+                  <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="6">
+                    <div role="listitem" style="display:grid; grid-template-columns: 24px 96px minmax(0,1fr) auto; gap: 12px; align-items:center; min-height: 66px; padding: 6px 8px; border-radius: 8px; background: {{ c.rowBg }}; box-shadow: {{ c.rowRing }};" style-hover="background: var(--bone);">
+                      <button onClick="{{ c.toggle }}" aria-pressed="{{ c.sel }}" aria-label="Select {{ c.kind }} at {{ c.timeText }}" style="width: 22px; height: 22px; padding:0; border-radius: 4px; border: 1.5px solid {{ c.cbBorder }}; background: {{ c.cbBg }}; color: var(--paper); font: 700 12px/19px var(--font-sans); text-align:center;">{{ c.mark }}</button>
+                      <div onClick="{{ c.playIt }}" style="position:relative; width: 96px; aspect-ratio: 16 / 9; overflow:hidden; border-radius: 4px; background: {{ c.scene }}; background-size: cover; cursor:pointer;">
+                        <span style="position:absolute; left: {{ c.boxL }}; top: {{ c.boxT }}; width: {{ c.boxW }}; height: {{ c.boxH }}; border: 1.5px solid {{ c.tone }}; border-radius: 1px;"></span>
+                      </div>
+                      <div style="display:flex; flex-direction:column; gap: 6px; min-width:0;">
+                        <span style="display:flex; align-items:center; gap: 8px; min-width:0;"><span style="flex-shrink:0; padding: 3px 6px; border-radius: 4px; background: {{ c.typeBg }}; color: {{ c.typeInk }}; font: 500 10.5px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;">{{ c.kind }}</span><span style="font-size: 15px; font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.camLabel }}</span></span>
+                        <span style="font: 500 12.5px/1.2 var(--font-mono); color: var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.timeText }} · {{ c.dur }} in view</span>
+                      </div>
+                      <button onClick="{{ c.playIt }}" style="height: 36px; display:flex; align-items:center; gap: 8px; padding: 0 12px; border: 1px solid {{ c.playBorder }}; border-radius: 8px; background: {{ c.playBg }}; color: {{ c.playInk }}; font-size: 14px; font-weight: 500; white-space:nowrap;"><span style="width:0; height:0; border-left: 8px solid currentColor; border-top: 5px solid transparent; border-bottom: 5px solid transparent;"></span>{{ c.playLabel }}</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              </sc-if>
+              <sc-if value="{{ q.isTimeline }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 8px 0 12px; border-top: 1px solid var(--line-soft);">
+                  <dc-import name="TimelineView" lanes="{{ q.lanes }}" a="{{ q.a }}" b="{{ q.b0 }}" now="{{ now }}" playing="{{ q.playId }}" on-play="{{ q.playMark }}" on-range="{{ q.tlRange }}" hint-size="100%,420px"></dc-import>
+                </div>
+              </sc-if>
+              <sc-if value="{{ q.isCalendar }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap: 12px; padding: 10px 0 12px; border-top: 1px solid var(--line-soft);">
+                  <span style="font-size: 14.5px; color: var(--muted);">Each day shows how many events matched these filters. Click a day to open it.</span>
+                  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 28px;">
+                    <sc-for list="{{ q.months }}" as="mo" hint-placeholder-count="1">
+                      <dc-import name="MonthCalendar" month="{{ mo.mo }}" nav="{{ false }}" size="large" cams="{{ q.calCams }}" types="{{ q.calTypes }}" sel-a="{{ q.calA }}" sel-b="{{ q.calB }}" on-pick="{{ q.openDay }}" hint-size="100%,580px"></dc-import>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ q.hasMore }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; justify-content:center; padding: 12px 0 4px;">
+                  <button onClick="{{ q.showMore }}" style="height: 44px; padding: 0 18px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Show more · {{ q.moreLeft }} left</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ q.loading }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line-soft);">
+                  <div style="width: 120px; height: 13px; border-radius: 3px; background: var(--paper-2);"></div>
+                  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    <sc-for list="{{ q.skeleton }}" as="k" hint-placeholder-count="8">
+                      <div style="display:flex; flex-direction:column; border: 1px solid var(--line-soft); border-radius: 8px; overflow:hidden;">
+                        <div style="aspect-ratio: 16 / 9; background: var(--paper-2);"></div>
+                        <div style="display:flex; flex-direction:column; gap: 8px; padding: 12px;">
+                          <div style="width: 45%; height: 12px; border-radius: 3px; background: var(--paper-2);"></div>
+                          <div style="width: 75%; height: 10px; border-radius: 3px; background: var(--paper-2);"></div>
+                          <div style="height: 34px; border-radius: 6px; background: var(--bone);"></div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ q.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="max-width: 560px; margin: 56px auto 0; display:flex; flex-direction:column; align-items:center; gap: 12px; text-align:center;">
+                  <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Nothing found</span>
+                  <h3 style="margin:0; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; text-wrap: balance;">{{ q.emptyTitle }}</h3>
+                  <p style="margin:0; font-size: 16px; color: var(--muted);">Try a wider time or more cameras.</p>
+                  <div style="display:flex; flex-wrap:wrap; justify-content:center; gap: 10px; margin-top: 8px;">
+                    <sc-for list="{{ q.wider }}" as="w" hint-placeholder-count="2">
+                      <button onClick="{{ w.go }}" style="height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">{{ w.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ q.error }}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="max-width: 620px; margin: 40px auto 0; display:flex; flex-direction:column; align-items:flex-start; gap: 10px; padding: 22px 26px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep);">
+                  <h3 style="margin:0; font-size: 20px; font-weight: 500; letter-spacing: -0.015em;">This search didn't finish.</h3>
+                  <p style="margin:0; font-size: 15.5px;">The box took too long to answer. Try again in a moment, and if it keeps happening, tell your admin.</p>
+                  <button onClick="{{ q.retry }}" style="height: 40px; margin-top: 4px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Try again</button>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          <sc-if value="{{ q.playing }}" hint-placeholder-val="{{ false }}">
+            <div style="min-width:0; min-height:0; container-type: size; overflow:auto;">
+              <dc-import name="ClipPlayer" ev="{{ q.playEv }}" index="{{ q.playIndex }}" total="{{ q.total }}" autoplay="{{ q.auto }}" start-frac="{{ q.startFrac }}" on-prev="{{ q.prev }}" on-next="{{ q.next }}" on-close="{{ q.closePlayer }}" on-download="{{ q.downloadOne }}" big="{{ q.big }}" on-big="{{ q.toggleBig }}" on-copy="{{ q.copied }}" keys="{{ notFrame }}" style="flex: 0 1 auto; min-height: 0; max-height: 100%; display:flex; flex-direction:column;" hint-size="100%,560px"></dc-import>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ q.spaceOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ q.closeSpace }}" style="position:absolute; inset:0; z-index: 30; background: rgba(10,10,11,.16);"></div>
+          <aside role="dialog" aria-label="Space saved" style="position:absolute; top:0; right:0; bottom:0; z-index: 31; width: 480px; max-width: 100%; display:flex; flex-direction:column; gap: 22px; padding: 24px 28px; overflow:auto; background: var(--paper); border-left: 1px solid var(--line); box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 12px;">
+              <div style="display:flex; flex-direction:column; gap: 6px;">
+                <span style="align-self:flex-start; padding: 5px 8px; border-radius: 4px; background: var(--blue-tint); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue-deep);">Space saved</span>
+                <h2 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">{{ q.spaceTitle }}</h2>
+                <span style="font: 500 12.5px/1.3 var(--font-mono); color: var(--muted);">{{ q.spaceRange }}</span>
+              </div>
+              <button onClick="{{ q.closeSpace }}" aria-label="Close" style="width: 36px; height: 36px; flex-shrink:0; border: 1px solid var(--line); border-radius: 8px; font-size: 18px; line-height: 1;" style-hover="border-color: var(--ink);">×</button>
+            </div>
+            <div style="display:flex; align-items:baseline; gap: 12px;">
+              <span style="font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 96px; line-height: .9; letter-spacing: -0.02em;">{{ q.spacePct }}</span>
+              <span style="font-size: 18px; color: var(--muted);">saved</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap: 16px;">
+              <div style="display:flex; flex-direction:column; gap: 7px;">
+                <div style="display:flex; justify-content:space-between; gap: 12px; font-size: 14.5px;"><span>Recording all video</span><span style="font-family: var(--font-mono);">{{ q.spaceRecv }}</span></div>
+                <div style="height: 12px; border-radius: 3px; background: var(--paper-3);"></div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap: 7px;">
+                <div style="display:flex; justify-content:space-between; gap: 12px; font-size: 14.5px;"><span>Clips i-Netra kept</span><span style="font-family: var(--font-mono);">{{ q.spaceKept }}</span></div>
+                <div style="height: 12px; border-radius: 3px; background: var(--paper-2);"><div style="width: {{ q.keptW }}; height: 100%; border-radius: 3px; background: var(--blue);"></div></div>
+              </div>
+            </div>
+            <p style="margin:0; font-size: 16px; line-height: 1.5; text-wrap: pretty;">{{ q.spaceSentence }}</p>
+            <p style="margin:0; font-size: 15px; line-height: 1.5; color: var(--muted); text-wrap: pretty;">{{ q.spaceWhy }}</p>
+            <sc-if value="{{ admin }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line-soft);">
+                <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="ghost" href="#" onClick="{{ q.openSpaceSettings }}" hint-size="auto,48px">Open Space saved in Settings</x-import>
+              </div>
+            </sc-if>
+          </aside>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDenied }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding: 32px;">
+        <div style="max-width: 560px; display:flex; flex-direction:column; align-items:flex-start; gap: 14px;">
+          <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Settings</span>
+          <h1 style="margin:0; font-size: 32px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1;">Settings is for admins.</h1>
+          <p style="margin: 0 0 8px; font-size: 17px; line-height: 1.5; color: var(--muted); text-wrap: pretty;">Your account can watch cameras, search events and download clips. If something in Settings needs changing, ask Karan Joshi, your admin.</p>
+          <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ goHome }}" hint-size="auto,48px">Go to Home</x-import>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCameras }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; position:relative;">
+        <dc-import name="CamerasScreen" role="{{ roleKey }}" scen="{{ scenKey }}" now="{{ now }}" edits="{{ edits }}" on-edit="{{ onEdit }}" nav="{{ navFn }}" opts="{{ cOpts }}" opts-key="{{ cKey }}" style="position:absolute; inset:0;" hint-size="100%,100%"></dc-import>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isCamsEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding: 32px;">
+        <div style="max-width: 560px; display:flex; flex-direction:column; align-items:flex-start; gap: 14px;">
+          <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Cameras</span>
+          <h1 style="margin:0; font-size: 32px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1;">No cameras yet.</h1>
+          <p style="margin: 0 0 8px; font-size: 17px; line-height: 1.5; color: var(--muted); text-wrap: pretty;">{{ camsEmptyText }}</p>
+          <sc-if value="{{ admin }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ goAdd }}" hint-size="auto,48px">Add cameras</x-import>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isAddCams }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; position:relative;">
+        <dc-import name="AddCameras" role="{{ roleKey }}" scen="{{ scenKey }}" edits="{{ edits }}" on-edit="{{ onEdit }}" nav="{{ navFn }}" on-added="{{ onAdded }}" opts="{{ aOpts }}" opts-key="{{ aKey }}" style="position:absolute; inset:0;" hint-size="100%,100%"></dc-import>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; min-height:0; position:relative;">
+        <dc-import name="SettingsScreen" role="{{ roleKey }}" who="{{ meKey }}" scen="{{ scenKey }}" now="{{ now }}" edits="{{ edits }}" on-edit="{{ onEdit }}" nav="{{ navFn }}" opts="{{ sOpts }}" opts-key="{{ sKey }}" keep-days="{{ keepDays }}" on-keep="{{ onKeep }}" disk-full="{{ diskFull }}" setup-step="{{ setupStep }}" on-step-done="{{ onStepDone }}" on-step-progress="{{ onStepProgress }}" on-show-checklist="{{ onShowChecklist }}" style="position:absolute; inset:0;" hint-size="100%,100%"></dc-import>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</sc-if>
+
+<sc-if value="{{ dlConfirm }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ dlCancel }}" style="position:absolute; inset:0; z-index: 90; background: rgba(10,10,11,.32);"></div>
+  <div role="dialog" aria-modal="true" aria-label="Download" style="position:absolute; z-index: 91; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; max-width: calc(100% - 48px); display:flex; flex-direction:column; gap: 18px; padding: 28px 32px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+    <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Download</span>
+    <h2 style="margin:0; font-size: 28px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1;">{{ dc.title }}</h2>
+    <div style="display:flex; flex-direction:column; gap: 6px;">
+      <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">What’s inside</span>
+      <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; border-top: 1px solid var(--line-soft);">
+        <sc-for list="{{ dc.items }}" as="it" hint-placeholder-count="4">
+          <li style="display:flex; align-items:center; gap: 12px; min-height: 42px; border-bottom: 1px solid var(--line-soft); font-size: 15px;"><span style="width: 6px; height: 6px; flex-shrink:0; background: var(--blue);"></span>{{ it.t }}</li>
+        </sc-for>
+      </ul>
+    </div>
+    <label style="display:flex; flex-direction:column; gap: 6px;">
+      <span style="font-size: 14px; font-weight: 500;">Name for the download <span style="font-weight: 400; color: var(--muted);">· optional</span></span>
+      <input value="{{ dlName }}" onChange="{{ onDlName }}" placeholder="{{ dc.def }}" style="height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+    </label>
+    <div style="display:flex; gap: 12px; padding: 12px 14px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep); font-size: 14.5px;"><span style="width: 7px; height: 7px; margin-top: 7px; flex-shrink:0; background: var(--info-deep);"></span><span>This download is recorded with your name, {{ dc.who }}, so it can be traced later.</span></div>
+    <div style="display:flex; align-items:center; gap: 12px;">
+      <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ dlStart }}" hint-size="auto,48px">Start download</x-import>
+      <button onClick="{{ dlCancel }}" style="height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 500;" style-hover="border-color: var(--ink);">Cancel</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:absolute; right: 24px; bottom: 24px; z-index: 95; width: max-content; max-width: min(480px, calc(100% - 48px)); opacity: {{ toastOp }}; transition: opacity .8s cubic-bezier(.2,.7,.2,1); display:flex; align-items:center; gap: 14px; padding: 10px 10px 10px 18px; background: var(--ink); color: var(--paper); border-radius: 8px; font-size: 14.5px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+    <span style="width: 7px; height: 7px; flex-shrink:0; background: var(--signal);"></span>
+    <span style="flex:1;">{{ toastText }}</span>
+    <sc-if value="{{ toastAct }}" hint-placeholder-val="{{ false }}"><button onClick="{{ toastDo }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--line-dark); border-radius: 6px; color: var(--paper); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--paper);">{{ toastActLabel }}</button></sc-if>
+    <button onClick="{{ toastClose }}" aria-label="Dismiss" style="width: 32px; height: 32px; border-radius: 6px; color: var(--muted-dark); font-size: 18px;" style-hover="color: var(--paper);">×</button>
+  </div>
+</sc-if>
+
+
+
+<sc-if value="{{ showProto }}" hint-placeholder-val="{{ false }}">
+  <button onClick="{{ toggleProto }}" aria-expanded="{{ proto }}" style="position:absolute; left: 16px; bottom: 16px; z-index: 97; height: 40px; display:flex; align-items:center; gap: 10px; padding: 0 16px; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 14px; font-weight: 500; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);" style-hover="background: var(--ink-2);"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--signal);"></span>{{ protoLabel }}</button>
+  <sc-if value="{{ proto }}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-label="Prototype controls" style="position:absolute; left: 16px; bottom: 66px; z-index: 97; width: 400px; max-height: calc(100% - 92px); overflow:auto; display:flex; flex-direction:column; gap: 16px; padding: 16px 16px 18px; background: var(--ink); color: var(--paper); border-radius: 14px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+      <div style="display:flex; flex-direction:column; gap: 4px; padding: 0 4px;">
+        <span style="font-size: 16px; font-weight: 500;">Prototype controls</span>
+        <span style="font-size: 13px; color: var(--muted-dark);">Not part of i-Netra. Jump to any screen, switch person or simulate what the box does.</span>
+      </div>
+      <sc-for list="{{ protoSecs }}" as="ps" hint-placeholder-count="4">
+        <div style="display:flex; flex-direction:column; gap: 6px;">
+          <span style="padding: 0 4px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-dark);">{{ ps.title }}</span>
+          <div style="display:flex; flex-wrap:wrap; gap: 6px;">
+            <sc-for list="{{ ps.items }}" as="pi" hint-placeholder-count="4">
+              <button onClick="{{ pi.go }}" style="height: 34px; display:flex; align-items:center; gap: 7px; padding: 0 11px; border: 1px solid {{ pi.border }}; border-radius: 6px; background: {{ pi.bg }}; color: var(--paper); font-size: 13px;" style-hover="border-color: var(--paper);"><sc-if value="{{ pi.on }}" hint-placeholder-val="{{ false }}"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--signal);"></span></sc-if>{{ pi.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute; inset:0; display:grid; grid-template-columns: minmax(0,5fr) minmax(0,7fr); background: var(--paper);">
+    <aside style="position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; padding: 44px 56px; background: linear-gradient(115deg, #0858FF 0%, #0A48E0 55%, #0334B8 100%); color: var(--paper);">
+      <div aria-hidden="true" style="position:absolute; inset:0; background-image: linear-gradient(rgba(255,255,255,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.10) 1px, transparent 1px); background-size: 60px 60px; -webkit-mask-image: radial-gradient(ellipse 80% 70% at 60% 45%, #000 0%, transparent 78%); mask-image: radial-gradient(ellipse 80% 70% at 60% 45%, #000 0%, transparent 78%);"></div>
+      <span aria-hidden="true" style="position:absolute; top: 22%; right: 18%; width: 6px; height: 6px; background: var(--paper);"></span>
+      <span aria-hidden="true" style="position:absolute; top: 46%; right: 14%; width: 6px; height: 6px; background: var(--signal);"></span>
+      <div style="position:relative; display:flex; align-items:center; gap: 14px;">
+        <span style="display:flex; align-items:center; gap: 14px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em;"><span style="width: 52px; height: 52px; display:flex; align-items:center; justify-content:center; border-radius: 8px; background: var(--paper);"><img src="{{ logoMark }}" alt="Brainy Neurals" style="width: 34px; height: auto; display:block; flex-shrink:0;"></span>i-Netra</span>
+      </div>
+      <div style="position:relative; display:flex; flex-direction:column; gap: 18px;">
+        <span style="font: 500 12px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.82);">You are signing in to</span>
+        <span style="font-size: clamp(56px, 5vw, 96px); font-weight: 500; letter-spacing: -0.035em; line-height: .95;">Plant 2</span>
+        <span style="font: 500 17px/1.3 var(--font-mono); color: rgba(255,255,255,.82);">Box INVR-01</span>
+      </div>
+      <div style="position:relative; display:flex; flex-direction:column; gap: 10px; max-width: 440px; font-size: 15px; line-height: 1.5; color: rgba(255,255,255,.82);">
+        <span style="display:flex; align-items:center; gap: 10px; color: var(--paper);"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--signal);"></span>The box is on and answering</span>
+        <span>i-Netra runs on this box at the site, with no internet connection.</span>
+        <span style="display:flex; flex-direction:column; gap: 8px; margin-top: 14px;"><span style="font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.82);">Built by</span><span style="align-self:flex-start; display:flex; padding: 10px 14px; border-radius: 8px; background: var(--paper);"><img src="{{ logoFull }}" alt="Brainy Neurals" style="height: 32px; width: auto; display:block;"></span></span>
+      </div>
+    </aside>
+    <div style="min-width:0; min-height:0; display:flex; flex-direction:column; align-items:center; padding: 48px; overflow:auto;">
+      <sc-if value="{{ a.isSignin }}" hint-placeholder-val="{{ true }}">
+        <div style="width:100%; max-width: 460px; margin-block: auto; display:flex; flex-direction:column; gap: 20px;">
+          <div style="display:flex; flex-direction:column; gap: 8px;">
+            <h1 style="margin:0; font-size: 40px; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05;">Sign in</h1>
+            <p style="margin:0; font-size: 16px; color: var(--muted);">Use the username and password your admin gave you.</p>
+          </div>
+          <sc-if value="{{ a.hasMsg }}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="display:flex; gap: 12px; padding: 12px 14px; background: {{ a.msgBg }}; color: {{ a.msgInk }}; border: 1px solid var(--line); border-radius: 8px; font-size: 15px; line-height: 1.45;">
+              <span style="width: 8px; height: 8px; margin-top: 7px; flex-shrink:0; background: {{ a.msgInk }};"></span>
+              <span style="display:flex; flex-direction:column; gap: 4px;"><span>{{ a.msg }}</span><sc-if value="{{ a.hasSub }}" hint-placeholder-val="{{ false }}"><span style="font: 500 12.5px/1.4 var(--font-mono);">{{ a.msgSub }}</span></sc-if></span>
+            </div>
+          </sc-if>
+          <label style="display:flex; flex-direction:column; gap: 6px;">
+            <span style="font-size: 14px; font-weight: 500;">Username</span>
+            <input value="{{ a.user }}" onChange="{{ a.onUser }}" onKeyDown="{{ a.onKey }}" autocomplete="username" spellcheck="false" style="height: 52px; padding: 0 14px; border: 1px solid {{ a.userBorder }}; border-radius: 8px; background: var(--paper); font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+          </label>
+          <label style="display:flex; flex-direction:column; gap: 6px;">
+            <span style="font-size: 14px; font-weight: 500;">Password</span>
+            <span style="position:relative; display:block;">
+              <input type="{{ a.passType }}" value="{{ a.pass }}" onChange="{{ a.onPass }}" onKeyDown="{{ a.onKey }}" autocomplete="current-password" style="width:100%; height: 52px; padding: 0 76px 0 14px; border: 1px solid {{ a.userBorder }}; border-radius: 8px; background: var(--paper); font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+              <button type="button" onClick="{{ a.toggleShow }}" style="position:absolute; right: 6px; top: 6px; height: 40px; padding: 0 12px; border-radius: 6px; font-size: 14px; font-weight: 500;" style-hover="background: var(--blue-tint); color: var(--blue-deep);">{{ a.showLabel }}</button>
+            </span>
+          </label>
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 16px; margin-top: 4px;">
+            <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ a.submit }}" hint-size="auto,48px">Sign in</x-import>
+            <button type="button" onClick="{{ a.toggleForgot }}" aria-expanded="{{ a.forgot }}" style="font-size: 14.5px; font-weight: 500; padding-bottom: 1px; border-bottom: 1px solid var(--line);" style-hover="border-color: var(--ink);">Forgot your password?</button>
+          </div>
+          <sc-if value="{{ a.forgot }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap: 8px; padding: 16px 18px; background: var(--bone); border: 1px solid var(--line); border-radius: 8px; font-size: 15px; line-height: 1.5;">
+              <span style="font-weight: 500;">Your admin resets passwords.</span>
+              <span style="color: var(--muted); text-wrap: pretty;">i-Netra runs without the internet, so it can’t send a reset email. Ask an admin for Plant 2 to reset yours, then sign in with the temporary password they give you.</span>
+              <span style="color: var(--muted); text-wrap: pretty;">If the only admin forgets their password, the installer can reset it from the box itself.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showAccounts }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap: 2px; margin-top: 8px; padding: 12px; background: var(--ink); color: var(--paper); border-radius: 14px;">
+              <span style="padding: 2px 6px 8px; font: 500 10.5px/1.4 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-dark);">Prototype only · any password · click to fill</span>
+              <sc-for list="{{ accounts }}" as="ac" hint-placeholder-count="5">
+                <button onClick="{{ ac.fill }}" style="display:flex; align-items:center; justify-content:space-between; gap: 12px; height: 38px; padding: 0 8px; border-radius: 8px; text-align:left;" style-hover="background: var(--ink-2);">
+                  <span style="font: 500 13.5px/1 var(--font-mono);">{{ ac.user }}</span><span style="font-size: 13px; color: var(--muted-dark);">{{ ac.what }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ a.isSetpw }}" hint-placeholder-val="{{ false }}">
+        <div style="width:100%; max-width: 480px; margin-block: auto; display:flex; flex-direction:column; gap: 20px;">
+          <div style="display:flex; flex-direction:column; gap: 8px;">
+            <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Signed in as {{ a.who }}</span>
+            <h1 style="margin:0; font-size: 40px; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05;">Set your own password</h1>
+            <p style="margin:0; font-size: 16px; color: var(--muted); text-wrap: pretty;">You signed in with a temporary password. Choose your own before anything else opens.</p>
+          </div>
+          <sc-if value="{{ a.hasPMsg }}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="display:flex; gap: 12px; padding: 12px 14px; background: var(--danger-tint); color: var(--danger-deep); border: 1px solid var(--line); border-radius: 8px; font-size: 15px; line-height: 1.45;">
+              <span style="width: 8px; height: 8px; margin-top: 7px; flex-shrink:0; background: var(--danger-deep);"></span><span>{{ a.pMsg }}</span>
+            </div>
+          </sc-if>
+          <label style="display:flex; flex-direction:column; gap: 6px;">
+            <span style="font-size: 14px; font-weight: 500;">New password</span>
+            <span style="position:relative; display:block;">
+              <input type="{{ a.pType }}" value="{{ a.pA }}" onChange="{{ a.onPA }}" onKeyDown="{{ a.onPKey }}" autocomplete="new-password" style="width:100%; height: 52px; padding: 0 76px 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+              <button type="button" onClick="{{ a.togglePShow }}" style="position:absolute; right: 6px; top: 6px; height: 40px; padding: 0 12px; border-radius: 6px; font-size: 14px; font-weight: 500;" style-hover="background: var(--blue-tint); color: var(--blue-deep);">{{ a.pShowLabel }}</button>
+            </span>
+          </label>
+          <div style="display:flex; flex-direction:column; gap: 8px; margin-top: -6px;">
+            <div style="display:grid; grid-template-columns: repeat(15, minmax(0,1fr)); gap: 3px;">
+              <sc-for list="{{ a.cells }}" as="c" hint-placeholder-count="15"><span style="height: 6px; border-radius: 1px; background: {{ c.bg }};"></span></sc-for>
+            </div>
+            <span style="font: 500 12.5px/1.3 var(--font-mono); color: {{ a.lenInk }};">{{ a.lenText }}</span>
+            <span style="font-size: 14.5px; line-height: 1.5; color: var(--muted); text-wrap: pretty;">Use at least 15 characters of any kind. A short sentence you can remember works well, and spaces are allowed.</span>
+          </div>
+          <label style="display:flex; flex-direction:column; gap: 6px;">
+            <span style="font-size: 14px; font-weight: 500;">Type it again</span>
+            <input type="{{ a.pType }}" value="{{ a.pB }}" onChange="{{ a.onPB }}" onKeyDown="{{ a.onPKey }}" autocomplete="new-password" style="height: 52px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+          </label>
+          <sc-if value="{{ a.showMatch }}" hint-placeholder-val="{{ false }}">
+            <span style="margin-top: -10px; font: 500 12.5px/1.3 var(--font-mono); color: {{ a.matchInk }};">{{ a.matchText }}</span>
+          </sc-if>
+          <div style="margin-top: 4px;">
+            <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ a.savePw }}" hint-size="auto,48px">Save and continue</x-import>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isFull }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute; inset:0; display:flex; flex-direction:column; background: var(--ink); color: var(--paper);">
+    <div style="height: 48px; flex-shrink:0; display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; padding: 0 12px 0 16px;">
+      <span style="display:flex; align-items:center; gap: 10px; font-size: 14px;"><span style="display:flex; align-items:center; gap: 8px; font-weight: 600;"><img src="{{ logoMark }}" alt="Brainy Neurals" style="width: 22px; height: auto; display:block; flex-shrink:0;">i-Netra</span><span style="color: var(--muted-dark);">Plant 2 · Live view · {{ l.scopeText }}</span></span>
+      <span style="font: 500 15px/1 var(--font-mono);">{{ clockText }}</span>
+      <span style="display:flex; align-items:center; justify-content:flex-end; gap: 14px;">
+        <sc-if value="{{ l.canCycle }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex; align-items:center; gap: 8px;">
+            <span style="font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-dark); white-space:nowrap;">Cycle pages</span>
+            <span role="group" aria-label="Cycle pages" style="display:flex; gap: 2px; padding: 2px; border: 1px solid var(--line-dark); border-radius: 6px;">
+              <sc-for list="{{ l.cycles }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.set }}" style="height: 26px; padding: 0 9px; border-radius: 4px; font: 500 12px/1 var(--font-mono); font-weight: {{ o.weight }}; background: {{ o.bg }}; color: {{ o.ink }}; white-space:nowrap;">{{ o.label }}</button></sc-for>
+            </span>
+            <sc-if value="{{ l.cycleOn }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ l.togglePause }}" aria-pressed="{{ l.paused }}" style="height: 30px; display:flex; align-items:center; gap: 7px; padding: 0 10px; border: 1px solid var(--line-dark); border-radius: 6px; color: var(--paper); font-size: 13px; white-space:nowrap;" style-hover="border-color: var(--paper);">
+                <sc-if value="{{ l.running }}" hint-placeholder-val="{{ true }}"><span style="display:flex; gap: 3px;"><span style="width: 3px; height: 11px; background: currentColor;"></span><span style="width: 3px; height: 11px; background: currentColor;"></span></span></sc-if>
+                <sc-if value="{{ l.paused }}" hint-placeholder-val="{{ false }}"><span style="width:0; height:0; border-left: 9px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent;"></span></sc-if>
+                {{ l.pauseLabel }}
+              </button>
+            </sc-if>
+          </span>
+        </sc-if>
+        <span style="display:flex; align-items:center; gap: 8px; font-size: 13.5px; color: var(--muted-dark); white-space:nowrap;"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--signal);"></span>{{ camSummary }}</span>
+        <button onClick="{{ l.exitFull }}" style="height: 34px; display:flex; align-items:center; gap: 10px; padding: 0 10px 0 12px; border: 1px solid var(--line-dark); border-radius: 8px; color: var(--paper); font-size: 13.5px;" style-hover="border-color: var(--paper);">Exit full screen<span style="padding: 3px 5px; border: 1px solid var(--line-dark); border-radius: 4px; font: 500 10.5px/1 var(--font-mono); color: var(--muted-dark);">Esc</span></button>
+      </span>
+    </div>
+    <sc-if value="{{ l.cycleOn }}" hint-placeholder-val="{{ false }}">
+      <div style="flex-shrink:0; display:flex; align-items:center; gap: 12px; padding: 0 16px 6px;">
+        <div style="flex:1; height: 3px; border-radius: 2px; background: var(--ink-2); overflow:hidden;"><div style="width: {{ l.cycleW }}; height:100%; background: {{ l.cycleFill }};"></div></div>
+        <sc-if value="{{ l.paused }}" hint-placeholder-val="{{ false }}"><span style="padding: 4px 7px; border-radius: 4px; background: var(--honey-deep); color: var(--honey-tint); font: 500 11px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase;">Paused</span></sc-if>
+        <span style="font: 500 12px/1 var(--font-mono); color: var(--muted-dark); white-space:nowrap;">{{ l.cycleText }}</span>
+      </div>
+    </sc-if>
+    <div style="flex:1; min-height:0; display:grid; grid-template-columns: {{ l.gridCols }}; grid-template-rows: {{ l.gridCols }}; gap: 4px; padding: 0 6px 6px;">
+      <sc-for list="{{ l.tiles }}" as="t" hint-placeholder-count="16">
+        <div style="grid-column: {{ t.span }}; grid-row: {{ t.span }}; min-width:0; min-height:0;">
+          <dc-import name="LiveTile" cam="{{ t.cam }}" status="{{ t.status }}" since="{{ t.since }}" show-boxes="{{ l.boxes }}" radius="{{ 2 }}" style="width:100%; height:100%;" hint-size="100%,100%"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;setpw&quot;,&quot;home&quot;,&quot;live&quot;,&quot;search&quot;,&quot;cameras&quot;,&quot;camera&quot;,&quot;areas&quot;,&quot;addcams&quot;,&quot;settings&quot;,&quot;denied&quot;],&quot;default&quot;:&quot;signin&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Start on&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Start on&quot;},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;operator&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;'admin' | 'operator'&quot;,&quot;section&quot;:&quot;Person signed in&quot;},&quot;banner&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;lost&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;'none' | 'lost'&quot;,&quot;section&quot;:&quot;Connection&quot;},&quot;frame&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = Object.assign({ ready: !!window.INVR }, this.init(this.props));
+
+  init(p) {
+    const v = p.variant || '', scr = p.screen || (p.frame ? 'home' : 'signin');
+    const st = {
+      screen: scr, role: p.role || 'admin', who: null, banner: p.banner || null, menu: false,
+      scen: scr === 'home' && (v === 'night' || v === 'midnight') ? v : scr === 'home' && v === 'setup' ? 'first' : scr === 'home' && v === 'setup2' ? 'fresh' : 'day',
+      steps: scr === 'home' && v === 'setup' ? { 1: 'todo', 2: 'todo', 3: 'todo', 4: 'todo' } : scr === 'home' && v === 'setup2' ? { 1: 'done', 2: 'done', 3: 'todo', 4: 'todo' } : null,
+      aUser: '', aPass: '', aMsg: null, aTries: 0, aLocked: null, aForgot: false, aShow: false, aReturn: null,
+      pA: '', pB: '', pMsg: null, pShow: false,
+      hDay: 'today', hDayOff: -2, hArea: 'all',
+      lCams: { mode: 'all' }, lLayout: 16, lPage: 0, lBoxes: true, lSingle: null, lFull: false, lEmpty: false,
+      sCams: { mode: 'all' }, sTime: { preset: 'today' }, sTypes: { person: true, vehicle: true, other: false }, sMin: 0, sSort: 'new',
+      sSel: {}, sSelPick: 0, sPlay: null, sFocusT: null, sAuto: false, sSpace: false, sLoading: false, sError: false, sMore: false, sShow: 60,
+      sViews: {}, sBig: false, sPickOpen: false, sSelHour: null, hCal: false, lRail: true, lCycle: 0, lCycleT: 0, lPaused: false, big: false, toastFade: false,
+      sRecent: [{ label: '1 Main gate entry · Last night', cams: { mode: 'cams', cams: [1] }, time: { preset: 'lastnight' }, types: { person: true, vehicle: true, other: false } }, { label: 'Warehouse · Yesterday · Vehicles', cams: { mode: 'area', area: 'warehouse' }, time: { preset: 'yesterday' }, types: { person: false, vehicle: true, other: false } }, { label: '3 Lobby corridor · This morning · People', cams: { mode: 'cams', cams: [3] }, time: { preset: 'morning' }, types: { person: true, vehicle: false, other: false } }],
+      edits: {}, cOpts: {}, cKey: 0, aOpts: {}, aKey: 0, sOpts: { section: 'storage' }, sKey: 0, keepDays: 30, diskFull: false, setupStep: null, forceChecklist: false, checkHidden: false,
+      dls: null, dlOpen: false, dlConfirm: null, dlName: '', toast: null, proto: false
+    };
+    const LOBBY_FROM = { label: 'This morning, 6:00 AM to 12:00 PM', phrase: 'this morning', camLabel: '3 Lobby corridor', cam: 3, recv: '8.1 GB', kept: '1.1 GB', pct: 86 };
+    if (scr === 'cameras') st.cOpts = { offlineFirst: v === 'offline', long: v === 'long', layout: v === 'grid' ? 'grid' : 'list' };
+    if (scr === 'camera') Object.assign(st, { screen: 'cameras', cOpts: { view: 'page', cam: v === 'remove' ? 16 : (parseInt(v, 10) || 3), confirmRemove: v === 'remove' } });
+    if (scr === 'areas') Object.assign(st, { screen: 'cameras', cOpts: { view: 'areas' } });
+    if (scr === 'addcams') st.aOpts = { view: v || null };
+    if (scr === 'settings') {
+      const sec = ['storage', 'space', 'capacity', 'users', 'about'].includes(v) ? v : v === 'refused' ? 'capacity' : v === 'adduser' ? 'users' : v === 'spacefrom' ? 'space' : 'storage';
+      st.sOpts = { section: sec, refused: v === 'refused', addUser: v === 'adduser', confirmKeep: v === 'keep', from: v === 'spacefrom' ? LOBBY_FROM : null };
+      if (v === 'diskfull') st.diskFull = true;
+      if (st.role !== 'admin') st.screen = 'denied';
+    }
+    if (scr === 'home' && v === 'dlpanel') st.dlOpen = true;
+    if (scr === 'home' && v === 'dlempty') Object.assign(st, { dlOpen: true, dls: [] });
+    if (scr === 'home' && v === 'pickdate') Object.assign(st, { hDay: 'date', hDayOff: -6, hCal: true });
+    if (scr === 'home' && v === 'checklist') Object.assign(st, { steps: { 1: 'done', 2: 'done', 3: 'done', 4: 'done' }, forceChecklist: true });
+    if (scr === 'signin') {
+      if (v === 'wrong') Object.assign(st, { aUser: 'ravi.desai', aPass: 'shiftstarts9', aMsg: 'wrong', aTries: 1 });
+      if (v === 'locked') Object.assign(st, { aUser: 'ravi.desai', aMsg: 'locked', aTries: 5, aLocked: 'ravi.desai' });
+      if (v === 'off') Object.assign(st, { aUser: 'arjun.mehta', aMsg: 'off' });
+      if (v === 'expired') Object.assign(st, { aUser: 'ravi.desai', aMsg: 'expired', aReturn: 'search', role: 'operator' });
+      if (v === 'forgot') Object.assign(st, { aUser: 'ravi.desai', aForgot: true });
+    }
+    if (scr === 'setpw') {
+      Object.assign(st, { who: 'neha', role: 'operator' });
+      if (v === 'weak') Object.assign(st, { pA: 'password12345678', pB: 'password12345678', pMsg: 'weak' });
+      else Object.assign(st, { pA: 'the blue van parks by', pB: '' });
+    }
+    if (scr === 'live') {
+      if (v === 'area4') Object.assign(st, { lCams: { mode: 'area', area: 'warehouse' }, lLayout: 4 });
+      if (v === 'single') st.lSingle = 3;
+      if (v === 'fullscreen') st.lFull = true;
+      if (v === 'empty') st.lEmpty = true;
+      if (v === 'tabs') Object.assign(st, { lCams: { mode: 'area', area: 'office' }, lLayout: 4 });
+      if (v === 'onefive') st.lLayout = 6;
+      if (v === 'norail') st.lRail = false;
+      if (v === 'big') Object.assign(st, { big: true, lLayout: 16 });
+      if (v === 'cycle') Object.assign(st, { big: true, lLayout: 16, lFull: true, lCycle: 15, lCycleT: 9, lPage: 2 });
+      if (v === 'dltoast') st.toast = { text: '“Lobby corridor, 28 Oct morning” is ready.', act: 'Download', id: 'x' };
+    }
+    if (scr === 'search') {
+      const lobby = { sCams: { mode: 'cams', cams: [3] }, sTime: { preset: 'morning' }, sTypes: { person: true, vehicle: false, other: false } };
+      if (['demo', 'space', 'selected', 'loading', 'error', 'retention', 'empty', 'dlconfirm'].includes(v)) Object.assign(st, lobby);
+      if (v === 'dlconfirm') Object.assign(st, { sSelPick: 3, dlConfirm: { n: 3, mb: 96, def: 'Lobby corridor, 28 Oct morning' } });
+      if (v === 'demo' || v === 'space') st.sFocusT = 9 * 3600 + 14 * 60;
+      if (v === 'space') st.sSpace = true;
+      if (v === 'selected') st.sSelPick = 3;
+      if (v === 'loading') st.sLoading = true;
+      if (v === 'error') st.sError = true;
+      if (v === 'empty') st.sTypes = { person: false, vehicle: true, other: false };
+      if (v === 'gap') Object.assign(st, { sCams: { mode: 'cams', cams: [13] }, sTime: { preset: 'morning' } });
+      if (v === 'list' || v === 'listnp' || v === 'big' || v === 'hoursel') Object.assign(st, lobby, { sViews: { [st.role]: 'list' } });
+      if (v === 'list' || v === 'big') st.sFocusT = 9 * 3600 + 14 * 60;
+      if (v === 'big') st.sBig = true;
+      if (v === 'hoursel') st.sSelHour = 9;
+      if (v === 'timeline') Object.assign(st, { sCams: { mode: 'area', area: 'gates' }, sTime: { preset: 'morning' }, sViews: { [st.role]: 'timeline' }, sFocusT: 8 * 3600 + 40 * 60 });
+      if (v === 'calendar') Object.assign(st, { sTime: { preset: 'custom', from: -13 * 86400, to: 40800 }, sViews: { [st.role]: 'calendar' } });
+      if (v === 'pickdate') Object.assign(st, lobby, { sTime: { preset: 'custom', from: -86400 + 6 * 3600, to: -86400 + 12 * 3600 }, sPickOpen: true });
+      if (v === 'retention') st.sTime = { preset: 'custom', from: -33 * 86400 + 6 * 3600, to: -30 * 86400 + 12 * 3600 };
+    }
+    return st;
+  }
+
+  componentDidMount() {
+    const boot = () => { if (!window.INVR) return setTimeout(boot, 30); this.setState({ ready: true }, () => this.resolve()); };
+    boot();
+    this.onKey = e => {
+      if (e.key !== 'Escape' || window.__invrActive !== this) return;
+      const s = this.state;
+      if (s.dlConfirm) this.setState({ dlConfirm: null });
+      else if (s.dlOpen || s.proto) this.setState({ dlOpen: false, proto: false });
+      else if (s.hCal) this.setState({ hCal: false });
+      else if (s.sBig) this.setState({ sBig: false });
+      else if (s.lFull) this.setState({ lFull: false });
+      else if (s.sSpace) this.setState({ sSpace: false });
+      else if (s.lSingle && s.screen === 'live') this.setState({ lSingle: null });
+      else if (s.menu) this.setState({ menu: false });
+    };
+    window.addEventListener('keydown', this.onKey);
+    if (!this.props.frame) {
+      window.__invrActive = this; this.di = setInterval(() => this.tickDl(), 500); this.ci = setInterval(() => this.tickCycle(), 500);
+      try { const m = /clip=(\d+)_(-?\d+)/.exec(location.hash || ''); if (m) this.linkClip = { cam: +m[1], t: +m[2] }; } catch (x) {}
+      try { const sv = JSON.parse(localStorage.getItem('inetra.views') || 'null'); if (sv && typeof sv === 'object') this.setState({ sViews: sv }); } catch (x) {}
+      if (window.innerWidth < 1500) this.setState({ lRail: false });
+    }
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); clearInterval(this.di); clearInterval(this.ci); clearTimeout(this.tt); clearTimeout(this.tf); clearTimeout(this.rt); }
+  merged() {
+    const s = this.state;
+    if (this._me !== s.edits || this._ms !== s.scen) { this._me = s.edits; this._ms = s.scen; this._m = window.INVR.merge(s.edits || {}, s.scen); }
+    return this._m;
+  }
+  onEdit = fn => this.setState(st => ({ edits: fn(st.edits || {}) }));
+  navFn = (t, o) => this.navTo(t, o);
+  onAdded = info => this.setState(st => { const steps = st.steps ? Object.assign({}, st.steps, { 1: 'done' }) : st.steps; return info && info.first ? { scen: 'fresh', steps } : { steps }; });
+  onKeep = v => this.setState(st => ({ keepDays: v, steps: st.setupStep === 3 && st.steps ? Object.assign({}, st.steps, { 3: 'done' }) : st.steps }));
+  onStepDone = k => this.setState(st => ({ steps: Object.assign({}, st.steps || {}, { [k]: 'done' }), setupStep: null, screen: 'home' }));
+  onStepProgress = k => this.setState(st => st.steps ? { steps: Object.assign({}, st.steps, { [k]: 'done' }) } : null);
+  onShowChecklist = () => this.setState(st => ({ steps: st.steps || { 1: 'done', 2: 'done', 3: 'done', 4: 'done' }, forceChecklist: true, checkHidden: false, screen: 'home', setupStep: null }));
+  navTo(t, o) {
+    o = o || {};
+    const base = { menu: false, dlOpen: false, lFull: false, sSpace: false, proto: false };
+    if (t === 'search') return this.openSearch(o);
+    if (t === 'live') return this.setState(Object.assign(base, { screen: 'live', lSingle: o.cam || null, lEmpty: false }));
+    if (t === 'home') return this.setState(Object.assign(base, { screen: 'home', setupStep: null }));
+    if (t === 'cameras') return this.setState(st => Object.assign(base, { screen: 'cameras', cOpts: Object.assign({ long: st.big }, o), cKey: st.cKey + 1 }));
+    if (t === 'addcams') return this.setState(st => Object.assign(base, { screen: st.role === 'admin' ? 'addcams' : 'denied', aOpts: o, aKey: st.aKey + 1 }));
+    if (t === 'settings') return this.setState(st => Object.assign(base, { screen: st.role === 'admin' ? 'settings' : 'denied', sOpts: o, sKey: st.sKey + 1, setupStep: o.setup || null }));
+  }
+  stepGo(k) {
+    if (k === 1) return this.navTo('addcams', {});
+    this.navTo('settings', { section: { 2: 'capacity', 3: 'storage', 4: 'users' }[k], setup: k });
+  }
+  dlList() { return this.state.dls || window.INVR.DOWNLOADS.map(d => Object.assign({}, d)); }
+  showToast(t) { clearTimeout(this.tt); clearTimeout(this.tf); this.setState({ toast: t, toastFade: false }); this.tf = setTimeout(() => this.setState({ toastFade: true }), 4200); this.tt = setTimeout(() => this.setState({ toast: null, toastFade: false }), 5200); }
+  pushRecent(r) { if (!r || !r.label) return; this.setState(st => ({ sRecent: [r].concat((st.sRecent || []).filter(x => x.label !== r.label)).slice(0, 6) })); }
+  tickCycle() {
+    const s = this.state, pages = this._lPages || 1;
+    if (!s.lFull || !s.lCycle || s.lPaused || pages < 2 || s.screen !== 'live') return;
+    const t = s.lCycleT + 0.5;
+    if (t >= s.lCycle) this.setState({ lCycleT: 0, lPage: (s.lPage + 1) % pages }); else this.setState({ lCycleT: t });
+  }
+  openLink() {
+    const lc = this.linkClip; if (!lc || !window.INVR) return; this.linkClip = null;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (x) {}
+    const off = Math.floor(lc.t / 86400);
+    this.openSearch({ cams: [lc.cam], preset: off === 0 ? 'today' : off === -1 ? 'yesterday' : null, day: off, focusT: lc.t });
+    this.showToast({ text: 'Opened the clip from the shared link.' });
+  }
+  tickDl() {
+    const s = this.state;
+    if (!window.INVR || s.screen === 'signin' || s.screen === 'setpw') return;
+    const list = this.dlList();
+    if (!list.some(d => d.status === 'preparing')) return;
+    let done = null;
+    const next = list.map(d => { if (d.status !== 'preparing') return d; const pr = Math.min(1, (d.progress || 0) + 0.06); if (pr >= 1) { done = d; return Object.assign({}, d, { status: 'ready', progress: 1, mb: d.est }); } return Object.assign({}, d, { progress: pr }); });
+    this.setState({ dls: next });
+    if (done && !s.dlOpen) this.showToast({ text: `“${done.name}” is ready.`, act: 'Download', id: done.id });
+  }
+  askDownload(evs, def) {
+    if (!evs || !evs.length) return;
+    const mb = Math.round(evs.reduce((a, e) => a + ((e.durS || e.dur || 20) + 8) * 0.5, 0));
+    this.setState({ dlConfirm: { n: evs.length, mb, def }, dlName: '', dlOpen: false });
+  }
+  startDownload() {
+    const s = this.state, I = window.INVR, dc = s.dlConfirm;
+    if (!dc) return;
+    const u = I.users[s.who || s.role], name = s.dlName.trim() || dc.def;
+    const d = { id: 'n' + Date.now(), name, events: dc.n, est: dc.mb, mb: 0, by: u.name, byKey: s.who || s.role, at: I.SCEN[s.scen].now, status: 'preparing', progress: 0 };
+    this.setState({ dls: [d].concat(this.dlList()), dlConfirm: null, dlName: '', sSel: {} });
+    this.showToast({ text: `Preparing “${name}”. It keeps going if you leave this page, and you’ll find it under Downloads.` });
+  }
+  fakeDownload() {
+    const s = this.state, I = window.INVR, u = I.users[s.who || s.role];
+    const d = { id: 'f' + Date.now(), name: 'Main gate exit, 28 Oct morning', events: 5, est: 74, mb: 0, by: u.name, byKey: s.who || s.role, at: I.SCEN[s.scen].now, status: 'preparing', progress: 0.82 };
+    this.setState({ dls: [d].concat(this.dlList()), proto: false });
+  }
+  asUser(k) {
+    const s = this.state, base = { menu: false, dlOpen: false, proto: false, aMsg: null, aReturn: null };
+    if (k === 'neha') return this.setState(Object.assign(base, { screen: 'setpw', role: 'operator', who: 'neha', pA: '', pB: '', pMsg: null }));
+    const scr = s.screen, adminOnly = scr === 'settings' || scr === 'addcams' || scr === 'denied';
+    this.setState(Object.assign(base, { role: k, who: null, screen: scr === 'signin' || scr === 'setpw' || (k !== 'admin' && adminOnly) || (k === 'admin' && scr === 'denied') ? 'home' : scr, scen: s.scen === 'first' && k !== 'admin' ? 'day' : s.scen }));
+  }
+  setScen(k) {
+    const s = this.state, first = k === 'first';
+    this.setState({ scen: k, screen: first || s.screen === 'signin' || s.screen === 'setpw' ? 'home' : s.screen, steps: first ? { 1: 'todo', 2: 'todo', 3: 'todo', 4: 'todo' } : (s.scen === 'first' ? null : s.steps), role: first ? 'admin' : s.role, who: first ? null : s.who, edits: first ? {} : s.edits, hDay: 'today', checkHidden: false, proto: false, lSingle: null });
+  }
+  endSession() {
+    const s = this.state, me = s.who || s.role, name = { admin: 'karan.joshi', operator: 'ravi.desai', neha: 'neha.shah' }[me] || '';
+    this.setState({ screen: 'signin', aMsg: 'expired', aReturn: s.screen === 'signin' || s.screen === 'setpw' ? 'home' : s.screen, aUser: name, aPass: '', menu: false, dlOpen: false, proto: false, lFull: false });
+  }
+  signOutNow() { this.setState({ screen: 'signin', menu: false, aUser: '', aPass: '', aMsg: null, aForgot: false, who: null, lFull: false, dlOpen: false, proto: false, aReturn: null }); }
+  chrome(I, s, p, c) {
+    const me = s.who || s.role, list = this.dlList();
+    const mine = (c.admin ? list : list.filter(d => d.byKey === me)).slice().sort((a, b) => b.at - a.at);
+    const prep = mine.filter(d => d.status === 'preparing');
+    const mbText = mb => mb >= 1000 ? (mb / 1000).toFixed(1) + ' GB' : Math.round(mb) + ' MB';
+    const dls = mine.map(d => {
+      const st = d.status;
+      return {
+        name: d.name, meta: [d.events + ' events', st === 'ready' ? mbText(d.mb) : st === 'preparing' ? 'about ' + mbText(d.est) : '', c.admin ? 'by ' + d.by : '', I.when(d.at)].filter(Boolean).join(' · '),
+        status: st === 'preparing' ? `Preparing · ${Math.round((d.progress || 0) * 100)}%` : st === 'ready' ? 'Ready' : 'Failed',
+        chipBg: st === 'ready' ? 'var(--success-tint)' : st === 'failed' ? 'var(--danger-tint)' : 'var(--blue-tint)', chipInk: st === 'ready' ? 'var(--success-deep)' : st === 'failed' ? 'var(--danger-deep)' : 'var(--blue-deep)',
+        preparing: st === 'preparing', ready: st === 'ready', failed: st === 'failed', w: Math.round((d.progress || 0) * 100) + '%', reason: d.reason || 'Something went wrong while preparing it.',
+        save: () => this.showToast({ text: `Saved “${d.name}” to this computer’s Downloads folder.` }),
+        retry: () => this.setState({ dls: this.dlList().map(x => x.id === d.id ? Object.assign({}, x, { status: 'preparing', progress: 0 }) : x) })
+      };
+    });
+    const dc = s.dlConfirm, t = s.toast;
+    const B = (label, fn, on) => ({ label, go: fn, on: !!on, border: on ? 'var(--paper)' : 'var(--line-dark)', bg: on ? 'var(--ink-2)' : 'transparent' });
+    const authed = !c.isAuth;
+    const protoSecs = [
+      { title: 'Signed in as', items: [B('Karan Joshi · Admin', () => this.asUser('admin'), authed && me === 'admin'), B('Ravi Desai · Operator', () => this.asUser('operator'), authed && me === 'operator'), B('Neha Shah · new password', () => this.asUser('neha'), me === 'neha'), B('Sign out', () => this.signOutNow())] },
+      { title: 'Go to', items: [
+        B('Sign in', () => this.signOutNow(), s.screen === 'signin'), B('Home', () => this.navTo('home'), s.screen === 'home'), B('Live view', () => this.navTo('live', {}), s.screen === 'live' && !s.lSingle), B('One camera full size', () => this.navTo('live', { cam: 3 }), s.screen === 'live' && !!s.lSingle),
+        B('Full-screen wall', () => this.setState({ screen: 'live', lSingle: null, lFull: true, lEmpty: false, proto: false })),
+        B('Search · Lobby this morning', () => this.openSearch({ cams: [3], preset: 'morning', types: { person: true, vehicle: false, other: false }, focusT: 33240 }), s.screen === 'search'),
+        B('Search · last 14 days', () => { this.openSearch({}); this.setState({ sTime: { preset: 'custom', from: -13 * 86400, to: c.now } }); }),
+        B('Cameras', () => this.navTo('cameras', {}), s.screen === 'cameras'), B('Camera page · offline', () => this.navTo('cameras', { view: 'page', cam: 16 })), B('Areas', () => this.navTo('cameras', { view: 'areas' })),
+        B('Add cameras', () => this.navTo('addcams', {}), s.screen === 'addcams'), B('Downloads panel', () => this.setState({ dlOpen: true, proto: false, menu: false }), s.dlOpen),
+        B('Storage', () => this.navTo('settings', { section: 'storage' })), B('Space saved', () => this.navTo('settings', { section: 'space' })), B('Capacity and detail', () => this.navTo('settings', { section: 'capacity' })), B('Users', () => this.navTo('settings', { section: 'users' })), B('About this box', () => this.navTo('settings', { section: 'about' }))
+      ] },
+      { title: 'Site right now', items: [B('Busy day · 11:20 AM', () => this.setScen('day'), s.scen === 'day'), B('Quiet night · 4:10 AM', () => this.setScen('night'), s.scen === 'night'), B('Just after midnight', () => this.setScen('midnight'), s.scen === 'midnight'), B('Brand-new box', () => this.setScen('first'), s.scen === 'first' || s.scen === 'fresh')] },
+      { title: 'Simulate', items: [B('Lost connection', () => this.setState(st => ({ banner: st.banner === 'lost' ? null : 'lost', proto: false })), s.banner === 'lost'), B('Session ends', () => this.endSession()), B('Disk nearly full', () => this.setState(st => ({ diskFull: !st.diskFull })), s.diskFull), B('200-camera site', () => { const nb = !s.big; this.setState({ big: nb, lPage: 0, lCams: { mode: 'all' }, lSingle: null, proto: false }); if (s.screen === 'cameras') this.navTo('cameras', { long: nb }); }, s.big), B('Open a copied link', () => { this.linkClip = { cam: 3, t: 33248 }; this.signOutNow(); }), B('A download finishes', () => this.fakeDownload())] }
+    ];
+    return {
+      dlOpen: s.dlOpen, toggleDl: () => this.setState(st => ({ dlOpen: !st.dlOpen, menu: false, proto: false })), dlBorder: s.dlOpen ? 'var(--paper)' : 'var(--line-dark)',
+      dlBusy: prep.length > 0, dlBadge: prep.length ? Math.round((prep[0].progress || 0) * 100) + '%' : '',
+      dlScope: c.admin ? 'Everyone’s · newest first' : 'Yours · newest first', dls, dlEmpty: dls.length === 0,
+      dlConfirm: !!dc && authed, dlName: s.dlName, onDlName: e => this.setState({ dlName: e.target.value }),
+      dlCancel: () => this.setState({ dlConfirm: null }), dlStart: c.pd(() => this.startDownload()),
+      dc: dc ? { title: `Download ${dc.n} ${dc.n === 1 ? 'event' : 'events'}`, def: dc.def, who: c.u.name, items: [{ t: `${dc.n} video ${dc.n === 1 ? 'clip' : 'clips'}, about ${mbText(dc.mb)}` }, { t: `${dc.n} ${dc.n === 1 ? 'picture' : 'pictures'}, one per event` }, { t: 'A list of the events, with camera and time' }, { t: `A note that ${c.u.name} made this download, today at ${I.clock(c.now)}` }] } : { title: '', def: '', who: '', items: [] },
+      toastOp: s.toastFade ? 0 : 1, notFrame: !p.frame, hasToast: !!t, toastText: t ? t.text : '', toastAct: !!(t && t.act), toastActLabel: t && t.act ? t.act : '',
+      toastDo: () => { const d = t && list.find(x => x.id === t.id); this.showToast({ text: `Saved “${d ? d.name : 'Lobby corridor, 28 Oct morning'}” to this computer’s Downloads folder.` }); },
+      toastClose: () => this.setState({ toast: null }),
+      showAccounts: !p.frame && s.screen === 'signin',
+      accounts: [['karan.joshi', 'Admin'], ['ravi.desai', 'Operator'], ['neha.shah', 'Sets her own password'], ['first.admin', 'Brand-new box, first admin'], ['arjun.mehta', 'Access turned off']].map(([user, what]) => ({ user, what, fill: () => this.setState({ aUser: user, aPass: 'demo-password', aMsg: s.aMsg === 'expired' ? 'expired' : null }) })),
+      showProto: !p.frame && !c.isFull && s.screen !== 'signin', proto: s.proto, toggleProto: () => this.setState(st => ({ proto: !st.proto, dlOpen: false, menu: false })), protoLabel: s.proto ? 'Close prototype controls' : 'Prototype controls', protoSecs
+    };
+  }
+  componentDidUpdate(prev, ps) {
+    const p = this.props, s = this.state;
+    if (ps && s.screen === 'search' && ps.screen === 'search' && (ps.sCams !== s.sCams || ps.sTime !== s.sTime || ps.sTypes !== s.sTypes) && !this.rt) { const was = this._prevCur; this.rt = setTimeout(() => { this.rt = null; this.pushRecent(was); }, 1200); }
+    if (prev.screen !== p.screen || prev.variant !== p.variant || prev.role !== p.role || prev.banner !== p.banner) this.setState(this.init(p), () => this.resolve());
+  }
+
+  camList(v) {
+    const M = this.merged();
+    if (window.INVR.SCEN[this.state.scen].noCams) return [];
+    if (!v || v.mode === 'all') return M.cams.map(c => c.num);
+    if (v.mode === 'area') return (M.areas.find(a => a.id === v.area) || { cams: [] }).cams.slice();
+    return v.cams.slice().sort((a, b) => a - b);
+  }
+  results(s) {
+    const I = window.INVR, now = I.SCEN[s.scen].now;
+    const r = I.presetRange(s.sTime.preset, now, [s.sTime.from, s.sTime.to]);
+    const a = r[0], b0 = r[1], b = Math.min(b0, now);
+    const camNums = this.camList(s.sCams), set = new Set(camNums);
+    const all = b > a ? I.between(a, b).filter(e => set.has(e.cam)) : [];
+    let list = all.filter(e => s.sTypes[e.type] && e.dur >= s.sMin);
+    if (s.sSort !== 'old') list = list.slice().reverse();
+    return { a, b0, b, now, camNums, all, list };
+  }
+  resolve() {
+    const s = this.state;
+    if (!window.INVR || (s.sFocusT == null && !s.sSelPick && s.sSelHour == null)) return;
+    const list = this.results(s).list, upd = {};
+    if (s.sFocusT != null) {
+      if (list.length) { let best = list[0]; list.forEach(e => { if (Math.abs(e.t - s.sFocusT) < Math.abs(best.t - s.sFocusT)) best = e; }); upd.sPlay = best.id; }
+      upd.sFocusT = null;
+    }
+    if (s.sSelPick) {
+      const m = {}; list.slice(1, 1 + s.sSelPick).forEach(e => { m[e.id] = true; });
+      upd.sSel = m; upd.sSelPick = 0;
+    }
+    if (s.sSelHour != null) { const m = {}; list.filter(e => Math.floor(e.t / 3600) === s.sSelHour).forEach(e => { m[e.id] = true; }); upd.sSel = m; upd.sSelHour = null; }
+    this.setState(upd);
+  }
+  openSearch(o) {
+    const I = window.INVR, DAY = I.DAY;
+    let time;
+    const preset = o.preset !== undefined ? o.preset : (o.focusT != null ? I.presetFor(o.focusT) : 'today');
+    if (preset) time = { preset };
+    else { const d = o.day != null ? o.day : Math.floor(o.focusT / DAY); time = { preset: 'custom', from: d * DAY, to: d * DAY + DAY }; }
+    this.setState({
+      screen: 'search', menu: false, lFull: false, dlOpen: false, proto: false,
+      sCams: o.cams ? { mode: 'cams', cams: o.cams } : { mode: 'all' }, sTime: time,
+      sTypes: o.types || { person: true, vehicle: true, other: false }, sMin: 0, sSel: {}, sPlay: null,
+      sFocusT: o.focusT != null ? o.focusT : null, sAuto: o.focusT != null, sBig: false, sPickOpen: false, sSpace: false, sLoading: false, sError: false, sMore: false, sShow: 60
+    }, () => this.resolve());
+  }
+  signIn() {
+    const s = this.state, u = s.aUser.trim().toLowerCase();
+    const KNOWN = { 'karan.joshi': ['admin', null], 'ravi.desai': ['operator', null], 'neha.shah': ['operator', 'neha', true], 'first.admin': ['admin', null, true, true] };
+    if (s.aLocked && s.aLocked === u) return this.setState({ aMsg: 'locked' });
+    if (u === 'arjun.mehta') return this.setState({ aMsg: 'off' });
+    const k = KNOWN[u];
+    if (k && s.aPass.length > 0) {
+      const [role, who, setpw, first] = k, back = s.aReturn;
+      const st = { role, who, aMsg: null, aPass: '', aTries: 0, aReturn: null, menu: false, proto: false };
+      if (first) Object.assign(st, { scen: 'first', steps: { 1: 'todo', 2: 'todo', 3: 'todo', 4: 'todo' }, edits: {}, checkHidden: false, forceChecklist: false });
+      else if (!back && (s.scen === 'first' || s.scen === 'fresh')) Object.assign(st, { scen: 'day', steps: null });
+      if (setpw) return this.setState(Object.assign(st, { screen: 'setpw', pA: '', pB: '', pMsg: null }));
+      return this.setState(Object.assign(st, { screen: back && !(role !== 'admin' && (back === 'settings' || back === 'addcams')) ? back : 'home' }), () => this.openLink());
+    }
+    const tries = s.aTries + 1;
+    this.setState(tries >= 5 ? { aTries: tries, aMsg: 'locked', aLocked: u } : { aTries: tries, aMsg: 'wrong' });
+  }
+  savePw() {
+    const s = this.state, a = s.pA;
+    const COMMON = ['password12345678', 'passwordpassword', '123456789012345', '1234567890123456', 'qwertyuiopasdfgh', 'iloveyouiloveyou', 'welcome123456789', 'admin12345678901'];
+    if (a.length < 15) return this.setState({ pMsg: 'short' });
+    if (COMMON.includes(a.toLowerCase())) return this.setState({ pMsg: 'weak' });
+    if (a !== s.pB) return this.setState({ pMsg: 'match' });
+    this.setState({ screen: 'home', pMsg: null, pA: '', pB: '' }, () => this.openLink());
+  }
+  go(k) {
+    if (k === 'cameras') return this.navTo('cameras', {});
+    if (k === 'settings') return this.navTo('settings', { section: 'storage' });
+    if (k === 'home' || k === 'live' || k === 'search') this.setState({ screen: k, menu: false, sSpace: false, dlOpen: false, proto: false, lSingle: k === 'live' ? null : this.state.lSingle, setupStep: null });
+  }
+  card(e) {
+    const I = window.INVR, c = this.merged().CAM[e.cam] || I.CAM[e.cam];
+    return { id: e.id, kind: e.kind, type: e.type, camLabel: c.label, when: I.when(e.t), dur: I.dur(e.dur), durS: e.dur, scene: c.scene, x: e.x, t: e.t, cam: e.cam };
+  }
+
+  renderVals() {
+    const I = window.INVR, s = this.state, p = this.props;
+    const pd = fn => e => { if (e && e.preventDefault) e.preventDefault(); fn(e); };
+    const seg = on => ({ bg: on ? 'var(--blue-tint)' : 'transparent', ink: on ? 'var(--blue-deep)' : 'var(--muted)', ring: on ? '0 0 0 1px var(--blue)' : 'none', weight: on ? 600 : 400 });
+    const out = { rootH: p.frame ? '100%' : '100vh', activate: () => { window.__invrActive = this; }, logoMark: I ? I.LOGO_MARK : '', logoFull: I ? I.LOGO_FULL : '' };
+    if (!I || !s.ready) return Object.assign(out, { notFull: false, isFull: false });
+    const DAY = I.DAY, H = I.H, sc = I.SCEN[s.scen], now = sc.now, admin = s.role === 'admin', u = I.users[s.who || s.role];
+    const M = this.merged(), cams = sc.noCams ? [] : M.cams, CAM = M.CAM;
+    const offCams = cams.filter(c => c.status === 'offline');
+    const scr = s.screen, isLive = scr === 'live', noCams = (isLive && s.lEmpty) || !!sc.noCams, isFull = isLive && s.lFull && !noCams;
+    const isAuth = scr === 'signin' || scr === 'setpw';
+    out.isAuth = isAuth;
+    out.signOut = () => this.setState({ screen: 'signin', menu: false, aUser: '', aPass: '', aMsg: null, aForgot: false, who: null, lFull: false });
+    if (isAuth) {
+      const MSG = {
+        wrong: ['That username or password is not right. Try again, or ask your admin to reset it.', '', 'danger'],
+        locked: ['Too many wrong tries for this username. Wait 5 minutes and try again, or ask your admin to reset your password.', 'You can try again at ' + I.clock(now + 300) + '.', 'danger'],
+        off: ['Your access to i-Netra is turned off, so ask your admin if you need it back.', '', 'warning'],
+        expired: ['You were signed out, so sign in again to carry on where you left off.', 'You’ll go back to Search with the same cameras, time and page.', 'info']
+      };
+      const PM = { short: 'Use at least 15 characters. A short sentence is the easiest to remember.', weak: 'That password is too easy to guess. Try a short sentence instead.', match: 'The two passwords are not the same yet. Type the new one again.' };
+      const m = s.aMsg ? MSG[s.aMsg] : null, len = s.pA.length;
+      const enter = fn => e => { if (e.key === 'Enter') { e.preventDefault(); fn(); } };
+      out.a = {
+        isSignin: scr === 'signin', isSetpw: scr === 'setpw',
+        hasMsg: !!m, msg: m ? m[0] : '', msgSub: m ? m[1] : '', hasSub: !!(m && m[1]),
+        msgBg: m ? `var(--${m[2]}-tint)` : 'transparent', msgInk: m ? `var(--${m[2]}-deep)` : 'var(--ink)',
+        userBorder: s.aMsg === 'wrong' ? 'var(--danger-deep)' : 'var(--line)',
+        user: s.aUser, pass: s.aPass,
+        onUser: e => this.setState({ aUser: e.target.value, aMsg: s.aMsg === 'expired' ? 'expired' : null }),
+        onPass: e => this.setState({ aPass: e.target.value }),
+        onKey: enter(() => this.signIn()), submit: pd(() => this.signIn()),
+        passType: s.aShow ? 'text' : 'password', showLabel: s.aShow ? 'Hide' : 'Show', toggleShow: () => this.setState(st => ({ aShow: !st.aShow })),
+        forgot: s.aForgot, toggleForgot: () => this.setState(st => ({ aForgot: !st.aForgot })),
+        who: `${u.name} · ${u.role}`,
+        hasPMsg: !!s.pMsg, pMsg: s.pMsg ? PM[s.pMsg] : '',
+        pA: s.pA, pB: s.pB, onPA: e => this.setState({ pA: e.target.value, pMsg: null }), onPB: e => this.setState({ pB: e.target.value, pMsg: null }),
+        onPKey: enter(() => this.savePw()), savePw: pd(() => this.savePw()),
+        pType: s.pShow ? 'text' : 'password', pShowLabel: s.pShow ? 'Hide' : 'Show', togglePShow: () => this.setState(st => ({ pShow: !st.pShow })),
+        cells: Array.from({ length: 15 }, (_, i) => ({ bg: i < len ? (len >= 15 ? 'var(--blue)' : 'var(--ink)') : 'var(--paper-3)' })),
+        lenText: len >= 15 ? `${len} characters · long enough` : `${len} of 15 characters`, lenInk: len >= 15 ? 'var(--success-deep)' : 'var(--muted)',
+        showMatch: s.pB.length > 0, matchText: s.pA === s.pB ? 'Both match' : 'Not the same yet', matchInk: s.pA === s.pB ? 'var(--success-deep)' : 'var(--muted)'
+      };
+    }
+    const navDefs = [['home', 'Home'], ['live', 'Live view'], ['search', 'Search'], ['cameras', 'Cameras']].concat(admin ? [['settings', 'Settings']] : []);
+    Object.assign(out, {
+      notFull: !isFull && !isAuth, isFull: isFull && !isAuth, admin, operator: !admin, now, camsStatus: cams,
+      camSummary: noCams ? 'No cameras yet' : s.big ? (() => { const BC = I.bigMerge().cams; return `${BC.filter(c => c.status !== 'offline').length} of ${BC.length} cameras online`; })() : `${cams.length - offCams.length} of ${cams.length} cameras online`,
+      camDot: noCams ? 'var(--paper-3)' : offCams.length ? 'var(--danger)' : 'var(--success)',
+      goCameras: () => this.navTo('cameras', { offlineFirst: offCams.length > 0 }),
+      goAdd: pd(() => this.navTo('addcams', {})),
+      pickAreas: M.areas, roleKey: s.role, scenKey: s.scen, meKey: s.who || s.role, edits: s.edits,
+      onEdit: this.onEdit, navFn: this.navFn, onAdded: this.onAdded, onKeep: this.onKeep, onStepDone: this.onStepDone, onStepProgress: this.onStepProgress, onShowChecklist: this.onShowChecklist,
+      cOpts: s.cOpts, cKey: s.cKey, aOpts: s.aOpts, aKey: s.aKey, sOpts: s.sOpts, sKey: s.sKey, keepDays: s.keepDays, diskFull: s.diskFull, setupStep: s.setupStep,
+      isCameras: scr === 'cameras' && !sc.noCams, isCamsEmpty: scr === 'cameras' && !!sc.noCams, isAddCams: scr === 'addcams' && admin, isSettings: scr === 'settings' && admin,
+      camsEmptyText: admin ? 'Add your cameras and each one shows here with its status, today’s events and its detail level.' : 'Ask your admin to add them. The admin for Plant 2 is Karan Joshi.',
+      userName: u.name, userRole: u.role, initials: u.initials,
+      roleLine: admin ? 'Admin · cameras, settings and accounts' : 'Operator · watch, search and download',
+      avatarBg: ({ admin: 'var(--iris)', operator: 'var(--teal)', neha: 'var(--sky)' })[s.who || s.role] || 'var(--iris)', avatarInk: (s.who || s.role) === 'admin' ? 'var(--paper)' : 'var(--ink)',
+      menu: s.menu, toggleMenu: () => this.setState(st => ({ menu: !st.menu })),
+      nav: navDefs.map(([k, l]) => { const on = scr === k || (k === 'cameras' && scr === 'addcams') || (k === 'settings' && scr === 'denied'); return { label: l, bg: on ? 'var(--ink-2)' : 'transparent', ink: on ? 'var(--paper)' : 'var(--muted-dark)', ring: on ? '0 0 0 1px var(--line-dark)' : 'none', weight: on ? 500 : 400, mark: on ? 'var(--blue)' : 'transparent', go: () => this.go(k) }; }),
+      lost: s.banner === 'lost', retryConn: () => this.setState({ banner: null }),
+      isHome: scr === 'home', isLiveWall: isLive && !noCams && !s.lSingle, isLiveSingle: isLive && !noCams && !!s.lSingle, isLiveEmpty: isLive && noCams,
+      isSearch: scr === 'search', isDenied: scr === 'denied',
+      goHome: pd(() => this.go('home')), clockText: I.clock(now),
+      emptyCells: Array.from({ length: 16 }, (_, i) => ({ i }))
+    });
+    Object.assign(out, this.chrome(I, s, p, { admin, now, u, isAuth, isFull, pd }));
+
+    if (scr === 'home') {
+      const dOff = s.hDay === 'today' ? 0 : s.hDay === 'yesterday' ? -1 : s.hDayOff;
+      const times = I.camTimes(dOff), dStart = dOff * DAY;
+      const areas = (s.hArea === 'all' ? M.areas : M.areas.filter(a => a.id === s.hArea)).filter(a => a.cams.length);
+      const since = sc.since || 0;
+      const groups = areas.map(a => ({
+        name: a.name, toneBg: I.areaTone(a.id).bg, toneInk: I.areaTone(a.id).ink, count: a.cams.length + (a.cams.length === 1 ? ' camera' : ' cameras'),
+        rows: a.cams.map(n => {
+          const c = CAM[n], t0 = times[n] || [], tt = sc.since == null ? t0 : dOff === 0 ? t0.filter(t => t >= since) : [];
+          return {
+            num: n, name: c.name, times: tt, cnt: dOff === 0 ? tt.filter(t => t <= now).length : tt.length,
+            offline: dOff === 0 ? (sc.gaps[n] || []) : [], isOff: dOff === 0 && c.status === 'offline',
+            open: () => this.openSearch({ cams: [n], preset: dOff === 0 ? 'today' : dOff === -1 ? 'yesterday' : null, day: dOff }),
+            pick: t => this.openSearch({ cams: [n], focusT: t })
+          };
+        })
+      }));
+      const todayEv = sc.noCams ? [] : I.day(0).filter(e => e.t <= now && e.t >= since);
+      const people = todayEv.filter(e => e.type === 'person').length, last = todayEv[todayEv.length - 1], nf = now / DAY;
+      const STEPS = [
+        ['Add your cameras', 'Opens Add cameras. Find them on this network, add them from the recorder, enter an address or upload a list.', 'Add cameras'],
+        ['Check detail levels', 'Opens Capacity and detail in Settings, where each camera is set to Low, Standard, High or Maximum.', 'Check detail levels'],
+        ['Choose how long to keep clips', 'Opens Storage in Settings. Clips are kept for 30 days until you choose otherwise.', 'Choose how long'],
+        ['Add the people who will use i-Netra', 'Opens Users in Settings, where you create accounts and give each one a role.', 'Add people']
+      ];
+      const stp = s.steps || {};
+      const nextK = [1, 2, 3, 4].find(k => stp[k] === 'todo');
+      const doneN = [1, 2, 3, 4].filter(k => stp[k] === 'done').length;
+      const steps = STEPS.map(([title, sub, action], i) => {
+        const k = i + 1, stt = stp[k], done = stt === 'done';
+        return {
+          idx: '0' + k, title, sub, action, status: done ? 'Done' : stt === 'skipped' ? 'Skipped' : 'To do',
+          chipBg: done ? 'var(--success-tint)' : 'var(--paper-2)', chipInk: done ? 'var(--success-deep)' : 'var(--ink)',
+          bar: done ? 'var(--success)' : 'var(--paper-3)',
+          isNext: k === nextK, isLater: !done && k !== nextK, canSkip: stt === 'todo', go: pd(() => this.stepGo(k)),
+          skip: () => this.setState(st => ({ steps: Object.assign({}, st.steps, { [k]: 'skipped' }) }))
+        };
+      });
+      const yEv = sc.noCams ? [] : I.day(-1).filter(e => e.t <= now - DAY && e.t >= since - DAY), yP = yEv.filter(e => e.type === 'person').length, yV = yEv.length - yP;
+      const cmpY = (x, y) => x === y ? 'Same as this time yesterday' : `${Math.abs(x - y)} ${x > y ? 'more' : 'fewer'} than this time yesterday`;
+      out.h = {
+        checklist: admin && !!s.steps && !s.checkHidden && (doneN < 4 || s.forceChecklist), steps, checkTitle: doneN === 4 ? 'Plant 2 is set up.' : 'Finish setting up Plant 2.', canHide: true, hideChecklist: () => this.setState({ forceChecklist: false, checkHidden: true }), doneText: `${doneN} of 4 done`,
+        firstRun: !!sc.noCams, hasData: !sc.noCams, statSince: `Since ${I.clock(since)} · Open in Search →`,
+        hasSince: sc.since != null && dOff === 0, sinceText: sc.since != null ? 'Watching since ' + I.clock(sc.since) : '',
+        notice: offCams.length > 0, goStorage: () => this.navTo('settings', { section: 'storage' }), openOffline: () => this.navTo('cameras', { view: 'page', cam: offCams[0] ? offCams[0].num : 16 }), noticeCam: offCams.map(c => c.label).join(', '), noticeSince: offCams[0] ? offCams[0].since : '',
+        noticeAdvice: admin ? "Check the camera's power and network cable." : "Nothing is saved from it until it's back, and your admin can check it.",
+        dateLine: `Wed ${I.dateShort(0)} · ${I.clock(now)} site time`,
+        pCmp: cmpY(people, yP), vCmp: cmpY(todayEv.length - people, yV), pBars: I.hourBars(todayEv, 'person', 'var(--sky)', now), vBars: I.hourBars(todayEv, 'vehicle', 'var(--honey)', now), camCells: cams.map(c => ({ c: c.status === 'offline' ? 'var(--danger)' : 'var(--success)' })),
+        people, vehicles: todayEv.length - people, online: cams.length - offCams.length, total: cams.length,
+        camChipBg: offCams.length ? 'var(--danger-tint)' : 'var(--success-tint)', camChipInk: offCams.length ? 'var(--danger-deep)' : 'var(--success-deep)',
+        camSub: offCams.length ? `${offCams[0].label} offline since ${offCams[0].since}` : 'Every camera is online',
+        spacePct: sc.space.pct, keptW: (100 - (parseInt(sc.space.pct, 10) || 0)) + '%', spaceSub: `${sc.space.kept} kept of ${sc.space.recv}`,
+        goPeople: () => this.openSearch({ preset: 'today', types: { person: true, vehicle: false, other: false } }),
+        goVehicles: () => this.openSearch({ preset: 'today', types: { person: false, vehicle: true, other: false } }),
+        goAll: pd(() => this.openSearch({ preset: 'today' })),
+        days: [['today', 'Today'], ['yesterday', 'Yesterday'], ['date', 'Pick a date']].map(([k, l]) => Object.assign({ label: l, set: () => this.setState({ hDay: k, hCal: k === 'date' }) }, seg(s.hDay === k))),
+        isDate: s.hDay === 'date', dateText: I.dayLong(dOff), calOpen: !!s.hCal, calBorder: s.hCal ? 'var(--blue)' : 'var(--line)', toggleCal: () => this.setState(st => ({ hCal: !st.hCal })), dOffV: dOff,
+        calCams: s.hArea === 'all' ? null : ((M.areas.find(a => a.id === s.hArea) || { cams: [] }).cams), pickDay: off => this.setState({ hDayOff: off, hDay: off === 0 ? 'today' : off === -1 ? 'yesterday' : 'date', hCal: false }),
+        areaOpts: [{ value: 'all', label: 'All areas' }].concat(M.areas.map(a => ({ value: a.id, label: a.name }))), areaValue: s.hArea,
+        onArea: e => this.setState({ hArea: e.target.value }),
+        midnightNote: s.scen === 'midnight' && dOff === 0, showYesterday: () => this.setState({ hDay: 'yesterday' }),
+        ticks: [0, 3, 6, 9, 12, 15, 18, 21, 24].map((hh, i) => ({ label: I.hourLabel(hh * H), left: (hh / 24 * 100) + '%', tx: i === 0 ? '0' : i === 8 ? '-100%' : '-50%' })),
+        dStart, dEnd: dStart + DAY, stripNow: dOff === 0 ? now : null, groups,
+        hasNow: dOff === 0, nowLeft: (nf * 100) + '%', nowTx: nf < 0.05 ? '0' : nf > 0.95 ? '-100%' : '-50%', nowText: I.clock(now),
+        latest: todayEv.slice(-8).reverse().map(e => this.card(e)),
+        latestNote: s.scen === 'night' && !!last, latestNoteText: last ? `Nothing new since ${I.clock(last.t)}, ${I.ago(last.t, now)} ago.` : '',
+        playLatest: ev => this.openSearch({ preset: 'today', focusT: ev.t })
+      };
+    }
+
+    if (isLive) {
+      const LM = s.big ? I.bigMerge() : M, LCAM = LM.CAM;
+      const listOf = v => !v || v.mode === 'all' ? LM.cams.map(c => c.num) : v.mode === 'area' ? ((LM.areas.find(a => a.id === v.area) || { cams: [] }).cams.slice()) : (v.cams || []).filter(x => LCAM[x]);
+      const lc = noCams ? [] : listOf(s.lCams);
+      const n = s.lLayout, one5 = n === 6;
+      const tile = (num, span) => { const c = LCAM[num]; return { cam: c, status: c.status, since: c.since, span }; };
+      let tiles, pages, page, pageText = '';
+      if (one5) {
+        const rest = lc.slice(1);
+        pages = Math.max(1, Math.ceil(rest.length / 5)); page = Math.min(s.lPage, pages - 1);
+        tiles = lc.length ? [tile(lc[0], 'span 2')].concat(rest.slice(page * 5, page * 5 + 5).map(x => tile(x, 'auto'))) : [];
+        if (lc.length) pageText = `${LCAM[lc[0]].label} large · cameras ${page * 5 + 2} to ${Math.min(lc.length, page * 5 + 6)} of ${lc.length}`;
+      } else {
+        pages = Math.max(1, Math.ceil(lc.length / n)); page = Math.min(s.lPage, pages - 1);
+        tiles = lc.slice(page * n, page * n + n).map(x => tile(x, 'auto'));
+        if (lc.length) pageText = `Cameras ${page * n + 1} to ${Math.min(lc.length, (page + 1) * n)} of ${lc.length}`;
+      }
+      this._lPages = pages;
+      const cols = one5 ? 3 : Math.round(Math.sqrt(n)), cells = one5 ? 6 : n;
+      const area = s.lCams.mode === 'area' ? LM.areas.find(a => a.id === s.lCams.area) : null;
+      const tabOn = s.lCams.mode === 'all' ? 'all' : s.lCams.mode === 'area' ? s.lCams.area : 'custom';
+      const tabs = [{ key: 'all', label: 'Every camera', n: LM.cams.length, dot: 'var(--ink)' }].concat(LM.areas.filter(a => a.cams.length).map(a => ({ key: a.id, label: a.name, n: a.cams.length, dot: I.areaTone(a.id).base })));
+      const wall = new Set(lc), railEv = s.big ? [] : I.day(0).filter(e => e.t <= now && wall.has(e.cam)).slice(-12).reverse().map(e => this.card(e));
+      const dark = on => ({ bg: on ? 'var(--blue-tint)' : 'transparent', ink: on ? 'var(--blue-deep)' : 'var(--muted-dark)', weight: on ? 600 : 400 });
+      const cycleOn = s.lCycle > 0 && pages > 1;
+      out.l = {
+        pickCams: LM.cams, pickAreas: LM.areas, camsValue: s.lCams, setCams: v => this.setState({ lCams: v, lPage: 0 }),
+        tabs: tabs.map(t => Object.assign({ label: t.label, n: t.n, dot: t.dot, on: tabOn === t.key, set: () => this.setState({ lCams: t.key === 'all' ? { mode: 'all' } : { mode: 'area', area: t.key }, lPage: 0 }) }, seg(tabOn === t.key))),
+        layouts: [[1, '1'], [4, '4'], [9, '9'], [16, '16'], [6, '1 + 5']].map(([v, l]) => Object.assign({ label: l, set: () => this.setState({ lLayout: v, lPage: 0 }) }, seg(v === n))),
+        boxes: s.lBoxes, toggleBoxes: () => this.setState(st => ({ lBoxes: !st.lBoxes })),
+        swBg: s.lBoxes ? 'var(--blue)' : 'var(--paper-3)', swKnob: s.lBoxes ? '16px' : '2px',
+        pageText, hasPages: pages > 1, prevPage: () => this.setState({ lPage: (page - 1 + pages) % pages, lCycleT: 0 }), nextPage: () => this.setState({ lPage: (page + 1) % pages, lCycleT: 0 }),
+        goFull: () => this.setState({ lFull: true, lCycleT: 0 }), exitFull: () => this.setState({ lFull: false }),
+        gridCols: `repeat(${cols}, minmax(0, 1fr))`, tiles,
+        blanks: Array.from({ length: Math.max(0, cells - tiles.length) }, (_, i) => ({ i })),
+        openTile: num => this.setState({ lSingle: num }),
+        scopeText: s.lCams.mode === 'all' ? 'Every camera' : area ? area.name : `${lc.length} cameras`,
+        rail: s.lRail, toggleRail: () => this.setState(st => ({ lRail: !st.lRail })), railSwBg: s.lRail ? 'var(--blue)' : 'var(--paper-3)', railKnob: s.lRail ? '16px' : '2px',
+        railEv, railEmpty: railEv.length === 0, railEmptyText: s.big ? 'The 200-camera sample has no saved events. Plant 2’s own cameras list theirs here.' : 'Nothing yet today from the cameras on the wall.',
+        railNote: `From the ${lc.length} ${lc.length === 1 ? 'camera' : 'cameras'} on the wall, newest first`,
+        playRail: ev => this.openSearch({ cams: [ev.cam], preset: 'today', focusT: ev.t }),
+        canCycle: pages > 1, cycles: [[0, 'Off'], [15, '15 s'], [30, '30 s']].map(([v, l]) => Object.assign({ label: l, set: () => this.setState({ lCycle: v, lCycleT: 0, lPaused: false }) }, dark(s.lCycle === v))),
+        cycleOn, paused: s.lPaused, running: !s.lPaused, togglePause: () => this.setState(st => ({ lPaused: !st.lPaused })), pauseLabel: s.lPaused ? 'Resume' : 'Pause',
+        cycleW: cycleOn ? Math.min(100, s.lCycleT / s.lCycle * 100) + '%' : '0%', cycleFill: s.lPaused ? 'var(--muted-dark)' : 'var(--blue)',
+        cycleText: s.lPaused ? `Page ${page + 1} of ${pages} stays on screen` : `Page ${page + 1} of ${pages} · next in ${Math.max(1, Math.ceil(s.lCycle - s.lCycleT))} s`
+      };
+      if (s.lSingle) {
+        const c = LCAM[s.lSingle] || CAM[s.lSingle] || cams[0], evs = s.big ? [] : I.day(0).filter(e => e.cam === c.num && e.t <= now);
+        out.ls = {
+          cam: c, num: c.num, name: c.name, area: c.areaName, status: c.status, since: c.since,
+          statusText: c.status === 'offline' ? 'Offline since ' + c.since : 'Live now', dot: c.status === 'offline' ? 'var(--danger)' : 'var(--signal)',
+          times: s.big ? (c.times || []) : (I.camTimes(0)[c.num] || []), offline: s.big ? [] : (sc.gaps[c.num] || []), countText: `${s.big ? (c.events || 0) : evs.length} events today`,
+          latest: evs.slice(-5).reverse().map(e => this.card(e)),
+          search: pd(() => s.big ? this.showToast({ text: 'The 200-camera sample is for the wall and the camera list. Search uses Plant 2’s 16 cameras.' }) : this.openSearch({ cams: [c.num], preset: 'today' })),
+          back: () => this.setState({ lSingle: null }),
+          pick: t => { if (!s.big) this.openSearch({ cams: [c.num], focusT: t }); },
+          playLatest: ev => this.openSearch({ cams: [c.num], preset: 'today', focusT: ev.t })
+        };
+      }
+    }
+
+    if (scr === 'search') {
+      const R = this.results(s);
+      const v = s.sCams, one = R.camNums.length === 1 ? CAM[R.camNums[0]] : null;
+      const area = v.mode === 'area' ? M.areas.find(a => a.id === v.area) : null;
+      const camWords = v.mode === 'all' ? 'every camera' : area ? `the ${area.name} cameras` : one ? one.label : `${R.camNums.length} cameras`;
+      const keys = ['person', 'vehicle', 'other'].filter(k => s.sTypes[k]);
+      const nounFor = c => keys.length === 1 ? ({ person: c === 1 ? 'person' : 'people', vehicle: c === 1 ? 'vehicle' : 'vehicles', other: c === 1 ? 'other object' : 'other objects' })[keys[0]] : (c === 1 ? 'event' : 'events');
+      const pr = I.PRESETS.find(k => k.key === s.sTime.preset);
+      const da = I.dayOff(R.a), db = I.dayOff(R.b0 - 1);
+      let timeWords;
+      if (s.sTime.preset === 'lastnight') timeWords = 'last night, 9:00 PM to 6:00 AM';
+      else if (s.sTime.preset === 'yesterday') timeWords = 'yesterday, all day';
+      else if (s.sTime.preset === 'custom') timeWords = da === db ? `${da === 0 ? 'today' : da === -1 ? 'yesterday' : 'on ' + I.dateShort(da)}, ${I.timesOnly(R.a, R.b0)}` : `from ${I.timesOnly(R.a, R.b0)}`;
+      else timeWords = `${pr.phrase}, ${I.timesOnly(R.a, R.b0)}`;
+      const shortTime = s.sTime.preset === 'custom' ? 'at these times' : pr.phrase;
+      const n = R.list.length;
+      const sp = I.space(R.camNums, R.a, R.b0, now, R.all.length);
+      const gapList = [];
+      R.camNums.forEach(num => (sc.gaps[num] || []).forEach(g => { const ge = g[1] == null ? now : g[1]; if (g[0] < R.b && ge > R.a) gapList.push({ num, from: g[0], to: g[1] }); }));
+      const notes = [];
+      if (gapList.length === 1 && one) { const g = gapList[0]; notes.push({ text: g.to == null ? `This camera has been offline since ${I.clock(g.from)}, so nothing has been saved since then.` : `This camera was offline from ${I.span(g.from, g.to)}, so nothing was saved then.` }); }
+      else if (gapList.length) notes.push({ text: `${gapList.length} cameras were offline during this time, so nothing was saved from them then: ` + gapList.map(g => `${CAM[g.num].label} ${g.to == null ? 'since ' + I.clock(g.from) : I.span(g.from, g.to)}`).join(' and ') + '.' });
+      if (R.a < I.OLDEST) notes.push({ text: `Clips are kept for 30 days. The oldest clip is from ${I.dateShort(-30)}.` });
+      const busy = (() => { const m = {}; R.all.forEach(e => { const k = Math.floor(e.t / 1800); m[k] = (m[k] || 0) + 1; }); let bk = null; Object.keys(m).forEach(k => { if (bk == null || m[k] > m[bk]) bk = k; }); return bk == null ? null : I.span(bk * 1800, bk * 1800 + 1800); })();
+      const spanS = R.b0 - R.a;
+      const stripOn = !!one && spanS <= DAY && !s.sLoading && !s.sError;
+      const shown = (s.sLoading || s.sError) ? [] : R.list.slice(0, s.sShow);
+      const cnt = {}; R.list.forEach(e => { const k = Math.floor(e.t / H); cnt[k] = (cnt[k] || 0) + 1; });
+      const groups = []; let cur = null;
+      shown.forEach(e => {
+        const k = Math.floor(e.t / H);
+        if (!cur || cur.k !== k) { const off = I.dayOff(e.t); cur = { k, label: (off === 0 ? '' : I.dayLabel(off) + ' · ') + I.hourLabel(e.t), count: `${cnt[k]} ${cnt[k] === 1 ? 'event' : 'events'}`, items: [] }; groups.push(cur); }
+        const c = this.card(e); c.sel = !!s.sSel[e.id]; c.play = e.id === s.sPlay; cur.items.push(c);
+      });
+      const idx = s.sPlay && !s.sLoading && !s.sError ? R.list.findIndex(e => e.id === s.sPlay) : -1;
+      const selN = Object.keys(s.sSel).filter(k => s.sSel[k]).length;
+      const every = keys.length === 3;
+      const typeDefs = [['person', 'People'], ['vehicle', 'Vehicles'], ['other', 'Other objects']];
+      const chips = typeDefs.map(([k, l]) => {
+        const on = s.sTypes[k] && !every;
+        return Object.assign({ label: l, on, tone: ({ person: 'var(--sky)', vehicle: 'var(--honey)', other: 'var(--teal)' })[k], toneEdge: ({ person: 'var(--sky-deep)', vehicle: 'var(--honey-deep)', other: 'var(--teal-deep)' })[k], toggle: () => { const nt = every ? { person: false, vehicle: false, other: false } : Object.assign({}, s.sTypes); nt[k] = !nt[k]; if (!nt.person && !nt.vehicle && !nt.other) nt[k] = true; this.setState({ sTypes: nt, sPlay: null }); } }, seg(on));
+      }).concat([Object.assign({ label: 'Everything', on: every, tone: 'var(--paper)', toneEdge: 'var(--ink)', toggle: () => this.setState({ sTypes: { person: true, vehicle: true, other: true }, sPlay: null }) }, seg(every))]);
+      const stays = [[0, 'Any time'], [5, '5 seconds'], [30, '30 seconds'], [120, '2 minutes'], [600, '10 minutes']];
+      const wider = [];
+      if (s.sTime.preset !== 'today') wider.push({ label: 'Search all of today', go: () => this.setState({ sTime: { preset: 'today' } }) });
+      if (v.mode !== 'all') wider.push({ label: 'Search every camera', go: () => this.setState({ sCams: { mode: 'all' } }) });
+      const camTitle = one ? one.label : camWords.charAt(0).toUpperCase() + camWords.slice(1);
+      out.q = {
+        camsValue: s.sCams, setCams: val => this.setState({ sCams: val, sPlay: null }),
+        timeValue: s.sTime, setTime: val => this.setState({ sTime: val, sPlay: null }),
+        chips, toggleMore: () => this.setState(st => ({ sMore: !st.sMore })), moreOpen: s.sMore, moreBorder: s.sMore ? 'var(--blue)' : 'var(--line)',
+        stays: stays.map(([sec, l]) => ({ label: l, bg: s.sMin === sec ? 'var(--blue-tint)' : 'transparent', ring: s.sMin === sec ? 'var(--blue)' : 'var(--line)', dot: s.sMin === sec ? 'var(--blue)' : 'transparent', set: () => this.setState({ sMin: sec, sMore: false, sPlay: null }) })),
+        hasMin: s.sMin > 0, minLabel: (stays.find(x => x[0] === s.sMin) || [0, ''])[1], clearMin: () => this.setState({ sMin: 0 }),
+        summary: s.sLoading ? `Searching ${camWords} ${shortTime}…` : `${n} ${nounFor(n)} on ${camWords} ${timeWords}`,
+        hasSpace: !!sp && !s.sLoading && !s.sError, spaceText: sp ? `${sp.kept} kept instead of ${sp.recv}, ${sp.pct}% saved` : '',
+        openSpace: () => this.setState({ sSpace: true }), closeSpace: () => this.setState({ sSpace: false }), spaceOpen: s.sSpace && !!sp,
+        spaceTitle: camTitle, spaceRange: I.rangeWords(R.a, R.b0), spacePct: sp ? sp.pct + '%' : '', spaceRecv: sp ? sp.recv : '', spaceKept: sp ? sp.kept : '', keptW: sp ? (100 - sp.pct) + '%' : '0%',
+        spaceSentence: sp ? `Recording all video on ${camWords} ${shortTime} would have used ${sp.recv}. i-Netra kept ${sp.kept} of clips.` : '',
+        spaceWhy: `${R.all.length} ${R.all.length === 1 ? 'event was' : 'events were'} kept as short clips${busy ? ', busiest from ' + busy : ''}. The empty minutes in between were not kept.`,
+        loading: s.sLoading, error: s.sError, retry: () => this.setState({ sError: false }),
+        notes, stripOn, stripCam: one ? one.label : '', stripTimes: R.list.map(e => e.t), a: R.a, b0: R.b0,
+        stripNow: R.b0 > now ? now : null, stripBin: spanS > 8 * H ? 300 : spanS > 2 * H ? 120 : 60, stripOffline: one ? (sc.gaps[one.num] || []) : [],
+        narrow: t => { const f = Math.floor(t / 600) * 600; this.setState({ sTime: { preset: 'custom', from: f, to: f + 600 }, sPlay: null }); },
+        bodyCols: idx >= 0 ? 'minmax(0,1fr) minmax(440px, 42%)' : 'minmax(0,1fr)',
+        sorts: [['new', 'Newest first'], ['old', 'Oldest first']].map(([k, l]) => Object.assign({ label: l, set: () => this.setState({ sSort: k }) }, seg(s.sSort === k))),
+        hasSel: selN > 0, noSel: selN === 0, selN: selN + (selN === 1 ? ' event' : ' events'), selText: `${selN} selected`,
+        clearSel: () => this.setState({ sSel: {} }),
+        download: pd(() => { const ids = new Set(Object.keys(s.sSel).filter(k => s.sSel[k])); this.askDownload(R.list.filter(e => ids.has(e.id)), `${one ? one.name : area ? area.name : v.mode === 'all' ? 'All cameras' : R.camNums.length + ' cameras'}, ${I.dateShort(I.dayOff(R.a))}${({ morning: ' morning', afternoon: ' afternoon', evening: ' evening', lastnight: ' night' })[s.sTime.preset] || ''}`); }),
+        downloadOne: ev => this.askDownload([ev], `${CAM[ev.cam] ? CAM[ev.cam].name : 'Clip'}, ${I.dateShort(I.dayOff(ev.t))} ${I.clock(ev.t)}`),
+        openSpaceSettings: pd(() => this.navTo('settings', { section: 'space', from: sp ? { label: s.sTime.preset === 'custom' ? I.rangeWords(R.a, R.b0) : `${pr.label}, ${I.timesOnly(R.a, R.b0)}`, phrase: shortTime, camLabel: camTitle, cam: one ? one.num : null, recv: sp.recv, kept: sp.kept, pct: sp.pct } : null })),
+        groups, hasMore: !s.sLoading && !s.sError && R.list.length > shown.length, moreLeft: R.list.length - shown.length, showMore: () => this.setState(st => ({ sShow: st.sShow + 60 })),
+        skeleton: Array.from({ length: 8 }, (_, i) => ({ i })),
+        empty: !s.sLoading && !s.sError && n === 0, emptyTitle: `No ${nounFor(2)} on ${camWords} ${shortTime}.`, wider,
+        play: ev => this.setState({ sPlay: ev.id, sAuto: true }),
+        toggle: ev => this.setState(st => ({ sSel: Object.assign({}, st.sSel, { [ev.id]: !st.sSel[ev.id] }) })),
+        playing: idx >= 0, playEv: idx >= 0 ? this.card(R.list[idx]) : null, playIndex: idx + 1, total: R.list.length,
+        auto: s.sAuto, startFrac: s.sAuto ? null : 0.4,
+        prev: () => idx > 0 && this.setState({ sPlay: R.list[idx - 1].id, sAuto: true }),
+        next: () => idx < R.list.length - 1 && this.setState({ sPlay: R.list[idx + 1].id, sAuto: true }),
+        closePlayer: () => this.setState({ sPlay: null, sBig: false })
+      };
+      const me = s.who || s.role, multi = da !== db;
+      const want = (s.sViews || {})[me] || 'cards', view = want === 'calendar' && !multi ? 'cards' : want;
+      const setView = k => this.setState(st => { const sv = Object.assign({}, st.sViews, { [me]: k }); if (!p.frame) { try { localStorage.setItem('inetra.views', JSON.stringify(sv)); } catch (x) {} } return { sViews: sv }; });
+      const hourIds = {}; R.list.forEach(e => { const k = Math.floor(e.t / H); (hourIds[k] = hourIds[k] || []).push(e.id); });
+      const TN = { person: ['var(--sky)', 'var(--sky-tint)', 'var(--sky-deep)'], vehicle: ['var(--honey)', 'var(--honey-tint)', 'var(--honey-deep)'], other: ['var(--teal)', 'var(--teal-tint)', 'var(--teal-deep)'] };
+      groups.forEach(g => {
+        const ids = hourIds[g.k] || [], all = ids.length > 0 && ids.every(id => s.sSel[id]);
+        g.selLabel = all ? `Clear ${ids.length}` : `Select all ${ids.length}`;
+        g.selAll = () => this.setState(st => { const m = Object.assign({}, st.sSel); ids.forEach(id => { if (all) delete m[id]; else m[id] = true; }); return { sSel: m }; });
+        g.items.forEach(c => {
+          const T = TN[c.type] || TN.other, isP = c.type !== 'vehicle', w = isP ? 0.14 : 0.32;
+          Object.assign(c, {
+            tone: T[0], typeBg: T[1], typeInk: T[2], timeText: I.when(c.t),
+            rowBg: c.play ? 'var(--blue-tint)' : c.sel ? 'var(--bone)' : 'transparent', rowRing: c.play ? 'inset 0 0 0 1px var(--blue)' : 'none',
+            cbBorder: c.sel ? 'var(--blue)' : 'var(--line)', cbBg: c.sel ? 'var(--blue)' : 'var(--paper)', mark: c.sel ? '✓' : '',
+            boxL: (Math.min(1 - w - 0.04, Math.max(0.04, (c.x ?? 0.4) - w / 2)) * 100) + '%', boxT: isP ? '22%' : '40%', boxW: (w * 100) + '%', boxH: isP ? '60%' : '38%',
+            playLabel: c.play ? 'Playing' : 'Play', playBg: c.play ? 'var(--blue)' : 'var(--paper)', playInk: c.play ? 'var(--paper)' : 'var(--ink)', playBorder: c.play ? 'var(--blue)' : 'var(--line)',
+            toggle: () => this.setState(st => ({ sSel: Object.assign({}, st.sSel, { [c.id]: !st.sSel[c.id] }) })), playIt: () => this.setState({ sPlay: c.id, sAuto: true })
+          });
+        });
+      });
+      const curLabel = `${one ? one.label : area ? area.name : v.mode === 'all' ? 'Every camera' : R.camNums.length + ' cameras'} · ${s.sTime.preset === 'custom' || !pr ? (da === db ? I.dateLong(da) + ', ' + I.timesOnly(R.a, R.b0) : I.dateLong(da) + ' to ' + I.dateLong(db)) : pr.label}${keys.length === 1 ? ' · ' + ({ person: 'People', vehicle: 'Vehicles', other: 'Other objects' })[keys[0]] : every ? ' · Everything' : ''}`;
+      if (!this._cur || this._cur.label !== curLabel) { this._prevCur = this._cur; this._cur = { label: curLabel, cams: s.sCams, time: s.sTime, types: s.sTypes }; }
+      const recent = (s.sRecent || []).filter(r => r.label !== curLabel).slice(0, 4);
+      const ma = I.monthOf(da), mb = I.monthOf(db), months = []; for (let mo = Math.max(ma, mb - 2); mo <= mb; mo++) months.push({ mo });
+      Object.assign(out.q, {
+        views: [['cards', 'Cards'], ['list', 'List'], ['timeline', 'Timeline']].concat(multi ? [['calendar', 'Calendar']] : []).map(([k, l]) => Object.assign({ label: l, set: () => setView(k) }, seg(view === k))),
+        showSort: view === 'cards' || view === 'list', isCards: view === 'cards', isList: view === 'list', isTimeline: view === 'timeline', isCalendar: view === 'calendar',
+        hasMore: out.q.hasMore && (view === 'cards' || view === 'list'), loading: out.q.loading && view === 'cards',
+        lanes: view === 'timeline' ? R.camNums.map(num => ({ label: CAM[num] ? CAM[num].label : String(num), events: R.list.filter(e => e.cam === num).map(e => ({ id: e.id, t: e.t, dur: e.dur, type: e.type, kind: e.kind })) })) : [],
+        playId: s.sPlay, playMark: id => this.setState({ sPlay: id, sAuto: true }),
+        tlRange: (fa, fb) => { const span = R.b0 - R.a, f = Math.floor((R.a + fa * span) / 60) * 60, t = Math.ceil((R.a + fb * span) / 60) * 60; if (t - f >= 120) this.setState({ sTime: { preset: 'custom', from: f, to: t }, sPlay: null }); },
+        months, calCams: R.camNums, calTypes: s.sTypes, calA: da, calB: db,
+        openDay: off => this.setState({ sTime: { preset: 'custom', from: off * DAY, to: off === 0 ? now : (off + 1) * DAY }, sPlay: null }),
+        hasRecent: recent.length > 0, recent: recent.map(r => ({ label: r.label, go: () => this.setState({ sCams: r.cams, sTime: r.time, sTypes: r.types, sPlay: null, sSel: {} }) })),
+        pickCams: R.camNums, pickOpen: !!s.sPickOpen,
+        big: !!s.sBig && idx >= 0, toggleBig: () => this.setState(st => ({ sBig: !st.sBig })), listDisp: s.sBig && idx >= 0 ? 'none' : 'flex',
+        bodyCols: idx >= 0 ? (s.sBig ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(440px, 42%)') : 'minmax(0,1fr)',
+        copied: () => this.showToast({ text: 'Link copied. It opens this clip after sign-in.' })
+      });
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

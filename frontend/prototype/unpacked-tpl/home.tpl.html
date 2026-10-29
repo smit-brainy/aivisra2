@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="position:relative; width:100%; font-family: var(--font-sans); user-select:none;">
+  <div onMouseMove="{{ onMove }}" onMouseLeave="{{ onLeave }}" onClick="{{ onClick }}" title="{{ tipText }}" style="position:relative; height: {{ h }}px; background: var(--paper-2); border-radius: 3px; cursor: {{ cursor }};">
+    <div style="position:absolute; inset:0; border-radius: 3px; background-image: {{ marks }};"></div>
+    <sc-for list="{{ offline }}" as="o" hint-placeholder-count="0">
+      <div style="position:absolute; top:0; bottom:0; left: {{ o.left }}; width: {{ o.width }}; background: repeating-linear-gradient(135deg, var(--coral) 0 1.5px, var(--coral-tint) 1.5px 5px);"></div>
+    </sc-for>
+    <sc-if value="{{ hasFuture }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; top:0; bottom:0; right:0; width: {{ futureW }}; border-radius: 0 3px 3px 0; background: repeating-linear-gradient(135deg, var(--line-soft) 0 1px, transparent 1px 6px), var(--bone); box-shadow: inset 0 0 0 1px var(--line-soft);"></div>
+    </sc-if>
+    <sc-if value="{{ hasNow }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; top:-3px; bottom:-3px; left: {{ nowLeft }}; width:2px; margin-left:-1px; background: var(--ink); pointer-events:none;"></div>
+    </sc-if>
+    <sc-if value="{{ hasTip }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; top:-2px; bottom:-2px; left: {{ tipLeft }}; width: {{ tipW }}; min-width:3px; box-shadow: 0 0 0 1.5px var(--ink); border-radius:2px; pointer-events:none;"></div>
+      <div style="position:absolute; bottom: calc(100% + 8px); left: {{ tipCenter }}; transform: translateX({{ tipTx }}); background: var(--ink); color: var(--paper); font: 500 12px/1.2 var(--font-mono); padding: 6px 9px; border-radius: 4px; white-space: nowrap; pointer-events:none; z-index: 5;">{{ tipText }}</div>
+    </sc-if>
+  </div>
+  <sc-if value="{{ axis }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative; height: 16px; margin-top: 7px;">
+      <sc-for list="{{ ticks }}" as="k" hint-placeholder-count="0">
+        <span style="position:absolute; top:0; left: {{ k.left }}; transform: translateX({{ k.tx }}); font: 500 11px/1 var(--font-mono); color: var(--muted); white-space:nowrap;">{{ k.label }}</span>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:70},&quot;times&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number[]&quot;},&quot;start&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;},&quot;end&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:86400,&quot;tsType&quot;:&quot;number&quot;},&quot;now&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:40800,&quot;tsType&quot;:&quot;number | null&quot;},&quot;bin&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:300,&quot;tsType&quot;:&quot;number&quot;},&quot;offline&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Array&lt;[number, number | null]&gt;&quot;},&quot;height&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;},&quot;axis&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;demoHover&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;onPick&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(t: number) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { hover: null, ready: !!window.INVR };
+  componentDidMount() {
+    if (!this.state.ready) { const t = () => window.INVR ? this.setState({ ready: true }) : setTimeout(t, 30); t(); }
+  }
+  renderVals() {
+    const I = window.INVR, p = this.props;
+    if (!I) return { h: p.height ?? 20, marks: 'none', offline: [], ticks: [], cursor: 'default' };
+    const demo = p.times == null;
+    const times = demo ? I.camTimes(0)[3] : p.times;
+    const start = p.start ?? 0, end = p.end ?? I.DAY, span = Math.max(1, end - start);
+    const bin = p.bin ?? 300, nb = Math.max(1, Math.ceil(span / bin));
+    const now = demo ? 40800 : (p.now ?? null);
+    const counts = new Array(nb).fill(0), first = new Array(nb).fill(null);
+    times.forEach(t => {
+      if (t < start || t >= end || (now != null && t > now)) return;
+      const i = Math.floor((t - start) / bin);
+      counts[i]++; if (first[i] == null || t < first[i]) first[i] = t;
+    });
+    const lvl = c => c === 0 ? 0 : c === 1 ? 1 : c <= 3 ? 2 : 3;
+    const col = { 1: 'color-mix(in oklch, var(--blue) 38%, var(--paper-2))', 2: 'var(--blue)', 3: 'var(--blue-deep)' };
+    const stops = []; let i = 0;
+    while (i < nb) {
+      const L = lvl(counts[i]); let j = i;
+      while (j < nb && lvl(counts[j]) === L) j++;
+      if (L) { const a = (i / nb * 100).toFixed(3), b = (j / nb * 100).toFixed(3); stops.push(`transparent ${a}%`, `${col[L]} ${a}%`, `${col[L]} ${b}%`, `transparent ${b}%`); }
+      i = j;
+    }
+    const pct = t => ((t - start) / span * 100) + '%';
+    const offSpans = (p.offline || []).map(o => {
+      const a = Math.max(o[0], start), b = Math.min(o[1] ?? now ?? end, end);
+      return b > a ? { a, b, open: o[1] == null, from: o[0], to: o[1], left: pct(a), width: ((b - a) / span * 100) + '%' } : null;
+    }).filter(Boolean);
+    const futFrac = now == null ? 0 : Math.min(1, Math.max(0, (end - now) / span));
+    const hb = p.demoHover != null ? Math.floor((p.demoHover - start) / bin) : this.state.hover;
+    let tip = null;
+    if (hb != null && hb >= 0 && hb < nb && (now == null || start + hb * bin <= now)) {
+      const b0 = start + hb * bin, b1 = b0 + bin, c = counts[hb], mid = b0 + bin / 2;
+      const off = offSpans.find(o => mid >= o.a && mid <= o.b);
+      const tt = bin >= 120 ? I.span(b0, b1) : I.clock(b0);
+      const text = off ? (off.open ? 'Offline since ' + I.clock(off.from) : 'Offline ' + I.span(off.from, off.to)) : `${tt} · ${c ? c + (c === 1 ? ' event' : ' events') : 'No events'}`;
+      const f = (mid - start) / span;
+      tip = { text, left: pct(b0), w: (bin / span * 100) + '%', center: pct(mid), tx: f < 0.12 ? '-12%' : f > 0.88 ? '-88%' : '-50%', clickable: c > 0 && !!p.onPick };
+    }
+    const step = p.tickStep ? p.tickStep : span >= 12 * I.H ? 3 * I.H : span >= 5 * I.H ? I.H : span >= 2 * I.H ? 1800 : span > 1800 ? 900 : 300;
+    const ticks = [];
+    for (let t = Math.ceil(start / step) * step; t <= end; t += step) {
+      const f = (t - start) / span;
+      ticks.push({ left: (f * 100) + '%', tx: f < 0.01 ? '0' : f > 0.99 ? '-100%' : '-50%', label: t % I.H === 0 ? I.hourLabel(t) : I.clock(t).replace(/ (AM|PM)$/, '') });
+    }
+    const binAt = e => { const r = e.currentTarget.getBoundingClientRect(); return Math.min(nb - 1, Math.max(0, Math.floor((e.clientX - r.left) / r.width * nb))); };
+    return {
+      h: p.height ?? 20,
+      marks: stops.length ? `linear-gradient(90deg, ${stops.join(', ')})` : 'none',
+      offline: offSpans,
+      hasFuture: futFrac > 0, futureW: (futFrac * 100) + '%',
+      hasNow: now != null && now > start && now < end, nowLeft: now != null ? pct(now) : '0%',
+      hasTip: !!tip, tipText: tip ? tip.text : '', tipLeft: tip ? tip.left : 0, tipW: tip ? tip.w : 0, tipCenter: tip ? tip.center : 0, tipTx: tip ? tip.tx : 0,
+      cursor: tip && tip.clickable ? 'pointer' : 'default',
+      axis: !!p.axis, ticks,
+      onMove: e => { const b = binAt(e); if (b !== this.state.hover) this.setState({ hover: b }); },
+      onLeave: () => this.setState({ hover: null }),
+      onClick: e => { const b = binAt(e); if (counts[b] && p.onPick) p.onPick(first[b]); }
+    };
+  }
+}
+</script>
+</body>
+</html>

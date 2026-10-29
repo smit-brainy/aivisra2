@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/colors_and_type.css">
+  <link rel="stylesheet" href="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/brainyneurals.css">
+  <script src="_ds/brainy-neurals-design-system-326a1f72-00bc-4ae7-9c61-01f8fa61e24f/_ds_bundle.js"></script>
+  <script src="invr-data.js"></script>
+</helmet>
+<div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden; background: var(--paper); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.45;">
+
+  <div style="flex-shrink:0; display:flex; align-items:center; flex-wrap:wrap; gap: 12px 16px; padding: 16px 32px 12px;">
+    <sc-if value="{{ hasBack }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ back }}" style="height: 44px; padding: 0 14px; white-space:nowrap; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">← Back</button>
+    </sc-if>
+    <div style="display:flex; flex-direction:column; gap: 5px; min-width:0;">
+      <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">{{ eyebrow }}</span>
+      <h1 style="margin:0; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1;">{{ title }}</h1>
+    </div>
+    <div style="flex:1;"></div>
+    <span style="display:flex; align-items:center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 999px; background: var(--paper-2); font-size: 13.5px; white-space:nowrap;"><span style="width: 6px; height: 6px; background: var(--blue);"></span>{{ capChip }}</span>
+    <button onClick="{{ cancel }}" style="height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">{{ cancelLabel }}</button>
+  </div>
+
+  <sc-if value="{{ hasSteps }}" hint-placeholder-val="{{ false }}">
+    <ol style="flex-shrink:0; list-style:none; margin: 0 32px 8px; padding: 0; display:grid; grid-template-columns: repeat({{ stepN }}, minmax(0,1fr)); gap: 6px;">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+        <li style="display:flex; flex-direction:column; gap: 7px;">
+          <span style="height: 4px; border-radius: 2px; background: {{ st.bar }};"></span>
+          <span style="font: 500 11px/1.2 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: {{ st.ink }};">{{ st.n }} · {{ st.label }}</span>
+        </li>
+      </sc-for>
+    </ol>
+  </sc-if>
+
+  <div style="flex:1; min-height:0; overflow:auto; padding: 12px 32px 28px;">
+
+    <sc-if value="{{ isChoose }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px; align-items:start; max-width: 1480px;">
+        <div style="display:flex; flex-direction:column; gap: 16px;">
+          <h2 style="margin:0; font-size: 40px; font-weight: 500; letter-spacing: -0.03em; line-height: 1.05;">Get cameras working <em style="font-family: var(--font-serif); font-style: italic; font-weight: 400;">in a few minutes.</em></h2>
+          <p style="margin:0; font-size: 17px; line-height: 1.5; color: var(--muted); text-wrap: pretty;">Pick the way that suits what you have. Each one ends the same way: you see every new camera’s picture, give it a name and an area, and choose its detail level.</p>
+          <div style="display:flex; gap: 12px; padding: 14px 16px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep); font-size: 15px; line-height: 1.45;">
+            <span style="width: 7px; height: 7px; margin-top: 7px; flex-shrink:0; background: var(--info-deep);"></span><span>{{ capLine }}</span>
+          </div>
+        </div>
+        <ol style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; border-top: 1px solid var(--line);">
+          <sc-for list="{{ ways }}" as="w" hint-placeholder-count="4">
+            <li>
+              <button onClick="{{ w.go }}" style="width:100%; display:grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 18px; align-items:center; padding: 22px 8px 22px 4px; border-bottom: 1px solid var(--line); text-align:left;" style-hover="background: var(--bone);">
+                <span style="font: 500 14px/1 var(--font-mono); color: var(--muted);">{{ w.idx }}</span>
+                <span style="display:flex; flex-direction:column; gap: 6px; min-width:0;">
+                  <span style="display:flex; align-items:center; flex-wrap:wrap; gap: 10px; font-size: 20px; font-weight: 500; letter-spacing: -0.015em;">{{ w.title }}<sc-if value="{{ w.rec }}" hint-placeholder-val="{{ false }}"><span style="padding: 4px 8px; border-radius: 999px; background: var(--blue-tint); color: var(--blue-deep); font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;">Start here</span></sc-if></span>
+                  <span style="font-size: 15px; color: var(--muted); text-wrap: pretty;">{{ w.sub }}</span>
+                </span>
+                <span style="display:flex; align-items:center; gap: 14px; white-space:nowrap;"><span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">{{ w.time }}</span><span style="font-size: 18px;">→</span></span>
+              </button>
+            </li>
+          </sc-for>
+        </ol>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isScan }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap: 16px; max-width: 1100px;">
+        <sc-if value="{{ scanning }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap: 14px; padding: 28px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+            <h2 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">Looking for cameras on this network…</h2>
+            <div style="height: 6px; border-radius: 3px; background: var(--paper-3); overflow:hidden;"><div style="width: {{ scanW }}; height:100%; background: var(--blue);"></div></div>
+            <span style="font: 500 13px/1 var(--font-mono); color: var(--muted);">{{ scanFound }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ scanDone }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 12px;">
+            <h2 style="margin:0; font-size: 20px; font-weight: 500; letter-spacing: -0.015em;">{{ scanSummary }}</h2>
+            <div style="display:flex; gap: 8px;">
+              <button onClick="{{ rescan }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Look again</button>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+            <button onClick="{{ tickAll }}" style="display:flex; align-items:center; gap: 14px; height: 50px; padding: 0 18px; background: var(--bone); border-bottom: 1px solid var(--line); text-align:left; font-size: 14px; font-weight: 500;">
+              <span style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid {{ allBorder }}; background: {{ allBg }}; color: var(--paper); font: 700 12px/17px var(--font-sans); text-align:center;">{{ allMark }}</span>{{ tickAllLabel }}
+            </button>
+            <sc-for list="{{ found }}" as="r" hint-placeholder-count="5">
+              <button onClick="{{ r.toggle }}" aria-pressed="{{ r.on }}" style="display:grid; grid-template-columns: 20px minmax(0,1fr) auto; gap: 14px; align-items:center; min-height: 60px; padding: 8px 18px; border-bottom: 1px solid var(--line-soft); text-align:left; background: {{ r.bg }};" style-hover="background: var(--bone);">
+                <span style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid {{ r.cbBorder }}; background: {{ r.cbBg }}; color: var(--paper); font: 700 12px/17px var(--font-sans); text-align:center;">{{ r.mark }}</span>
+                <span style="display:flex; flex-direction:column; gap: 3px; min-width:0;">
+                  <span style="font-size: 15.5px; font-weight: 500;">{{ r.model }}</span>
+                  
+                </span>
+                <span style="font-size: 13.5px; color: var(--muted);">Not on i-Netra yet</span>
+              </button>
+            </sc-for>
+            <sc-if value="{{ hasOld }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ toggleOld }}" aria-expanded="{{ showOld }}" style="display:flex; align-items:center; justify-content:space-between; height: 50px; padding: 0 18px; text-align:left; font-size: 14px; color: var(--muted);" style-hover="background: var(--bone);">
+                <span>{{ oldText }}</span><span style="font-size: 12px;">{{ oldCaret }}</span>
+              </button>
+              <sc-if value="{{ showOld }}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{ olds }}" as="r" hint-placeholder-count="4">
+                  <div style="display:grid; grid-template-columns: 20px minmax(0,1fr) auto; gap: 14px; align-items:center; min-height: 48px; padding: 6px 18px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 14px;">
+                    <span></span>
+                    <span style="display:flex; flex-direction:column; gap: 2px;"><span>{{ r.model }}</span></span>
+                    <span>Already on i-Netra as {{ r.existing }}</span>
+                  </div>
+                </sc-for>
+              </sc-if>
+            </sc-if>
+          </div>
+          <div style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+            <button onClick="{{ toggleAddr }}" aria-expanded="{{ showAddr }}" style="height: 50px; display:flex; align-items:center; justify-content:space-between; padding: 0 18px; text-align:left; font-size: 15px; font-weight: 500;" style-hover="background: var(--bone);"><span>Technical details</span><span style="font-size: 12px; color: var(--muted);">{{ addrCaret }}</span></button>
+            <sc-if value="{{ showAddr }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; padding: 2px 18px 12px; border-top: 1px solid var(--line-soft);">
+                <div style="display:grid; grid-template-columns: minmax(0,1fr) 150px 210px; gap: 12px; padding: 10px 0 8px; font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);"><span>Camera</span><span>Address</span><span>Protocol</span></div>
+                <sc-for list="{{ techRows }}" as="tr" hint-placeholder-count="5">
+                  <div style="display:grid; grid-template-columns: minmax(0,1fr) 150px 210px; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line-soft); font: 500 12.5px/1.3 var(--font-mono);"><span>{{ tr.model }}</span><span>{{ tr.ip }}</span><span>{{ tr.proto }}</span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCreds }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width: 560px; display:flex; flex-direction:column; gap: 18px;">
+        <p style="margin:0; font-size: 17px; line-height: 1.5; color: var(--muted); text-wrap: pretty;">Type the username and password set on the cameras. i-Netra tries them on all {{ tickedN }} at once.</p>
+        <label style="display:flex; flex-direction:column; gap: 6px;">
+          <span style="font-size: 14px; font-weight: 500;">Camera username</span>
+          <input value="{{ user }}" onChange="{{ onUser }}" spellcheck="false" style="height: 52px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+        </label>
+        <label style="display:flex; flex-direction:column; gap: 6px;">
+          <span style="font-size: 14px; font-weight: 500;">Camera password</span>
+          <input type="password" value="{{ pass }}" onChange="{{ onPass }}" placeholder="The password set on the cameras" style="height: 52px; padding: 0 14px; border: 1px solid {{ passBorder }}; border-radius: 8px; background: var(--paper); font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+        </label>
+        <sc-if value="{{ passMissing }}" hint-placeholder-val="{{ false }}">
+          <span style="margin-top: -8px; font-size: 14px; color: var(--danger-deep);">Type the cameras’ password to carry on.</span>
+        </sc-if>
+        <span style="font-size: 14px; color: var(--muted); text-wrap: pretty;">A camera with a different password can be fixed on its own in the next step.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isConnect }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap: 14px; max-width: 1100px;">
+        <h2 style="margin:0; font-size: 20px; font-weight: 500; letter-spacing: -0.015em;">{{ connSummary }}</h2>
+        <div style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+          <sc-for list="{{ connRows }}" as="r" hint-placeholder-count="5">
+            <div style="display:grid; grid-template-columns: 128px minmax(0,1fr); gap: 18px; align-items:start; padding: 14px 18px; border-bottom: 1px solid var(--line-soft);">
+              <div style="aspect-ratio: 16 / 9; border-radius: 4px; background: {{ r.pic }};"></div>
+              <div style="display:flex; flex-direction:column; gap: 8px; min-width:0;">
+                <span style="display:flex; align-items:baseline; flex-wrap:wrap; gap: 4px 12px;"><span style="font-size: 15.5px; font-weight: 500;">{{ r.model }}</span><span style="font-size: 13.5px; color: var(--muted);">{{ r.hint }}</span></span>
+                <span style="display:flex; align-items:center; gap: 8px; font-size: 14.5px; color: {{ r.ink }};"><span style="width: 8px; height: 8px; flex-shrink:0; border-radius: 50%; background: {{ r.dot }};"></span>{{ r.text }}</span>
+                <sc-if value="{{ r.isPass }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex; flex-wrap:wrap; gap: 8px; align-items:center;">
+                    <input value="{{ r.fixUser }}" onChange="{{ r.onFixUser }}" aria-label="Username for this camera" style="width: 160px; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+                    <input type="password" value="{{ r.fixPass }}" onChange="{{ r.onFixPass }}" placeholder="This camera’s password" aria-label="Password for this camera" style="width: 220px; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+                    <button onClick="{{ r.retry }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">Try again</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.isVideo }}" hint-placeholder-val="{{ false }}">
+                  <div><button onClick="{{ r.retry }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">Use the camera’s second stream</button></div>
+                </sc-if>
+                <sc-if value="{{ r.isUnreach }}" hint-placeholder-val="{{ false }}">
+                  <div><button onClick="{{ r.retry }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px; font-weight: 500; white-space:nowrap;" style-hover="border-color: var(--ink);">Check again</button></div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRecorder }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap: 14px; max-width: 1100px;">
+        <div style="display:flex; flex-direction:column; gap: 6px;">
+          <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Recorder · Main office recorder · {{ recN }} cameras</span>
+          <p style="margin:0; font-size: 16px; color: var(--muted); text-wrap: pretty;">i-Netra reads these cameras through the site’s recorder, so there’s no camera password to type.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+          <sc-for list="{{ recRows }}" as="r" hint-placeholder-count="8">
+            <button onClick="{{ r.toggle }}" aria-pressed="{{ r.on }}" style="display:grid; grid-template-columns: 20px 110px minmax(0,1fr) auto; gap: 14px; align-items:center; min-height: 56px; padding: 6px 18px; border-bottom: 1px solid var(--line-soft); text-align:left; background: {{ r.bg }}; color: {{ r.ink }}; cursor: {{ r.cursor }};" style-hover="background: var(--bone);">
+              <span style="width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid {{ r.cbBorder }}; background: {{ r.cbBg }}; color: var(--paper); font: 700 12px/17px var(--font-sans); text-align:center; visibility: {{ r.cbVis }};">{{ r.mark }}</span>
+              <span style="font: 500 12.5px/1 var(--font-mono); color: var(--muted);">Channel {{ r.ch }}</span>
+              <span style="font-size: 15.5px; font-weight: 500;">{{ r.label }}</span>
+              <span style="font-size: 13.5px; color: var(--muted);">{{ r.status }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAddress }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 32px; align-items:start; max-width: 1280px;">
+        <div style="display:flex; flex-direction:column; gap: 16px;">
+          <label style="display:flex; flex-direction:column; gap: 6px;">
+            <span style="font-size: 14px; font-weight: 500;">Stream address</span>
+            <input value="{{ addrUrl }}" onChange="{{ onAddrUrl }}" spellcheck="false" placeholder="rtsp://…" style="height: 52px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font: 500 14.5px/1 var(--font-mono); outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+            <span style="font-size: 13.5px; color: var(--muted);">Copy it from the camera’s own settings page or its box.</span>
+          </label>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label style="display:flex; flex-direction:column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Username</span><input value="{{ addrUser }}" onChange="{{ onAddrUser }}" style="height: 52px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);"></label>
+            <label style="display:flex; flex-direction:column; gap: 6px;"><span style="font-size: 14px; font-weight: 500;">Password</span><input type="password" value="{{ addrPass }}" onChange="{{ onAddrPass }}" style="height: 52px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);"></label>
+          </div>
+          <div style="display:flex; align-items:center; gap: 14px;">
+            <button onClick="{{ test }}" style="height: 48px; padding: 0 22px; border-radius: 999px; background: var(--blue); color: var(--paper); font-size: 15px; font-weight: 500;" style-hover="background: var(--blue-2);">{{ testLabel }}</button>
+            <span style="font-size: 13.5px; color: var(--muted);">Type “wrong” as the password, or end the address in .99, to see what a failed test says.</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap: 12px;">
+          <div style="position:relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow:hidden; background: {{ testPic }}; display:flex; align-items:center; justify-content:center;">
+            <sc-if value="{{ testIdle }}" hint-placeholder-val="{{ true }}"><span style="font-size: 15px; color: var(--muted); padding: 24px; text-align:center;">Test the address to see the camera’s picture here.</span></sc-if>
+            <sc-if value="{{ testing }}" hint-placeholder-val="{{ false }}"><span style="font: 500 13px/1 var(--font-mono); color: var(--muted-dark);">Testing the connection…</span></sc-if>
+            <sc-if value="{{ testOk }}" hint-placeholder-val="{{ false }}"><span style="position:absolute; top: 10px; left: 10px; padding: 5px 8px; border-radius: 4px; background: rgba(10,10,11,.72); color: var(--paper); font: 500 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;">Live picture</span></sc-if>
+          </div>
+          <sc-if value="{{ testMsg }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="display:flex; gap: 12px; padding: 12px 14px; background: {{ testBg }}; color: {{ testInk }}; border: 1px solid var(--line); border-radius: 8px; font-size: 15px; line-height: 1.45;"><span style="width: 7px; height: 7px; margin-top: 7px; flex-shrink:0; background: {{ testInk }};"></span>{{ testText }}</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isUpload }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap: 16px; max-width: 1200px;">
+        <sc-if value="{{ upStart }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap: 12px; padding: 24px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+              <span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">01</span>
+              <h2 style="margin:0; font-size: 20px; font-weight: 500; letter-spacing: -0.015em;">Download the template sheet</h2>
+              <p style="margin: 0 0 6px; font-size: 15px; color: var(--muted); text-wrap: pretty;">One row per camera: name, number, area, stream address, username and password. It opens in any spreadsheet.</p>
+              <button onClick="{{ getTemplate }}" style="height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14.5px; font-weight: 500;" style-hover="border-color: var(--ink);">Download the template</button>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap: 12px; padding: 24px; background: var(--paper); border: 1.5px dashed var(--line); border-radius: 14px;">
+              <span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">02</span>
+              <h2 style="margin:0; font-size: 20px; font-weight: 500; letter-spacing: -0.015em;">Upload the filled-in sheet</h2>
+              <p style="margin: 0 0 6px; font-size: 15px; color: var(--muted); text-wrap: pretty;">Drop it here, or choose it from this computer. i-Netra checks every row and shows any that need a fix.</p>
+              <button onClick="{{ upload }}" style="height: 44px; padding: 0 16px; border-radius: 8px; background: var(--blue); color: var(--paper); font-size: 14.5px; font-weight: 500;" style-hover="background: var(--blue-2);">Choose a file</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ upChecking }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap: 14px; padding: 28px; background: var(--bone); border: 1px solid var(--line); border-radius: 14px;">
+            <h2 style="margin:0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em;">Checking plant2-annex-cameras.csv…</h2>
+            <div style="height: 6px; border-radius: 3px; background: var(--paper-3); overflow:hidden;"><div style="width: 60%; height:100%; background: var(--blue);"></div></div>
+            <span style="font: 500 13px/1 var(--font-mono); color: var(--muted);">Trying each camera on the list</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ upRowsOn }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap: 12px;">
+            <div style="display:flex; flex-direction:column; gap: 4px;">
+              <span style="font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">plant2-annex-cameras.csv · 16 rows</span>
+              <h2 style="margin:0; font-size: 20px; font-weight: 500; letter-spacing: -0.015em;">{{ upSummary }}</h2>
+            </div>
+            <sc-if value="{{ upHasFails }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ recheck }}" style="height: 44px; padding: 0 16px; border-radius: 8px; background: var(--blue); color: var(--paper); font-size: 14.5px; font-weight: 500;" style-hover="background: var(--blue-2);">Check these rows again</button>
+            </sc-if>
+          </div>
+          <sc-if value="{{ upHasFails }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow:hidden;">
+              <div style="display:grid; grid-template-columns: 70px 200px minmax(0,1fr) minmax(0,1fr); gap: 16px; align-items:center; height: 38px; padding: 0 18px; background: var(--bone); border-bottom: 1px solid var(--line); font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);"><span>Row</span><span>Camera</span><span>What went wrong</span><span>Fix it here</span></div>
+              <sc-for list="{{ failRows }}" as="r" hint-placeholder-count="3">
+                <div style="display:grid; grid-template-columns: 70px 200px minmax(0,1fr) minmax(0,1fr); gap: 16px; align-items:center; min-height: 64px; padding: 8px 18px; border-bottom: 1px solid var(--line-soft);">
+                  <span style="font: 500 13px/1 var(--font-mono);">{{ r.row }}</span>
+                  <span style="font-size: 15px; font-weight: 500;">{{ r.name }}</span>
+                  <span style="font-size: 14px; color: var(--danger-deep); text-wrap: pretty;">{{ r.reason }}</span>
+                  <input type="{{ r.inputType }}" value="{{ r.value }}" onChange="{{ r.onChange }}" placeholder="{{ r.placeholder }}" aria-label="{{ r.placeholder }}" style="height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; font: 500 13.5px/1 var(--font-mono); outline:none;" style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);">
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="display:flex; flex-wrap:wrap; gap: 6px;">
+            <sc-for list="{{ okRows }}" as="r" hint-placeholder-count="13">
+              <span style="display:flex; align-items:center; gap: 7px; height: 32px; padding: 0 10px; border-radius: 4px; background: var(--success-tint); color: var(--success-deep); font-size: 13px;"><span style="font: 500 11px/1 var(--font-mono);">Row {{ r.row }}</span>{{ r.name }}</span>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap: 16px;">
+        <sc-if value="{{ fits }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; gap: 12px; padding: 12px 16px; background: var(--info-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--info-deep); font-size: 15px; line-height: 1.45;"><span style="width: 7px; height: 7px; margin-top: 7px; flex-shrink:0; background: var(--info-deep);"></span>{{ fitText }}</div>
+        </sc-if>
+        <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex; flex-direction:column; gap: 12px; padding: 16px 18px; background: var(--danger-tint); border: 1px solid var(--line); border-radius: 8px; color: var(--danger-deep);">
+            <span style="font-size: 16px; font-weight: 600;">These cameras need more than the box can give.</span>
+            <span style="font-size: 15px; line-height: 1.5; text-wrap: pretty;">{{ overText }}</span>
+            <div style="display:flex; flex-wrap:wrap; gap: 10px;">
+              <button onClick="{{ allLow }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">Set the new cameras to Low</button>
+              <button onClick="{{ fewer }}" style="height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500;" style-hover="border-color: var(--ink);">{{ fewerLabel }}</button>
+            </div>
+          </div>
+        </sc-if>
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap: 10px 14px;">
+          <span style="font-size: 14.5px; color: var(--muted);">Detail level for every new camera</span>
+          <div role="group" aria-label="Detail level for every new camera" style="display:flex; gap: 2px; padding: 3px; background: var(--paper-2); border: 1px solid var(--line-soft); border-radius: 8px;">
+            <sc-for list="{{ bulk }}" as="b" hint-placeholder-count="4">
+              <button onClick="{{ b.set }}" style="height: 34px; padding: 0 12px; border-radius: 6px; font-size: 13.5px; font-weight: {{ b.weight }}; background: {{ b.bg }}; color: {{ b.ink }}; box-shadow: {{ b.ring }};">{{ b.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;">
+          <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+            <div style="display:flex; flex-direction:column; background: var(--paper); border: 1px solid {{ it.border }}; border-radius: 14px; overflow:hidden; opacity: {{ it.op }};">
+              <div style="position:relative; aspect-ratio: 16 / 9; background: {{ it.scene }};">
+                <span style="position:absolute; top: 8px; left: 8px; padding: 5px 7px; border-radius: 4px; background: rgba(10,10,11,.72); color: var(--paper); font: 500 10.5px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase;">Live picture</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap: 10px; padding: 12px 14px 14px;">
+                <div style="display:grid; grid-template-columns: 76px minmax(0,1fr); gap: 8px;">
+                  <label style="display:flex; flex-direction:column; gap: 4px;"><span style="font: 500 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Number</span><input type="number" value="{{ it.num }}" onChange="{{ it.onNum }}" style="height: 40px; padding: 0 8px; border: 1px solid {{ it.numBorder }}; border-radius: 8px; font: 500 14px/1 var(--font-mono); outline:none;" style-focus="border-color: var(--blue);"></label>
+                  <label style="display:flex; flex-direction:column; gap: 4px;"><span style="font: 500 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Name</span><input value="{{ it.name }}" onChange="{{ it.onName }}" style="height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; outline:none;" style-focus="border-color: var(--blue);"></label>
+                </div>
+                <sc-if value="{{ it.numErr }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: var(--danger-deep);">{{ it.numErrText }}</span></sc-if>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <label style="display:flex; flex-direction:column; gap: 4px;"><span style="font: 500 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Area</span>
+                    <select value="{{ it.area }}" onChange="{{ it.onArea }}" style="height: 40px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px;"><sc-for list="{{ areaOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.value }}">{{ o.label }}</option></sc-for></select>
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap: 4px;"><span style="font: 500 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);">Detail level</span>
+                    <select value="{{ it.level }}" onChange="{{ it.onLevel }}" style="height: 40px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 14px;"><sc-for list="{{ levelOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o.value }}">{{ o.label }}</option></sc-for></select>
+                  </label>
+                </div>
+                <button onClick="{{ it.toggle }}" aria-pressed="{{ it.include }}" style="display:flex; align-items:center; gap: 10px; margin-top: 2px; font-size: 14px; text-align:left;">
+                  <span style="width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid {{ it.cbBorder }}; background: {{ it.cbBg }}; color: var(--paper); font: 700 11px/15px var(--font-sans); text-align:center;">{{ it.mark }}</span>Add this camera
+                </button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width: 820px; margin: 40px auto 0; display:flex; flex-direction:column; align-items:flex-start; gap: 18px;">
+        <span style="display:flex; align-items:center; gap: 10px; font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--success-deep);"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span>Done</span>
+        <h2 style="margin:0; font-size: 56px; font-weight: 500; letter-spacing: -0.035em; line-height: 1;">{{ doneTitle }}</h2>
+        <p style="margin:0; font-size: 19px; color: var(--muted);">They now appear on Home and in Live view.</p>
+        <div style="display:flex; flex-wrap:wrap; gap: 6px; margin: 4px 0 10px;">
+          <sc-for list="{{ doneList }}" as="d" hint-placeholder-count="4">
+            <span style="display:flex; align-items:center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 4px; background: var(--paper-2); font-size: 14px;"><span style="font: 500 12px/1 var(--font-mono); color: var(--muted);">{{ d.num }}</span>{{ d.name }}</span>
+          </sc-for>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap: 12px;">
+          <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ goLive }}" hint-size="auto,48px">Go to Live view</x-import>
+          <button onClick="{{ addMore }}" style="height: 48px; padding: 0 20px; border: 1px solid var(--line); border-radius: 999px; font-size: 15px; font-weight: 500;" style-hover="border-color: var(--ink);">Add more</button>
+          <sc-if value="{{ first }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goHome }}" style="font-size: 15px; font-weight: 500; padding-bottom: 1px; border-bottom: 1px solid var(--line);" style-hover="border-color: var(--ink);">Back to the setup checklist</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ hasFoot }}" hint-placeholder-val="{{ false }}">
+    <div style="flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap: 16px; padding: 12px 32px; border-top: 1px solid var(--line); background: var(--paper);">
+      <span style="font-size: 15px; color: {{ footInk }};">{{ footText }}</span>
+      <sc-if value="{{ footGo }}" hint-placeholder-val="{{ true }}">
+        <x-import component-from-global-scope="BrainyNeuralsDesignSystem_326a1f.Button" variant="primary" href="#" onClick="{{ next }}" hint-size="auto,48px">{{ nextLabel }}</x-import>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:absolute; right: 24px; bottom: 84px; z-index: 70; max-width: 420px; display:flex; align-items:center; gap: 12px; padding: 14px 16px; background: var(--ink); color: var(--paper); border-radius: 8px; font-size: 14.5px; box-shadow: 0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06);">
+      <span style="width: 7px; height: 7px; flex-shrink:0; background: var(--signal);"></span>{{ toastText }}
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1720,&quot;height&quot;:1024},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;admin&quot;,&quot;operator&quot;],&quot;default&quot;:&quot;admin&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;scen&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;edits&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;onEdit&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(fn) =&gt; void&quot;},&quot;nav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(target, opts) =&gt; void&quot;},&quot;onAdded&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(info) =&gt; void&quot;},&quot;opts&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;optsKey&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;}}">class Component extends DCLogic {
+  state = Object.assign({ ready: !!window.INVR }, this.base());
+  componentDidMount() {
+    const go = () => { if (!window.INVR) return setTimeout(go, 30); this.setState({ ready: true }, () => this.preset((this.props.opts || {}).view)); };
+    go();
+  }
+  componentDidUpdate(prev) { if (prev.optsKey !== this.props.optsKey) { this.clear(); this.setState(this.base(), () => this.preset((this.props.opts || {}).view)); } }
+  componentWillUnmount() { this.clear(); }
+  clear() { clearInterval(this.si); (this.tm || []).forEach(clearTimeout); this.tm = []; clearTimeout(this.tt); }
+  later(fn, ms) { this.tm = this.tm || []; this.tm.push(setTimeout(fn, ms)); }
+  base() { return { step: 'choose', way: null, scanPct: 0, scanning: false, ticked: {}, showOld: false, showAddr: false, user: 'admin', pass: '', passMissing: false, conn: {}, fix: {}, recTicked: {}, addr: { url: 'rtsp://10.20.1.36:554/Streaming/Channels/101', user: 'admin', pass: 'plant2cam', test: null }, up: { stage: 'start', rows: [] }, items: [], doneList: [], toast: null }; }
+  first() { return this.props.scen === 'first'; }
+  M() { return window.INVR.merge(this.props.edits || {}, this.props.scen === 'first' ? 'day' : (this.props.scen || 'day')); }
+  used() { return this.first() ? 0 : this.M().used; }
+  say(t) { clearTimeout(this.tt); this.setState({ toast: t }); this.tt = setTimeout(() => this.setState({ toast: null }), 4500); }
+  scanSrc() {
+    const I = window.INVR, first = this.first(), M = this.M();
+    return I.addSource(first).map(x => {
+      const y = Object.assign({}, x);
+      if (!first && x.key === 'n1') y.trouble = 'unreach';
+      if (y.fresh && !first) { const c = M.cams.find(c => c.ip === y.ip); if (c) { y.fresh = false; y.existing = c.label; } }
+      return y;
+    });
+  }
+  recSrc() {
+    const I = window.INVR, M = this.M();
+    if (this.first()) return I.CAMS.map((c, i) => ({ key: 'r' + c.num, ch: i + 1, label: c.name, area: c.area, num: c.num, via: 'recorder', fresh: true }));
+    const olds = M.cams.filter(c => c.via === 'recorder').map((c, i) => ({ key: 'r' + c.num, ch: i + 1, label: c.name, existing: c.label, fresh: false }));
+    const news = [['Canteen', 'office', '10.20.1.51'], ['Scrap yard', 'warehouse', '10.20.1.52'], ['Line C', 'production', '10.20.1.53'], ['Weighbridge', 'gates', '10.20.1.54']].map(([n, a, ip], i) => {
+      const ex = M.cams.find(c => c.ip === ip);
+      return ex ? { key: 'rn' + i, ch: olds.length + i + 1, label: n, existing: ex.label, fresh: false } : { key: 'rn' + i, ch: olds.length + i + 1, label: n, area: a, ip, via: 'recorder', fresh: true };
+    });
+    return olds.concat(news);
+  }
+  upRows() {
+    const N = ['Annex gate', 'Annex gate exit', 'Annex lobby', 'Annex reception', 'Annex stairs', 'Annex corridor 1', 'Annex corridor 2', 'Annex canteen', 'Annex store', 'Annex dock', 'Annex yard', 'Annex parking', 'Annex roof', 'Annex lab', 'Annex office', 'Annex fence'];
+    return N.map((n, i) => ({ key: 'u' + i, row: i + 2, name: n, ip: '10.20.3.' + (11 + i), url: i === 12 ? '' : 'rtsp://10.20.3.' + (11 + i) + ':554/stream1', pass: '', fail: i === 3 ? 'password' : i === 8 ? 'unreach' : i === 12 ? 'address' : null }));
+  }
+  mkItems(src) {
+    const M = this.M(); let n = M.next;
+    return src.map(x => ({ key: x.key, num: x.num != null ? x.num : n++, name: x.suggest || x.label || x.name, area: x.area || 'unassigned', level: 'standard', include: true, model: x.model || '', via: x.via || 'direct', ip: x.ip || '' }));
+  }
+  startScan() {
+    clearInterval(this.si);
+    this.setState({ step: 'scan', way: 'scan', scanning: true, scanPct: 0 });
+    this.si = setInterval(() => {
+      this.setState(st => {
+        const p = Math.min(100, st.scanPct + 7);
+        if (p >= 100) { clearInterval(this.si); const t = {}; this.scanSrc().filter(x => x.fresh).forEach(x => { t[x.key] = true; }); return { scanPct: 100, scanning: false, ticked: t }; }
+        return { scanPct: p };
+      });
+    }, 110);
+  }
+  startConnect() {
+    const src = this.scanSrc().filter(x => x.fresh && this.state.ticked[x.key]);
+    const conn = {}; src.forEach(x => { conn[x.key] = 'wait'; });
+    this.setState({ step: 'connect', conn, fix: {} });
+    const gap = src.length > 8 ? 180 : 420;
+    src.forEach((x, i) => this.later(() => this.setState(st => ({ conn: Object.assign({}, st.conn, { [x.key]: x.trouble || 'ok' }) })), 500 + i * gap));
+  }
+  retry(key, kind) {
+    if (kind === 'password' && !((this.state.fix[key] || {}).pass)) return this.say('Type this camera’s own password first.');
+    this.setState(st => ({ conn: Object.assign({}, st.conn, { [key]: 'wait' }) }));
+    this.later(() => this.setState(st => ({ conn: Object.assign({}, st.conn, { [key]: 'ok' }) })), 900);
+  }
+  preset(v) {
+    if (!v || !window.INVR) return;
+    const scanAll = () => { const t = {}; this.scanSrc().filter(x => x.fresh).forEach(x => { t[x.key] = true; }); return t; };
+    if (v === 'scan') { const t = scanAll(); const ks = Object.keys(t); if (ks.length > 3) { delete t[ks[ks.length - 1]]; delete t[ks[ks.length - 2]]; } this.setState({ way: 'scan', step: 'scan', scanning: false, scanPct: 100, ticked: t, showOld: true }); }
+    if (v === 'creds') this.setState({ way: 'scan', step: 'creds', ticked: scanAll() });
+    if (v === 'connect') { const conn = {}; this.scanSrc().filter(x => x.fresh).forEach(x => { conn[x.key] = x.trouble || 'ok'; }); this.setState({ way: 'scan', step: 'connect', ticked: scanAll(), conn }); }
+    if (v === 'confirm') { const src = this.scanSrc().filter(x => x.fresh && x.trouble !== 'unreach'); this.setState({ way: 'scan', step: 'confirm', items: this.mkItems(src) }); }
+    if (v === 'recorder') { const t = {}; this.recSrc().filter(x => x.fresh).forEach(x => { t[x.key] = true; }); this.setState({ way: 'recorder', step: 'recorder', recTicked: t }); }
+    if (v === 'address') this.setState({ way: 'address', step: 'address', addr: Object.assign({}, this.state.addr, { test: 'ok' }) });
+    if (v === 'upload') this.setState({ way: 'upload', step: 'upload', up: { stage: 'rows', rows: this.upRows() } });
+    if (v === 'full') this.setState({ way: 'upload', step: 'confirm', items: this.mkItems(this.upRows()) });
+    if (v === 'done') { const src = this.scanSrc().filter(x => x.fresh).slice(0, 4); this.setState({ way: 'scan', step: 'done', doneList: this.mkItems(src).map(i => ({ num: i.num, name: i.name })) }); }
+  }
+  finish(inc) {
+    const I = window.INVR, first = this.first();
+    const kind = a => ({ gates: 'yard', parking: 'yard', office: 'hall', warehouse: 'bay', production: 'floor' })[a] || 'hall';
+    const sample = new Set(I.CAMS.map(c => c.num));
+    const patch = {}, added = [];
+    inc.forEach(it => {
+      if (first && sample.has(it.num)) patch[it.num] = { name: it.name, area: it.area, level: it.level };
+      else { const c = { num: it.num, name: it.name, area: it.area, scene: I.sceneFor(kind(it.area), it.num), boxes: [], level: it.level, priority: false, via: it.via, model: it.model, ip: it.ip, isNew: true }; c.tech = I.techFor(c); added.push(c); }
+    });
+    if (this.props.onEdit) this.props.onEdit(e => Object.assign({}, e, { cams: Object.assign({}, e.cams, patch), added: (e.added || []).concat(added) }));
+    this.setState({ step: 'done', doneList: inc.map(i => ({ num: i.num, name: i.name })) });
+    if (this.props.onAdded) this.props.onAdded({ first, count: inc.length });
+  }
+
+  renderVals() {
+    const I = window.INVR, p = this.props, s = this.state;
+    const out = { ways: [], steps: [], found: [], olds: [], connRows: [], recRows: [], failRows: [], okRows: [], items: [], bulk: [], areaOpts: [], levelOpts: [], doneList: [], isChoose: true };
+    if (!I || !s.ready) return out;
+    const pd = fn => e => { if (e && e.preventDefault) e.preventDefault(); fn(e); };
+    const seg = on => ({ bg: on ? 'var(--blue-tint)' : 'transparent', ink: on ? 'var(--blue-deep)' : 'var(--muted)', ring: on ? '0 0 0 1px var(--blue)' : 'none', weight: on ? 600 : 400 });
+    const cb = on => ({ cbBorder: on ? 'var(--blue)' : 'var(--line)', cbBg: on ? 'var(--blue)' : 'var(--paper)', mark: on ? '✓' : '' });
+    const first = this.first(), M = this.M(), used0 = this.used(), free0 = I.CAPACITY - used0, fit0 = Math.floor(free0 / 10);
+    const nav = (t, o) => p.nav ? p.nav(t, o) : this.say('In the full prototype this opens ' + t + '.');
+    const W4 = {
+      scan: { title: 'Find cameras on this network', steps: ['Find', 'Sign in', 'Connect', 'Name and place', 'Done'], idx: { scan: 0, creds: 1, connect: 2, confirm: 3, done: 4 } },
+      recorder: { title: 'Add from the recorder', steps: ['Choose', 'Name and place', 'Done'], idx: { recorder: 0, confirm: 1, done: 2 } },
+      address: { title: 'Enter a camera address', steps: ['Enter and test', 'Name and place', 'Done'], idx: { address: 0, confirm: 1, done: 2 } },
+      upload: { title: 'Upload a list', steps: ['Upload', 'Fix rows', 'Name and place', 'Done'], idx: { upload: s.up.stage === 'rows' ? 1 : 0, confirm: 2, done: 3 } }
+    };
+    const W = s.way ? W4[s.way] : null, si = W ? W.idx[s.step] : -1;
+    const TITLES = { choose: 'Add cameras', scan: 'Find cameras on this network', creds: 'Sign in to the cameras', connect: 'Connecting to the cameras', recorder: 'Add from the recorder', address: 'Enter a camera address', upload: 'Upload a list', confirm: 'Check, name and place the new cameras', done: 'Cameras added' };
+    Object.assign(out, {
+      first, eyebrow: W ? `Add cameras · ${W.title} · Step ${si + 1} of ${W.steps.length}` : 'Cameras · Add cameras', title: TITLES[s.step],
+      capChip: first ? 'Room for about 30 cameras at Standard' : `Room for ${fit0} more at Standard`,
+      capLine: first ? 'The capacity check at install says this box can watch about 30 cameras at Standard detail.' : `This box can watch ${fit0} more cameras at Standard detail.`,
+      hasBack: s.step !== 'choose' && s.step !== 'done', cancelLabel: s.step === 'done' ? 'Close' : 'Cancel',
+      cancel: () => nav(first ? 'home' : 'cameras', {}),
+      back: () => {
+        this.clear();
+        if (s.step === 'confirm') return this.setState({ step: s.way === 'scan' ? 'connect' : s.way });
+        if (s.step === 'upload' && s.up.stage !== 'start') return this.setState({ up: { stage: 'start', rows: [] } });
+        const b = { scan: 'choose', creds: 'scan', connect: 'creds', recorder: 'choose', address: 'choose', upload: 'choose' };
+        this.setState({ step: b[s.step] || 'choose', way: (b[s.step] || 'choose') === 'choose' ? null : s.way, scanning: false });
+      },
+      hasSteps: !!W, stepN: W ? W.steps.length : 1,
+      steps: W ? W.steps.map((l, i) => ({ n: '0' + (i + 1), label: l, bar: i <= si ? 'var(--blue)' : 'var(--paper-3)', ink: i === si ? 'var(--ink)' : 'var(--muted)' })) : [],
+      isChoose: s.step === 'choose', isScan: s.step === 'scan', isCreds: s.step === 'creds', isConnect: s.step === 'connect', isRecorder: s.step === 'recorder', isAddress: s.step === 'address', isUpload: s.step === 'upload', isConfirm: s.step === 'confirm', isDone: s.step === 'done',
+      toast: !!s.toast, toastText: s.toast || ''
+    });
+    out.ways = [
+      ['scan', 'Find cameras on this network', 'i-Netra looks for cameras on the box’s network and lists their brand and model. Tick the ones to add and type their username and password once.', 'About 2 min'],
+      ['recorder', 'Add from the recorder', 'Pick from the cameras the site’s recorder already knows, ready to tick and add.', 'About 1 min'],
+      ['address', 'Enter a camera address', 'Paste one camera’s stream address and sign-in details, then test it before adding.', 'About 1 min'],
+      ['upload', 'Upload a list', 'Fill in the template sheet with many cameras at once, upload it, then fix any rows that failed.', 'About 5 min for 16']
+    ].map(([k, t, sub, time], i) => ({ idx: '0' + (i + 1), title: t, sub, time, rec: i === 0, go: () => {
+      if (k === 'scan') return this.startScan();
+      if (k === 'recorder') { const tk = {}; this.recSrc().filter(x => x.fresh).forEach(x => { tk[x.key] = true; }); return this.setState({ way: 'recorder', step: 'recorder', recTicked: tk }); }
+      if (k === 'address') return this.setState({ way: 'address', step: 'address', addr: Object.assign({}, s.addr, { test: null }) });
+      this.setState({ way: 'upload', step: 'upload', up: { stage: 'start', rows: [] } });
+    } }));
+
+    let foot = null;
+    const pl = (n, a, b) => n + ' ' + (n === 1 ? a : b);
+    if (s.step === 'scan') {
+      const src = this.scanSrc(), fresh = src.filter(x => x.fresh), olds = src.filter(x => !x.fresh);
+      const tn = fresh.filter(x => s.ticked[x.key]).length, all = tn === fresh.length && tn > 0;
+      Object.assign(out, {
+        scanning: s.scanning, scanDone: !s.scanning, techRows: src.map(x => ({ model: x.model, ip: x.ip, proto: 'ONVIF Profile S · RTSP' })), scanW: s.scanPct + '%', scanFound: `${Math.round(src.length * s.scanPct / 100)} found so far`,
+        scanSummary: olds.length ? `Found ${pl(fresh.length, 'new camera', 'new cameras')}, and ${olds.length} already on i-Netra.` : `Found ${fresh.length} cameras on this network.`,
+        showAddr: s.showAddr, addrCaret: s.showAddr ? '▾' : '▸', toggleAddr: () => this.setState(st => ({ showAddr: !st.showAddr })), rescan: () => this.startScan(),
+        tickAllLabel: all ? 'Untick all' : `Tick all ${fresh.length}`, allBorder: all ? 'var(--blue)' : 'var(--line)', allBg: all ? 'var(--blue)' : 'var(--paper)', allMark: all ? '✓' : '',
+        tickAll: () => { const t = {}; if (!all) fresh.forEach(x => { t[x.key] = true; }); this.setState({ ticked: t }); },
+        found: fresh.map(x => Object.assign({ model: x.model, ip: x.ip, on: !!s.ticked[x.key], bg: s.ticked[x.key] ? 'var(--blue-tint)' : 'var(--paper)', toggle: () => this.setState(st => ({ ticked: Object.assign({}, st.ticked, { [x.key]: !st.ticked[x.key] }) })) }, cb(!!s.ticked[x.key]))),
+        hasOld: olds.length > 0, showOld: s.showOld, oldCaret: s.showOld ? '▾' : '▸', oldText: `${pl(olds.length, 'camera is', 'cameras are')} already on i-Netra`,
+        toggleOld: () => this.setState(st => ({ showOld: !st.showOld })), olds: olds.map(x => ({ model: x.model, ip: x.ip, existing: x.existing }))
+      });
+      if (!s.scanning) foot = tn ? { text: `${pl(tn, 'camera', 'cameras')} ticked`, label: `Next: sign in to ${pl(tn, 'camera', 'cameras')}`, go: () => this.setState({ step: 'creds' }) } : { text: 'Tick the cameras you want to add.', ink: 'var(--muted)' };
+    }
+    if (s.step === 'creds') {
+      const tn = this.scanSrc().filter(x => x.fresh && s.ticked[x.key]).length;
+      Object.assign(out, { tickedN: tn, user: s.user, pass: s.pass, onUser: e => this.setState({ user: e.target.value }), onPass: e => this.setState({ pass: e.target.value, passMissing: false }), passMissing: s.passMissing, passBorder: s.passMissing ? 'var(--danger-deep)' : 'var(--line)' });
+      foot = { text: `${pl(tn, 'camera', 'cameras')} to connect`, label: `Connect ${pl(tn, 'camera', 'cameras')}`, go: () => s.pass ? this.startConnect() : this.setState({ passMissing: true }) };
+    }
+    if (s.step === 'connect') {
+      const src = this.scanSrc().filter(x => x.fresh && s.conn[x.key]);
+      const MSG = { wait: 'Connecting…', ok: 'Connected', password: 'The camera refused this username or password.', video: 'i-Netra can’t read this camera’s video. Try the camera’s second stream, which most cameras offer.', unreach: 'i-Netra can’t reach this camera. Check that it’s switched on and on the same network as the box.' };
+      const okN = src.filter(x => s.conn[x.key] === 'ok').length, waitN = src.filter(x => s.conn[x.key] === 'wait').length, badN = src.length - okN - waitN;
+      out.connSummary = waitN ? `Connecting to ${src.length} cameras… ${okN} connected so far.` : badN ? `${okN} of ${src.length} connected. ${badN} ${badN === 1 ? 'needs' : 'need'} a fix.` : `All ${src.length} cameras connected.`;
+      out.connRows = src.map((x, i) => {
+        const st = s.conn[x.key], f = s.fix[x.key] || {};
+        return {
+          model: x.model, hint: x.suggest ? 'Looks like ' + x.suggest : '', text: MSG[st],
+          pic: st === 'ok' ? I.sceneFor(['hall', 'yard', 'bay', 'floor'][i % 4], (x.num || 20) + i) : 'var(--paper-2)',
+          ink: st === 'ok' ? 'var(--success-deep)' : st === 'wait' ? 'var(--muted)' : 'var(--danger-deep)', dot: st === 'ok' ? 'var(--success)' : st === 'wait' ? 'var(--paper-3)' : 'var(--danger)',
+          isPass: st === 'password', isVideo: st === 'video', isUnreach: st === 'unreach',
+          fixUser: f.user ?? s.user, fixPass: f.pass || '',
+          onFixUser: e => { const v = e.target.value; this.setState(stt => ({ fix: Object.assign({}, stt.fix, { [x.key]: Object.assign({}, stt.fix[x.key], { user: v }) }) })); },
+          onFixPass: e => { const v = e.target.value; this.setState(stt => ({ fix: Object.assign({}, stt.fix, { [x.key]: Object.assign({}, stt.fix[x.key], { pass: v }) }) })); },
+          retry: () => this.retry(x.key, st)
+        };
+      });
+      if (!waitN) foot = okN ? { text: badN ? `${pl(badN, 'camera is', 'cameras are')} left out until fixed.` : 'Every ticked camera is connected.', label: `Next: name and place ${pl(okN, 'camera', 'cameras')}`, go: () => this.setState({ step: 'confirm', items: this.mkItems(src.filter(x => s.conn[x.key] === 'ok')) }) } : { text: 'Fix at least one camera to carry on.', ink: 'var(--danger-deep)' };
+    }
+    if (s.step === 'recorder') {
+      const src = this.recSrc(), fresh = src.filter(x => x.fresh), tn = fresh.filter(x => s.recTicked[x.key]).length;
+      out.recN = src.length;
+      out.recRows = src.map(x => Object.assign({ ch: x.ch, label: x.label, on: !!s.recTicked[x.key], status: x.fresh ? 'Not on i-Netra yet' : 'Already on i-Netra as ' + x.existing, bg: x.fresh && s.recTicked[x.key] ? 'var(--blue-tint)' : 'var(--paper)', ink: x.fresh ? 'var(--ink)' : 'var(--muted)', cursor: x.fresh ? 'pointer' : 'default', cbVis: x.fresh ? 'visible' : 'hidden',
+        toggle: () => x.fresh && this.setState(st => ({ recTicked: Object.assign({}, st.recTicked, { [x.key]: !st.recTicked[x.key] }) })) }, cb(!!s.recTicked[x.key])));
+      foot = tn ? { text: `${pl(tn, 'camera', 'cameras')} ticked`, label: `Next: name and place ${pl(tn, 'camera', 'cameras')}`, go: () => this.setState({ step: 'confirm', items: this.mkItems(fresh.filter(x => s.recTicked[x.key])) }) } : { text: 'Tick the cameras you want to add.', ink: 'var(--muted)' };
+    }
+    if (s.step === 'address') {
+      const a = s.addr, set = patch => this.setState(st => ({ addr: Object.assign({}, st.addr, patch) }));
+      const T = { ok: ['Connected. This is what the camera sees.', 'success'], unreach: ['i-Netra can’t reach this camera. Check that it’s switched on and on the same network as the box.', 'danger'], refused: ['The camera refused this username or password.', 'danger'], empty: ['Paste the camera’s stream address first.', 'danger'] };
+      const t = T[a.test];
+      Object.assign(out, {
+        addrUrl: a.url, addrUser: a.user, addrPass: a.pass,
+        onAddrUrl: e => set({ url: e.target.value, test: null }), onAddrUser: e => set({ user: e.target.value, test: null }), onAddrPass: e => set({ pass: e.target.value, test: null }),
+        testLabel: a.test === 'testing' ? 'Testing…' : 'Test', testIdle: !a.test || (a.test !== 'ok' && a.test !== 'testing'), testing: a.test === 'testing', testOk: a.test === 'ok',
+        testPic: a.test === 'ok' ? I.sceneFor('hall', 21) : a.test === 'testing' ? 'var(--ink-2)' : 'var(--paper-2)',
+        testMsg: !!t, testText: t ? t[0] : '', testBg: t ? `var(--${t[1]}-tint)` : 'transparent', testInk: t ? `var(--${t[1]}-deep)` : 'var(--ink)',
+        test: () => {
+          if (!a.url.trim()) return set({ test: 'empty' });
+          set({ test: 'testing' });
+          const r = /\.99([:/]|$)/.test(a.url) ? 'unreach' : a.pass === 'wrong' ? 'refused' : 'ok';
+          this.later(() => set({ test: r }), 1100);
+        }
+      });
+      if (a.test === 'ok') foot = { text: 'The camera answered and its picture is showing.', label: 'Next: name and place this camera', go: () => this.setState({ step: 'confirm', items: this.mkItems([{ key: 'addr', suggest: 'Canteen entrance', area: 'office', model: 'Added by address', ip: (a.url.match(/\/\/([^:/]+)/) || [])[1] || '' }]) }) };
+    }
+    if (s.step === 'upload') {
+      const u = s.up, fails = u.rows.filter(r => r.fail), oks = u.rows.filter(r => !r.fail);
+      const R = { password: 'The camera refused this username or password.', unreach: 'i-Netra can’t reach this camera. Check that it’s switched on and on the same network as the box.', address: 'This row has no stream address.' };
+      const setRow = (key, patch) => this.setState(st => ({ up: Object.assign({}, st.up, { rows: st.up.rows.map(r => r.key === key ? Object.assign({}, r, patch) : r) }) }));
+      Object.assign(out, {
+        upStart: u.stage === 'start', upChecking: u.stage === 'checking', upRowsOn: u.stage === 'rows',
+        getTemplate: () => this.say('Saved “i-Netra camera list template.csv” to this computer.'),
+        upload: () => { this.setState({ up: { stage: 'checking', rows: [] } }); this.later(() => this.setState({ up: { stage: 'rows', rows: this.upRows() } }), 1400); },
+        upSummary: fails.length ? `${oks.length} of 16 rows are ready. ${fails.length} need a fix.` : 'All 16 rows are ready.',
+        upHasFails: fails.length > 0,
+        failRows: fails.map(r => ({ row: r.row, name: r.name, reason: R[r.fail], inputType: r.fail === 'password' ? 'password' : 'text', placeholder: r.fail === 'password' ? 'This camera’s password' : 'Stream address, such as rtsp://…', value: r.fail === 'password' ? r.pass : r.url, onChange: e => { const v = e.target.value; setRow(r.key, r.fail === 'password' ? { pass: v } : { url: v }); } })),
+        okRows: oks.map(r => ({ row: r.row, name: r.name })),
+        recheck: () => {
+          const bad = fails.filter(r => r.fail === 'password' ? !r.pass : !r.url.trim());
+          this.setState(st => ({ up: Object.assign({}, st.up, { rows: st.up.rows.map(r => r.fail && !bad.some(b => b.key === r.key) ? Object.assign({}, r, { fail: null }) : r) }) }));
+          if (bad.length) this.say(bad.length === 1 ? `Row ${bad[0].row} still needs a fix.` : `${bad.length} rows still need a fix.`);
+        }
+      });
+      if (u.stage === 'rows') foot = fails.length ? { text: `Fix the ${fails.length} rows above, or carry on with the ${oks.length} that are ready.`, label: `Next: name and place ${oks.length} cameras`, go: () => this.setState({ step: 'confirm', items: this.mkItems(oks) }) } : { text: 'Every row is ready.', label: 'Next: name and place 16 cameras', go: () => this.setState({ step: 'confirm', items: this.mkItems(u.rows) }) };
+    }
+    if (s.step === 'confirm') {
+      const setIt = (key, patch) => this.setState(st => ({ items: st.items.map(i => i.key === key ? Object.assign({}, i, patch) : i) }));
+      const inc = s.items.filter(i => i.include), need = inc.reduce((a, i) => a + I.LV[i.level].checks, 0), left = free0 - need;
+      const taken = {}; if (!first) M.all.forEach(c => { if (!c.removed) taken[c.num] = c.label; });
+      const seen = {}; inc.forEach(i => { seen[i.num] = (seen[i.num] || 0) + 1; });
+      const errs = {}; inc.forEach(i => { if (!i.num || i.num < 1) errs[i.key] = 'Give this camera a number.'; else if (taken[i.num]) errs[i.key] = `Number ${i.num} is already ${taken[i.num]}.`; else if (seen[i.num] > 1) errs[i.key] = `Two new cameras both use number ${i.num}.`; else if (!i.name.trim()) errs[i.key] = 'Give this camera a name.'; });
+      const levelOf = inc.length && inc.every(i => i.level === inc[0].level) ? inc[0].level : null;
+      const fitN = Math.max(0, Math.floor(free0 / I.LV[levelOf || 'standard'].checks));
+      Object.assign(out, {
+        fits: left >= 0, over: left < 0,
+        fitText: inc.length ? `After adding ${inc.length === 1 ? 'this camera' : 'these ' + inc.length}, the box can watch ${Math.floor(left / 10)} more ${Math.floor(left / 10) === 1 ? 'camera' : 'cameras'} at Standard detail.` : 'Tick “Add this camera” on at least one camera.',
+        overText: `These ${inc.length} cameras need ${Math.round(need / I.CAPACITY * 100)}% of the box’s AI capacity at the levels chosen, and ${Math.round(free0 / I.CAPACITY * 100)}% is free. Lower the detail level on some cameras, or add fewer cameras now and the rest later.`,
+        allLow: () => this.setState(st => ({ items: st.items.map(i => Object.assign({}, i, { level: 'low' })) })),
+        fewerLabel: `Add the first ${fitN} only`,
+        fewer: () => { let k = 0; this.setState(st => ({ items: st.items.map(i => { if (!i.include) return i; k++; return k <= fitN ? i : Object.assign({}, i, { include: false }); }) })); },
+        bulk: I.LEVELS.map(l => Object.assign({ label: l.label, set: () => this.setState(st => ({ items: st.items.map(i => Object.assign({}, i, { level: l.key })) })) }, seg(levelOf === l.key))),
+        areaOpts: M.areaList.map(a => ({ value: a.id, label: a.name })).concat([{ value: 'unassigned', label: 'Unassigned' }]),
+        levelOpts: I.LEVELS.map(l => ({ value: l.key, label: `${l.label} · checks ${l.checks} times a second` })),
+        items: s.items.map(i => Object.assign({
+          num: i.num, name: i.name, area: i.area, level: i.level, include: i.include, scene: I.sceneFor(['hall', 'yard', 'bay', 'floor'][i.num % 4], i.num),
+          border: errs[i.key] ? 'var(--danger-deep)' : 'var(--line)', op: i.include ? 1 : 0.5, numErr: !!errs[i.key], numErrText: errs[i.key] || '', numBorder: errs[i.key] && /umber/.test(errs[i.key]) ? 'var(--danger-deep)' : 'var(--line)',
+          onNum: e => setIt(i.key, { num: parseInt(e.target.value, 10) || 0 }), onName: e => setIt(i.key, { name: e.target.value }),
+          onArea: e => setIt(i.key, { area: e.target.value }), onLevel: e => setIt(i.key, { level: e.target.value }), toggle: () => setIt(i.key, { include: !i.include })
+        }, cb(i.include)))
+      });
+      const nErr = Object.keys(errs).length;
+      foot = left < 0 ? { text: 'Sort out the capacity message above to carry on.', ink: 'var(--danger-deep)' } : nErr ? { text: nErr === 1 ? 'One camera needs a fix before adding.' : `${nErr} cameras need a fix before adding.`, ink: 'var(--danger-deep)' } : inc.length ? { text: `${pl(inc.length, 'camera', 'cameras')} ready to add`, label: `Add ${pl(inc.length, 'camera', 'cameras')}`, go: () => this.finish(inc) } : { text: 'Tick “Add this camera” on at least one camera.', ink: 'var(--muted)' };
+    }
+    if (s.step === 'done') {
+      const n = s.doneList.length;
+      Object.assign(out, { doneTitle: `${pl(n, 'camera', 'cameras')} added.`, doneList: s.doneList, goLive: pd(() => nav('live', {})), addMore: () => this.setState(this.base()), goHome: () => nav('home', {}) });
+    }
+    Object.assign(out, { hasFoot: !!foot, footText: foot ? foot.text : '', footInk: foot && foot.ink ? foot.ink : 'var(--ink)', footGo: !!(foot && foot.go), nextLabel: foot && foot.label ? foot.label : '', next: pd(() => foot && foot.go && foot.go()) });
+    return out;
+  }
+}</script>
+</body>
+</html>
