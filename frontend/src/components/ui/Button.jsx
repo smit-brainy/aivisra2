@@ -1,9 +1,14 @@
 import React from 'react';
+import { useHoverProps } from '../../hooks/useHoverProps';
 
 /**
  * Button — reusable UI button component.
  * Mirrors the prototype's button styles (primary, ink, danger, secondary).
  * Supports size variants and full width.
+ *
+ * Hover is applied at runtime via useHoverProps() — plain React ignores the
+ * `&:hover` CSS-in-JS syntax that the original port used, so those hovers
+ * never rendered. The hook merges the variant's hover style on mouse enter.
  *
  * Props:
  *   children — button label
@@ -36,31 +41,31 @@ export default function Button({
       background: 'var(--blue)',
       color: 'var(--paper)',
       borderColor: 'var(--blue)',
-      _hover: { background: 'var(--blue-2)' },
+      hover: { background: 'var(--blue-2)', borderColor: 'var(--blue-2)' },
     },
     ink: {
       background: 'var(--ink)',
       color: 'var(--paper)',
       borderColor: 'var(--ink)',
-      _hover: { background: 'var(--ink-2)' },
+      hover: { background: 'var(--ink-2)', borderColor: 'var(--ink-2)' },
     },
     danger: {
       background: 'var(--danger-tint)',
       color: 'var(--danger-deep)',
       borderColor: 'var(--danger-deep)',
-      _hover: { background: '#b71c1c' },
+      hover: { background: 'var(--danger-tint)', borderColor: 'var(--danger)' },
     },
     secondary: {
       background: 'var(--paper)',
       color: 'var(--ink)',
       borderColor: 'var(--line)',
-      _hover: { borderColor: 'var(--ink)', background: 'var(--ink-2)' },
+      hover: { borderColor: 'var(--ink)' },
     },
     text: {
       background: 'transparent',
       color: 'var(--blue)',
       borderColor: 'transparent',
-      _hover: { color: 'var(--blue-2)' },
+      hover: { color: 'var(--blue-2)' },
     },
   };
 
@@ -69,7 +74,7 @@ export default function Button({
     fontWeight: 500,
     borderRadius: 6,
     border: '1px solid currentColor',
-    cursor: disabled ? 'not-available' : 'pointer',
+    cursor: disabled ? 'not-allowed' : 'pointer',
     transition: 'background .2s, border-color .2s, color .2s',
     ...sizeStyles[size],
     ...(fullWidth && { width: '100%' }),
@@ -82,14 +87,15 @@ export default function Button({
     ...baseStyle,
     background: variantStyle.background,
     color: variantStyle.color,
-    borderColor: variantStyle.background.includes('var(--') ? 'var(--line)' : variantStyle.background.includes('var(--') ? variantStyle.background.replace('var(--', 'var(--') : variantStyle.background),
-    ...(disabled && { opacity: 0.5, cursor: 'not-available' }),
-    ...(variantStyle._hover && { '&:hover': variantStyle._hover }),
+    borderColor: variantStyle.borderColor,
+    ...(disabled && { opacity: 0.5, cursor: 'not-allowed' }),
   };
+
+  const hover = useHoverProps(style, disabled ? null : variantStyle.hover);
 
   return (
     <button
-      style={style}
+      {...hover}
       onClick={onClick}
       disabled={disabled}
       {...props}
@@ -98,7 +104,3 @@ export default function Button({
     </button>
   );
 }
-
-/* eslint-enable */
-// styled-component-like fallback for environments without styled-components
-// This Button can be used directly or wrapped with a styling library

@@ -14,6 +14,26 @@ class CameraRegisterRequest(BaseModel):
     live_path: Optional[str] = None
 
 
+class CameraMetadataRequest(BaseModel):
+    """Partial update of operator-editable camera metadata."""
+
+    display_name: Optional[str] = Field(None, max_length=120)
+    area_id: Optional[str] = None
+    kind: Optional[str] = None
+    level: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class AreaCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    sort_order: int = 0
+
+
+class AreaUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=120)
+    sort_order: Optional[int] = None
+
+
 class CameraAnalyzeRequest(BaseModel):
     sample_count: int = 20
     sample_duration_seconds: float = 8.0

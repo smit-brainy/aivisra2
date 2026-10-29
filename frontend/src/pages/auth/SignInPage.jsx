@@ -201,6 +201,7 @@ export default function SignInPage({ onSignedIn }) {
                 onKeyDown={onEnter(signIn)}
                 autoComplete="username"
                 spellCheck="false"
+                className="fcs-input"
                 style={{ height: 52, padding: '0 14px', border: `1px solid ${aMsg === 'wrong' ? 'var(--danger-deep)' : 'var(--line)'}`, borderRadius: 8, background: 'var(--paper)', fontSize: 16, outline: 'none' }}
                 onFocus={(e) => { e.target.style.borderColor = 'var(--blue)'; }}
                 onBlur={(e) => { e.target.style.borderColor = aMsg === 'wrong' ? 'var(--danger-deep)' : 'var(--line)'; }}
@@ -216,14 +217,14 @@ export default function SignInPage({ onSignedIn }) {
                   onChange={(e) => setPass(e.target.value)}
                   onKeyDown={onEnter(signIn)}
                   autoComplete="current-password"
+                  className="fcs-input"
                   style={{ width: '100%', height: 52, padding: '0 76px 0 14px', border: `1px solid ${aMsg === 'wrong' ? 'var(--danger-deep)' : 'var(--line)'}`, borderRadius: 8, background: 'var(--paper)', fontSize: 16, outline: 'none' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShow((v) => !v)}
+                  className="hvr-blue2"
                   style={{ position: 'absolute', right: 6, top: 6, height: 40, padding: '0 12px', borderRadius: 6, fontSize: 14, fontWeight: 500, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink)' }}
-                  onMouseEnter={(e) => { e.target.style.background = 'var(--blue-tint)'; e.target.style.color = 'var(--blue-deep)'; }}
-                  onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--ink)'; }}
                 >
                   {aShow ? 'Hide' : 'Show'}
                 </button>
@@ -269,9 +270,8 @@ export default function SignInPage({ onSignedIn }) {
                 <button
                   key={user}
                   onClick={() => { setUser(user); setPass('demo-password'); }}
+                  className="hvr-menu-item"
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, height: 38, padding: '0 8px', borderRadius: 8, textAlign: 'left', border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer' }}
-                  onMouseEnter={(e) => { e.target.style.background = 'var(--ink-2)'; }}
-                  onMouseLeave={(e) => { e.target.style.background = 'transparent'; }}
                 >
                   <span style={{ font: '500 13.5px/1 var(--font-mono)' }}>{user}</span>
                   <span style={{ fontSize: 13, color: 'var(--muted-dark)' }}>{what}</span>
@@ -308,6 +308,7 @@ export default function SignInPage({ onSignedIn }) {
                   onChange={(e) => { setPA(e.target.value); setPMsg(null); }}
                   onKeyDown={onEnter(savePw)}
                   autoComplete="new-password"
+                  className="fcs-input"
                   style={{ width: '100%', height: 52, padding: '0 76px 0 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 16, outline: 'none' }}
                 />
                 <button
@@ -342,6 +343,7 @@ export default function SignInPage({ onSignedIn }) {
                 onChange={(e) => { setPB(e.target.value); setPMsg(null); }}
                 onKeyDown={onEnter(savePw)}
                 autoComplete="new-password"
+                className="fcs-input"
                 style={{ height: 52, padding: '0 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 16, outline: 'none' }}
               />
             </label>

@@ -1,16 +1,21 @@
 import React from 'react';
+import { useHoverProps } from '../../hooks/useHoverProps';
 
 /**
  * CameraTile — reusable camera display tile.
  * Mirrors the prototype's camera tile style used in live view and clip player.
  * Shows camera number, name, area badge, and live indicator dot.
  *
+ * Hover is applied at runtime via useHoverProps() — the previous `&:hover`
+ * key inside the inline style object was ignored by React, so the tile never
+ * lifted on hover.
+ *
  * Props:
  *   cam — camera object with num, name, area, status, kind properties
  *   small — whether to render in small size (default: false)
  *   onClick — optional click handler
  */
-export default function CameraTile({ cam, small = false, onClick }) {
+export function CameraTile({ cam, small = false, onClick }) {
   const isCam = cam && cam.num !== undefined;
   const num = isCam ? cam.num : 1;
   const name = isCam ? cam.name : 'Camera';
@@ -32,9 +37,10 @@ export default function CameraTile({ cam, small = false, onClick }) {
     color: 'var(--ink)',
     cursor: onClick ? 'pointer' : 'default',
     overflow: 'hidden',
-    ...(onClick && { transition: 'transform .15s' }),
-    ...(onClick && { '&:hover': { transform: 'translateY(-2px)' } }),
+    transition: 'transform .15s',
   };
+
+  const hover = useHoverProps(tileStyle, onClick ? { transform: 'translateY(-2px)' } : null);
 
   const nameStyle = {
     fontSize: small ? '11px' : '14px',
@@ -58,7 +64,7 @@ export default function CameraTile({ cam, small = false, onClick }) {
   const dotStyle = {
     width: small ? '12px' : '16px',
     height: small ? '12px' : '16px',
-    borderRadius: '50',
+    borderRadius: '50%',
     background: dotColor,
     flexShrink: 0,
     display: 'flex',
@@ -69,106 +75,23 @@ export default function CameraTile({ cam, small = false, onClick }) {
     color: 'var(--paper)',
   };
 
-  const contentStyle = {
-    padding: small ? '8px' : '12px',
-  };
+  const content = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: small ? '6px' : '10px' }}>
+      <span style={dotStyle}>{num}</span>
+      <span style={nameStyle}>{name}</span>
+      <span style={areaStyle}>{area}</span>
+    </div>
+  );
 
   if (onClick) {
     return (
-      <div style={tileStyle} onClick={() => onClick(cam)}>      
-        <div style={{ display: 'flex', alignItems: 'center', gap: small ? '6px' : '10px' }}>
-          <span style={dotStyle}>{num}</span>
-          <span style={nameStyle}>{name}</span>
-          <span style={areaStyle}>{area}</span>
-        </div>
+      <div {...hover} onClick={() => onClick(cam)}>
+        {content}
       </div>
     );
   }
 
-  return (
-    <div style={tileStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: small ? '6px' : '10px' }}>
-        <span style={dotStyle}>{num}</span>
-        <span style={nameStyle}>{name}</span>
-        <span style={areaStyle}>{area}</span>
-      </div>
-    </div>
-  );
+  return <div {...hover}>{content}</div>;
 }
 
-/**
- * PersonChip — reusable person/vehicle/other filter chip.
- * Mirrors the prototype's type chip style used in Search and Live view filters.
- * Shows type label with color-coded background.
- *
- * Props:
- *   text — chip label (e.g., 'Person', 'Vehicle', 'Other')
- *   variant — 'person' | 'vehicle' | 'other' | 'all'
- *   selected — whether the chip is selected
- *   onClick — optional click handler
- *   size — 'sm' | 'md' | 'lg'
- */
-export function PersonChip({ text, variant = 'person', selected = false, onClick, size = 'md' }) {
-  const variantStyles = {
-    person: {
-      bg: selected ? 'var(--sky-tint)' : 'var(--sky)',
-      ink: selected ? 'var(--sky-deep)' : 'var(--sky-deep)',
-    },
-    vehicle: {
-      bg: selected ? 'var(--honey-tint)' : 'var(--honey)',
-      ink: selected ? 'var(--honey-deep)' : 'var(--honey-deep)',
-    },
-    other: {
-      bg: selected ? 'var(--teal-tint)' : 'var(--teal)',
-      ink: selected ? 'var(--teal-deep)' : 'var(--teal-deep)',
-    },
-    all: {
-      bg: selected ? 'var(--paper-tint)' : 'var(--paper)',
-      ink: selected ? 'var(--paper-deep)' : 'var(--paper-deep)',
-    },
-  };
-
-  const styles = variantStyles[variant] || variantStyles.person;
-  const fontSize = size === 'sm' ? '11px' : size === 'lg' ? '13px' : '12px';
-  const padding = size === 'sm' ? '4px 8px' : size === 'lg' ? '8px 16px' : '6px 12px';
-  const borderRadius = 4;
-
-  const chipStyle = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-    padding: padding,
-    borderRadius: borderRadius,
-    background: styles.bg,
-    color: styles.ink,
-    fontSize: fontSize,
-    fontWeight: 500,
-    letterSpacing: '.04em',
-    textTransform: 'uppercase',
-    cursor: onClick ? 'pointer' : 'default',
-    transition: 'background .15s',
-    ...(onClick && { '&:hover': { background: styles.bg.replace('tint', 'deep') } }),
-  };
-
-  const labelStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '2px',
-  };
-
-  if (onClick) {
-    return (
-      <div style={chipStyle} onClick={() => onClick(variant)}>      
-        <span style={labelStyle}>
-          {text}
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div style={chipStyle}>
-      <span style={labelStyle}>{text}</span>
-    </div>
-  );
-}
+export default CameraTile;

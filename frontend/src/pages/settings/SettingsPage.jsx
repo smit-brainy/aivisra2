@@ -157,13 +157,13 @@ export default function SettingsPage({ session, openSearch, navTo }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 14 }}>
         <button style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14, fontWeight: 500 }} onClick={() => setKeepDays(v => Math.max(1, v - 1))}>−</button>
-        <input value={daysVal} onChange={e => setDaysVal(parseInt(e.target.value))} style={{ width: '84px', height: '40px', padding: '0 10px', border: '1px solid var(--line)', borderRadius: 8, textAlign: 'center', font: '500 17px/1 var(--font-mono)', outline: 'none' }} />
+        <input value={daysVal} onChange={e => setDaysVal(parseInt(e.target.value))} className="fcs-input" style={{ width: '84px', height: '40px', padding: '0 10px', border: '1px solid var(--line)', borderRadius: 8, textAlign: 'center', font: '500 17px/1 var(--font-mono)', outline: 'none' }} />
         <button style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14, fontWeight: 500 }} onClick={() => setKeepDays(v => v + 1)}>+</button>
         <span style={{ fontSize: 16, fontWeight: 500 }}>days</span>
       </div>
       <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14, fontWeight: 500 }} onClick={() => { setRefused(true); }}>Save changes</button>
-        <button style={{ height: '48px', padding: '0 18px', border: '1px solid var(--line)', borderRadius: 999, fontSize: 15, fontWeight: 500, styleHover: 'border-color: var(--ink)' }} onClick={() => { setRefused(false); }}>Undo</button>
+        <button className="hvr-ink-border" style={{ height: '48px', padding: '0 18px', border: '1px solid var(--line)', borderRadius: 999, fontSize: 15, fontWeight: 500 }} onClick={() => { setRefused(false); }}>Undo</button>
       </div>
     </div>
   );
@@ -232,7 +232,7 @@ export default function SettingsPage({ session, openSearch, navTo }) {
         <h3 style={{ margin: '0', fontSize: '22px', fontWeight: '500', letterSpacing: '-0.02em', lineHeight: '1.25' }}>This box can watch about 30 cameras at Standard detail.</h3>
         <span style={{ font: '500 12.5px/1.3 var(--font-mono)', color: 'var(--muted)' }}>{{ capWhen }}</span>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginTop: '4px' }}>
-          <button style={{ height: '42px', padding: '0 16px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: '14.5', fontWeight: 500, styleHover: 'border-color: var(--ink)' }}>Run the check again</button>
+          <button className="hvr-ink-border" style={{ height: '42px', padding: '0 16px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: '14.5', fontWeight: 500 }}>Run the check again</button>
           <span style={{ fontSize: '13.5', color: 'var(--muted)' }}>Takes up to 15 minutes.</span>
         </div>
       )}
@@ -315,7 +315,7 @@ export default function SettingsPage({ session, openSearch, navTo }) {
               {{ u.temp && <span style={{ padding: '4px 7px', borderRadius: '4', background: 'var(--paper-2)', font: '500 11px/1 var(--font-mono)', letterSpacing: '.06em', textTransform: 'uppercase' }}>Temporary password</span> }}
             </span>
             <span style={{ position: 'relative', display: 'flex', justifyContent: 'flexEnd' }}>
-              <button style={{ height: '36px', padding: '0 12px', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '14', fontWeight: '500', styleHover: 'border-color: var(--ink)' }}>Manage ▾</button>
+              <button className="hvr-ink-border" style={{ height: '36px', padding: '0 12px', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '14', fontWeight: '500' }}>Manage ▾</button>
               {{ u.menu && (
                 <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: '40', width: '300px', padding: '6px', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: '14', boxShadow: '0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06)' }}>
                   {{ u.you && (
@@ -348,7 +348,7 @@ export default function SettingsPage({ session, openSearch, navTo }) {
           <span style={{ fontSize: '16', fontWeight: '500' }}>Setup checklist</span>
           <span style={{ fontSize: '14.5', color: 'var(--muted)' }}>Brings back the four first-time steps at the top of Home.</span>
         </span>
-        <button style={{ height: '44px', padding: '0 16px', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '14.5', fontWeight: '500', styleHover: 'border-color: var(--ink)' }}>Show setup checklist</button>
+        <button className="hvr-ink-border" style={{ height: '44px', padding: '0 16px', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '14.5', fontWeight: '500' }}>Show setup checklist</button>
       </section>
     </div>
   );

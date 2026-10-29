@@ -167,9 +167,9 @@ rtsp_server/server/*.crt
 rtsp_server/server/hotel_1.mp4
 
 # MediaMTX binaries
-rtsp_server/server/tools/mediamtx
-rtsp_server/server/tools/mediamtx.exe
-rtsp_server/server/tools/ffmpeg.exe
+# rtsp_server/server/tools/mediamtx
+# rtsp_server/server/tools/mediamtx.exe
+# rtsp_server/server/tools/ffmpeg.exe
 
 # Windows batch files (if not needed in repo)
 rtsp_server/server/exe/*.bat

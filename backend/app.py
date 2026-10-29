@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 
 from .routers import streams, telemetry, cameras, spatial, search
 from .dependencies import get_engine
+from .state_store import get_state_store
 
 app = FastAPI(
     title="AIVISRA StreamCore API",
@@ -28,7 +29,8 @@ app = FastAPI(
 
 @app.on_event("startup")
 def on_startup():
-    """Ensure engine is initialized when backend server starts."""
+    """Ensure engine and metadata store are initialized when the server starts."""
+    get_state_store()
     get_engine()
 
 # Enable CORS for React frontend (both local dev server on :5173 and preview server on :8765)

@@ -24,13 +24,13 @@ export default function Checkbox({ checked, onChange, disabled = false, text, si
     width: sizeStyles[size].width,
     height: sizeStyles[size].height,
     flexShrink: 0,
-    cursor: disabled ? 'not-available' : 'pointer',
+    cursor: disabled ? 'not-allowed' : 'pointer',
   };
 
   const labelStyle = {
     fontSize: size === 'sm' ? '12px' : size === 'lg' ? '14px' : '13px',
     lineHeight: 1.5,
-    cursor: disabled ? 'not-available' : 'pointer',
+    cursor: disabled ? 'not-allowed' : 'pointer',
   };
 
   return (

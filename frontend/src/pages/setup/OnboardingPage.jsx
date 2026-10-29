@@ -253,9 +253,9 @@ export default function OnboardingPage({ session, openSearch, navTo }) {
           <input 
             value={username} 
             onChange={e => setUsername(e.target.value)} 
-            spellcheck="false" 
-            style={{ height: '52', padding: '0 14', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '16', outline: 'none' }}
-            styleFocus={{ borderColor: 'var(--blue)', boxShadow: '0 0 0 3px var(--blue-tint)' }}
+            spellCheck="false"
+            className="fcs-input"
+            style={{ height: '52px', padding: '0 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 16, outline: 'none' }}
           />
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: '6' }}>
@@ -265,8 +265,8 @@ export default function OnboardingPage({ session, openSearch, navTo }) {
             value={password} 
             onChange={e => setPassword(e.target.value)} 
             placeholder="The password set on the cameras" 
-            style={{ height: '52', padding: '0 14', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '16', outline: 'none' }}
-            styleFocus={{ borderColor: 'var(--blue)', boxShadow: '0 0 0 3px var(--blue-tint)' }}
+            className="fcs-input"
+            style={{ height: '52px', padding: '0 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 16, outline: 'none' }}
           />
         </label>
         {!credError && (
@@ -321,6 +321,7 @@ export default function OnboardingPage({ session, openSearch, navTo }) {
               <input 
                 value={selectedCamera.label} 
                 onChange={e => { /* update label */ }} 
+                className="fcs-input"
                 style={{ padding: '8px', border: '1px solid var(--line)', borderRadius: '6', fontSize: '14' }}
               />
               <span style={{ fontSize: '13', color: 'var(--muted)' }}>Area</span>
@@ -373,10 +374,10 @@ export default function OnboardingPage({ session, openSearch, navTo }) {
           ))}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12' }}>
-          <button style={{ padding: '14px 24px', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '14', fontWeight: '500', styleHover: 'border-color: var(--ink)' }}>
+          <button className="hvr-ink-border" style={{ padding: '14px 24px', border: '1px solid var(--line)', borderRadius: '8', background: 'var(--paper)', fontSize: '14', fontWeight: '500' }}>
             Go to Live view
           </button>
-          <button style={{ padding: '14px 20px', border: '1px solid var(--line)', borderRadius: '999', fontSize: '15', fontWeight: '500', styleHover: 'border-color: var(--ink)' }}>Add more</button>
+          <button className="hvr-ink-border" style={{ padding: '14px 20px', border: '1px solid var(--line)', borderRadius: '999', fontSize: '15', fontWeight: '500' }}>Add more</button>
         </div>
       </div>
     );

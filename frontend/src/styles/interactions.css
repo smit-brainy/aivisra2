@@ -1,0 +1,93 @@
+/* interactions.css — shared interaction layer ported from the prototype's
+   `style-hover` / `style-focus` attribute system.
+
+   The prototype attaches these as attributes on elements; here the same
+   rules live in one shared stylesheet so screens no longer duplicate
+   per-file `<style>` blocks. Runtime stateful hovers (components that need
+   inline style merging) use `src/hooks/useHoverProps.jsx` instead.
+
+   NOTE ON !important — the port keeps the prototype's styles inline (as the
+   prototype did), and inline declarations outrank author stylesheet rules.
+   A plain `.hvr-x:hover { border-color: … }` would therefore never win over
+   an element's inline `border: 1px solid var(--line)`. The `!important`
+   flags below are required to reproduce the prototype's `style-hover`
+   behaviour on inline-styled elements.
+
+   Source patterns (counts from frontend/prototype/unpacked-tpl):
+     style-hover="border-color: var(--ink);"                     79×
+     style-hover="background: var(--blue-tint); color: …deep;"   10×
+     style-hover="background: var(--blue-2);"                    10×
+     style-hover="background: var(--bone);"                       8×
+     style-hover="background: var(--paper); border-color: …;"     5×
+     style-focus="border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint);"  20×
+*/
+
+/* --- hover: border turns ink (default outline button / link affordance) --- */
+.hvr-ink-border:hover { border-color: var(--ink) !important; }
+
+/* --- hover: stat / card tiles lift to paper + ink border --- */
+.hvr-stat:hover {
+  background: var(--paper) !important;
+  border-color: var(--ink) !important;
+}
+
+/* --- hover: calendar day cell outline --- */
+.hvr-cal-cell:hover {
+  outline: 2px solid var(--blue) !important;
+  outline-offset: -2px !important;
+}
+
+/* --- hover: activity row highlight; play button border follows --- */
+.hvr-row:hover {
+  background: var(--blue-tint) !important;
+  color: var(--blue-deep) !important;
+}
+.hvr-row:hover .hvr-play-btn { border-color: var(--blue) !important; }
+
+/* --- hover: inline underline link / camera row --- */
+.hvr-underline:hover { text-decoration: underline !important; }
+
+/* --- hover: skip text button --- */
+.hvr-skip:hover { border-color: var(--ink) !important; }
+
+/* --- hover: primary CTA darkens to blue-2 --- */
+.hvr-blue2:hover { background: var(--blue-2) !important; }
+
+/* --- hover: dark chrome buttons (top bar) lighten border --- */
+.hvr-dl:hover { border-color: var(--paper) !important; }
+
+/* --- hover: sidebar navigation rail --- */
+.hvr-nav:hover {
+  background: var(--ink-2) !important;
+  color: var(--paper) !important;
+}
+
+/* --- hover: light dropdown menu items (account menu) --- */
+.hvr-menu-item:hover {
+  background: var(--blue-tint) !important;
+  color: var(--blue-deep) !important;
+}
+
+/* --- hover: bone-bg buttons / rows (area rows, tech panels, cancel) --- */
+.hvr-bone:hover {
+  background: var(--bone) !important;
+}
+
+/* --- hover: timeline / clip-mark highlight (search timeline, clip player) --- */
+.hvr-mark:hover {
+  z-index: 4 !important;
+  box-shadow: 0 0 0 2px var(--ink) !important;
+}
+
+/* --- focus: prototype style-focus ring on inputs / text fields --- */
+.fcs-input:focus,
+.fcs-input:focus-visible,
+.fcs-input:focus-within {
+  border-color: var(--blue) !important;
+  box-shadow: 0 0 0 3px var(--blue-tint);
+  outline: none;
+}
+
+.live-view-page button { color: var(--ink); font-family: var(--font-sans); }
+.live-view-page .hvr-blue2:hover { color: var(--paper) !important; }
+.search-page button { color: var(--ink); font-family: var(--font-sans); }

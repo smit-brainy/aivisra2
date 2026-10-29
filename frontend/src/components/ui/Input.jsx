@@ -25,6 +25,7 @@ export default function Input({
   inputProps = {},
   disabled = false,
   fullWidth = false,
+  className = '',
 }) {
   const inputStyle = {
     width: fullWidth ? '100%' : '100%',
@@ -40,9 +41,15 @@ export default function Input({
     transition: 'border-color .15s, box-shadow .15s',
     ...(disabled && {
       opacity: 0.5,
-      cursor: 'not-available',
+      cursor: 'not-allowed',
     }),
   };
+
+  // `.fcs-input` carries the prototype's `style-focus` ring
+  // (border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint)).
+  const inputClassName = ['fcs-input', inputProps.className, className]
+    .filter(Boolean)
+    .join(' ');
 
   const labelStyle = {
     fontFamily: 'var(--font-mono)',
@@ -67,6 +74,7 @@ export default function Input({
         style={inputStyle}
         disabled={disabled}
         {...inputProps}
+        className={inputClassName}
       />
     </div>
   );

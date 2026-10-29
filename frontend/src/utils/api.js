@@ -17,6 +17,54 @@ export async function fetchCameras() {
   return res.json();
 }
 
+export async function fetchCamera(cameraId) {
+  const res = await fetch(`${BASE_URL}/api/cameras/${cameraId}`);
+  if (!res.ok) throw new Error(`Camera HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function updateCameraMetadata(cameraId, payload) {
+  const res = await fetch(`${BASE_URL}/api/cameras/${cameraId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Camera Update HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchAreas() {
+  const res = await fetch(`${BASE_URL}/api/areas`);
+  if (!res.ok) throw new Error(`Areas HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function createArea(payload) {
+  const res = await fetch(`${BASE_URL}/api/areas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Create Area HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function updateArea(areaId, payload) {
+  const res = await fetch(`${BASE_URL}/api/areas/${areaId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Update Area HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function deleteArea(areaId) {
+  const res = await fetch(`${BASE_URL}/api/areas/${areaId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Delete Area HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function fetchDetections(cameraId) {
   const url = cameraId ? `${BASE_URL}/api/detections/${cameraId}` : `${BASE_URL}/api/detections`;
   const res = await fetch(url);

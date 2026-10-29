@@ -8,6 +8,7 @@ import EventsPage from './pages/vision/EventsPage';
 import LivePage from './pages/live/LivePage';
 import CamerasPage from './pages/cameras/CamerasPage';
 import SearchPage from './pages/search/SearchPage';
+import SettingsPage from './pages/settings/SettingsSimple';
 import SignInPage from './pages/auth/SignInPage';
 import InetraShell from './components/inetra/InetraShell';
 import InetraPlaceholder from './components/inetra/InetraPlaceholder';
@@ -154,6 +155,24 @@ export default function App() {
                 openSearch={(o) => go('search', o)}
                 navTo={(t, o) => go(t, o)}
               />
+            </main>
+          </InetraShell>
+        );
+      }
+      if (screen === 'cameras') {
+        return (
+          <InetraShell session={sess} screen={screen} onSignOut={handleSignOut} onNav={(k, opts) => go(k, opts)} camSummary={camSummary} camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}>
+            <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <CamerasPage openSearch={(o) => go('search', o)} navTo={(t, o) => go(t, o)} />
+            </main>
+          </InetraShell>
+        );
+      }
+      if (screen === 'settings') {
+        return (
+          <InetraShell session={sess} screen={screen} onSignOut={handleSignOut} onNav={(k, opts) => go(k, opts)} camSummary={camSummary} camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}>
+            <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <SettingsPage />
             </main>
           </InetraShell>
         );

@@ -97,15 +97,7 @@ export default function HomePage({ session, openSearch, navTo }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 20, padding: '24px 32px 32px' }}>
-      <style>{`
-        .hvr-ink-border:hover { border-color: var(--ink); }
-        .hvr-stat:hover { background: var(--paper); border-color: var(--ink); }
-        .hvr-cal-cell:hover { outline: 2px solid var(--blue); outline-offset: -2px; }
-        .hvr-row:hover { background: var(--blue-tint); color: var(--blue-deep); }
-        .hvr-row:hover .hvr-play-btn { border-color: var(--blue); }
-        .hvr-underline:hover { text-decoration: underline; }
-        .hvr-skip:hover { border-color: var(--ink); }
-      `}</style>
+
 
       {canShowChecklist && (
         <section aria-label="Setup checklist" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 4fr) minmax(0, 8fr)', gap: 40, padding: '24px 28px', background: 'var(--bone)', border: '1px solid var(--line)', borderRadius: 14 }}>

@@ -71,10 +71,6 @@ export function TopBar({ session, onSignOut, onNav, camSummary = 'No cameras yet
   });
 
   return <header style={{ gridColumn: '1 / 3', gridRow: 1, display: 'grid', gridTemplateColumns: '224px minmax(0,1fr)', alignItems: 'center', borderBottom: '1px solid var(--line-dark)', background: 'var(--ink)', color: 'var(--paper)', position: 'relative', zIndex: 20 }}>
-    <style>{`
-      .hvr-dl:hover { border-color: var(--paper); }
-      .hvr-blue2:hover { background: var(--blue-2); }
-    `}</style>
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, height: '100%', padding: '0 20px', borderRight: '1px solid var(--line-dark)' }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
         <img src={LOGO_MARK} alt="Brainy Neurals" style={{ width: 28, height: 'auto', display: 'block', flexShrink: 0 }} />
@@ -87,7 +83,7 @@ export function TopBar({ session, onSignOut, onNav, camSummary = 'No cameras yet
       </span>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '0 16px 0 20px', minWidth: 0 }}>
-      <button onClick={() => onNav && onNav('cameras')} style={{ height: 38, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', border: '1px solid var(--line-dark)', borderRadius: 8, background: 'var(--ink-2)', color: 'var(--paper)', fontSize: 14, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+      <button onClick={() => onNav && onNav('cameras')} className="hvr-dl" style={{ height: 38, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', border: '1px solid var(--line-dark)', borderRadius: 8, background: 'var(--ink-2)', color: 'var(--paper)', fontSize: 14, whiteSpace: 'nowrap', cursor: 'pointer' }}>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: camDot }} />
         {camSummary}
       </button>
@@ -158,6 +154,7 @@ export function AccountButton({ session, u, admin, onSignOut }) {
       <button
         onClick={() => setMenu((v) => !v)}
         aria-expanded={menu}
+        className="hvr-dl"
         style={{ height: 38, display: 'flex', alignItems: 'center', gap: 10, padding: '0 10px 0 5px', border: `1px solid ${menu ? 'var(--paper)' : 'var(--line-dark)'}`, borderRadius: 8, background: 'var(--ink-2)', color: 'var(--paper)', cursor: 'pointer' }}
       >
         <span style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: avatarBg, color: avatarInk, font: '600 11px/1 var(--font-mono)' }}>{u.initials}</span>
@@ -182,6 +179,7 @@ export function AccountButton({ session, u, admin, onSignOut }) {
             <button
               key={k}
               onClick={() => { setMenu(false); onNav && onNav(k); }}
+              className="hvr-menu-item"
               style={{ width: '100%', height: 40, padding: '0 10px', borderRadius: 8, textAlign: 'left', fontSize: 14.5, border: 'none', background: 'transparent', color: 'var(--ink)', cursor: 'pointer' }}
             >
               {label}
@@ -189,6 +187,7 @@ export function AccountButton({ session, u, admin, onSignOut }) {
           ))}
           <button
             onClick={() => { setMenu(false); onSignOut && onSignOut(); }}
+            className="hvr-menu-item"
             style={{ width: '100%', height: 40, marginTop: 6, padding: '0 10px', borderRadius: 8, textAlign: 'left', fontSize: 14.5, border: 'none', background: 'transparent', color: 'var(--ink)', cursor: 'pointer' }}
           >
             Sign out
@@ -212,6 +211,7 @@ export function Sidebar({ active, admin, onNav }) {
           <button
             key={k}
             onClick={() => onNav && onNav(k)}
+            className="hvr-nav"
             style={{ height: 44, display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', borderRadius: 8, textAlign: 'left', fontSize: 15, fontWeight: on ? 500 : 400, background: on ? 'var(--ink-2)' : 'transparent', color: on ? 'var(--paper)' : 'var(--muted-dark)', boxShadow: on ? '0 0 0 1px var(--line-dark)' : 'none', border: 'none', cursor: 'pointer' }}
           >
             <span style={{ width: 6, height: 6, flexShrink: 0, background: on ? 'var(--blue)' : 'transparent' }} />
