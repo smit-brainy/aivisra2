@@ -5,7 +5,7 @@ Mounts:
 - Telemetry router (/api/status, /api/tracks, /api/detections, /api/frames/batch)
 - Cameras router (/api/cameras, onboarding)
 - Spatial router (/api/cameras/{id}/zones, lines, rules, occupancy)
-- Search router (/api/search-visual, /api/events, snapshots)
+- Search router (/api/events, snapshots)
 - Static files for frontend React build (or dev proxy)
 """
 
@@ -22,7 +22,7 @@ from .state_store import get_state_store
 
 app = FastAPI(
     title="AIVISRA StreamCore API",
-    description="GPU-Native AI Vision Surveillance System with Local VLM & Spatial Intelligence",
+    description="GPU-Native AI Vision Surveillance System with Spatial Intelligence",
     version="2.0.0",
 )
 

@@ -6,7 +6,7 @@ export default function Navbar({ activeTab, setActiveTab, theme, onToggleTheme, 
     { id: 'grid', label: 'Multi-Grid Camera' },
     { id: 'onboarding', label: 'Camera Setup' },
     { id: 'spatial', label: 'Spatial Rules & Zones' },
-    { id: 'events', label: 'Visual Search & Clips' },
+    { id: 'events', label: 'Events & Clips' },
   ];
 
   const signedInAs = session ? (session.who || `${session.name || 'user'}`) : 'karan.joshi';

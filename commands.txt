@@ -4,13 +4,19 @@
 # 0. Environment Setup
 # ------------------------------------------------------------------------------
 conda activate nvr
-cd /home/brainy/brainy_neurals/smit/aivisra2
+cd "$(git rev-parse --show-toplevel)"
 
 # ------------------------------------------------------------------------------
 # 1. Reset Storage & Cache (Optional / Clean State)
 # ------------------------------------------------------------------------------
-# Clear SQLite DB and FAISS Vector Index
-rm -f runtime/streamcore/output/events.db* runtime/streamcore/output/vector_index/*
+# Inspect the central database (metadata + auth)
+sqlite3 backend/database.db ".tables"
+
+# Clear the central database (recreated on next backend start)
+rm -f backend/database.db backend/database.db-shm backend/database.db-wal
+
+# Clear SQLite event database
+rm -f runtime/streamcore/output/events.db*
 
 # Clear generated clips and snapshots
 rm -rf runtime/streamcore/output/clips/* runtime/streamcore/output/snapshots/*
@@ -49,9 +55,6 @@ curl -I http://127.0.0.1:8765/
 
 # Check Swagger API documentation
 curl -I http://127.0.0.1:8765/docs
-
-# Check visual search status / vector count
-curl -s http://127.0.0.1:8765/api/status/search
 
 # Check registered cameras
 curl -s http://127.0.0.1:8765/api/cameras

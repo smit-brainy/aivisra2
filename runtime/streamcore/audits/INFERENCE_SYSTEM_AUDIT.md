@@ -69,7 +69,7 @@ Negotiated Caps: video/x-raw(memory:CUDAMemory), format=(string)NV12, width=(int
 ## 1.3 Double-Buffer Ownership Audit & Race Condition Vulnerability
 
 ### Vulnerability Analysis:
-In [`mis/runtime/streamcore/ingest/gstreamer_reader.py`](file:///home/brainy/brainy_neurals/smit/aivisra/mis/runtime/streamcore/ingest/gstreamer_reader.py#L301-L310):
+In [`runtime/streamcore/ingest/gstreamer_reader.py`](runtime/streamcore/ingest/gstreamer_reader.py#L301-L310):
 ```python
 target_tensors = self._gpu_buffer_pool[self.sequence % 2]
 ```
@@ -286,7 +286,7 @@ Recommended optimization:
 
 ## 3.1 Audit of Existing Scheduler (`LatestFrameScheduler`)
 
-Inspection of [`mis/runtime/streamcore/scheduling/frame_scheduler.py`](file:///home/brainy/brainy_neurals/smit/aivisra/mis/runtime/streamcore/scheduling/frame_scheduler.py):
+Inspection of [`runtime/streamcore/scheduling/frame_scheduler.py`](runtime/streamcore/scheduling/frame_scheduler.py):
 1. **Target FPS Configuration:** Supports per-camera dictionary or global float. Defaults to 8.0 FPS.
 2. **Fairness & Starvation:** Employs fair rotation (`self._rotation = (self._rotation + 1) % len(camera_ids)`). No camera is permanently starved.
 3. **Freshness Enforcement:** Queries `store.latest(camera_id, self.last_sequence[camera_id])`. Never enqueues duplicate or historical frames.

@@ -40,16 +40,6 @@ class CameraAnalyzeRequest(BaseModel):
     force_fresh: bool = False
 
 
-class VisualSearchRequest(BaseModel):
-    query: str = ""
-    camera_id: Optional[str] = None
-    start: Optional[str] = None
-    start_utc: Optional[str] = None
-    end: Optional[str] = None
-    end_utc: Optional[str] = None
-    top_k: int = 2
-
-
 class ApplyCapabilitiesRequest(BaseModel):
     capabilities: list[str] = Field(default_factory=list)
     expected_version: Optional[int] = None

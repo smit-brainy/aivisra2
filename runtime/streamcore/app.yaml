@@ -79,15 +79,6 @@ events:
   retention_days: 1
   max_concurrent_recordings: 2
   record_on_track_confirmed: true
-  top_k: 2 # Top K matching video clips returned for natural language vector queries
-  # Local search stack (Ollama). 100% offline, zero cloud API dependencies.
-  search_backend: local
-  ollama_url: http://127.0.0.1:11434
-  vlm_model: qwen3.5:9b
-  vlm_timeout_s: 60
-  vlm_keep_alive_s: 90
-  embed_model: embeddinggemma-2:740m
-  embed_dim: 0 # 0 = auto-detect the embedder output dimension at startup
   min_crop_px: 40
   tracked_classes: [] # empty = all detected classes
   ist_offset_hours: 5.5 # local timezone offset used when parsing time phrases

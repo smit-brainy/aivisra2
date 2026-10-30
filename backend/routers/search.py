@@ -1,11 +1,8 @@
-"""Visual search, SQLite event queries, FAISS re-indexing, and snapshot retrieval.
+"""SQLite event queries and snapshot retrieval.
 
 Serves:
-- /api/search-visual (GET, POST)
 - /api/events (GET)
 - /api/events/{event_id} (GET)
-- /api/events/reindex (GET, POST)
-- /api/status/search and /api/settings/gemini (GET)
 - /api/snapshots/{filename} (GET)
 """
 
@@ -15,22 +12,10 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Response
 
 from ..dependencies import get_engine
-from ..schemas.models import VisualSearchRequest
-from runtime.streamcore.events.visual_search_manager import VisualSearchManager
 
-router = APIRouter(tags=["Visual Search & Events"])
+router = APIRouter(tags=["Events & Snapshots"])
 
-
-def _get_or_create_vsm(engine):
-    vsm = getattr(engine, "visual_search_manager", None)
-    if vsm is None:
-        ev_cfg = getattr(getattr(engine, "config", None), "events", None)
-        vsm = VisualSearchManager(
-            event_db=getattr(engine, "event_db", None),
-            settings=ev_cfg,
-        )
-        engine.visual_search_manager = vsm
-    return vsm
+_DEFAULT_OUTPUT_DIR = Path("runtime/streamcore/output")
 
 
 def _parse_to_utc(s: Optional[str]) -> Optional[str]:
@@ -100,108 +85,16 @@ def get_event_by_id(event_id: str):
     return event.to_dict()
 
 
-@router.get("/api/search-visual")
-def search_visual_get(
-    query: str = Query(""),
-    camera_id: Optional[str] = Query(None),
-    start: Optional[str] = Query(None),
-    start_utc: Optional[str] = Query(None),
-    end: Optional[str] = Query(None),
-    end_utc: Optional[str] = Query(None),
-    top_k: int = Query(2),
-):
-    """Execute natural language visual search using local VLM embeddings (GET)."""
-    engine = get_engine()
-    vsm = _get_or_create_vsm(engine)
-    effective_start = start or start_utc
-    effective_end = end or end_utc
-    results = vsm.search(
-        query=query,
-        top_k=top_k,
-        camera_id=camera_id,
-        start_utc=effective_start,
-        end_utc=effective_end,
-    )
-    return {
-        "query": query,
-        "count": len(results),
-        "has_api_key": vsm.has_api_key,
-        "results": results,
-    }
-
-
-@router.post("/api/search-visual")
-def search_visual_post(payload: VisualSearchRequest):
-    """Execute natural language visual search using local VLM embeddings (POST)."""
-    engine = get_engine()
-    vsm = _get_or_create_vsm(engine)
-    effective_start = payload.start or payload.start_utc
-    effective_end = payload.end or payload.end_utc
-    results = vsm.search(
-        query=payload.query,
-        top_k=payload.top_k,
-        camera_id=payload.camera_id,
-        start_utc=effective_start,
-        end_utc=effective_end,
-    )
-    return {
-        "query": payload.query,
-        "count": len(results),
-        "has_api_key": vsm.has_api_key,
-        "results": results,
-    }
-
-
-@router.get("/api/status/search")
-@router.get("/api/settings/gemini")
-def get_search_status():
-    """Retrieve local VLM and embedding engine diagnostics."""
-    engine = get_engine()
-    vsm = getattr(engine, "visual_search_manager", None) if engine else None
-    has_vlm = False
-    vlm_model = ""
-    embed_model = ""
-    ollama_url = ""
-
-    if vsm and vsm.local_models:
-        has_vlm = bool(vsm.local_models.has_vlm and vsm.local_models.has_embedder)
-        vlm_model = vsm.local_models.config.vlm_model
-        embed_model = vsm.local_models.config.embed_model
-        ollama_url = vsm.local_models.config.ollama_url
-    elif vsm:
-        has_vlm = vsm.has_api_key
-
-    return {
-        "has_api_key": has_vlm,
-        "backend": "local",
-        "vlm_model": vlm_model,
-        "embed_model": embed_model,
-        "ollama_url": ollama_url,
-        "total_vectors": vsm.vector_store.total_items if vsm else 0,
-    }
-
-
-@router.get("/api/events/reindex")
-@router.post("/api/events/reindex")
-def reindex_events():
-    """Trigger synchronous FAISS vector re-indexing of stored events."""
-    engine = get_engine()
-    vsm = _get_or_create_vsm(engine)
-    count = vsm.index_existing_clips_sync(max_items=500)
-    return {
-        "status": "OK",
-        "indexed_count": count,
-        "total_vectors": vsm.vector_store.total_items,
-    }
-
-
 @router.get("/api/snapshots/{filename:path}")
 def get_snapshot(filename: str):
-    """Serve crop snapshot JPEG image."""
+    """Serve an event crop snapshot JPEG image."""
     engine = get_engine()
-    vsm = getattr(engine, "visual_search_manager", None) if engine else None
-    base_dir = (vsm.base_dir if vsm else Path("runtime/streamcore/output")).resolve()
-    snap_dir = (vsm.snapshots_dir if vsm else (base_dir / "snapshots")).resolve()
+    event_cfg = getattr(getattr(engine, "config", None), "events", None)
+    clip_dir = getattr(event_cfg, "clip_storage_dir", None)
+    base_dir = (
+        Path(clip_dir).parent if clip_dir else _DEFAULT_OUTPUT_DIR
+    ).resolve()
+    snap_dir = (base_dir / "snapshots").resolve()
 
     clean_name = filename.strip("/")
     if clean_name.startswith("snapshots/"):
@@ -227,4 +120,3 @@ def get_snapshot(filename: str):
         pass
 
     raise HTTPException(status_code=404, detail="Snapshot image not found")
-

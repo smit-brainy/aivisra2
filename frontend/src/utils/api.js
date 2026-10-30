@@ -214,32 +214,10 @@ export async function fetchRecentSpatialEvents(cameraId) {
   return res.json();
 }
 
-export async function searchVisual(payload) {
-  const res = await fetch(`${BASE_URL}/api/search-visual`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`Search Visual HTTP ${res.status}`);
-  return res.json();
-}
-
 export async function fetchEvents(params = {}) {
   const qs = new URLSearchParams(params).toString();
   const res = await fetch(`${BASE_URL}/api/events?${qs}`);
   if (!res.ok) throw new Error(`Events HTTP ${res.status}`);
-  return res.json();
-}
-
-export async function fetchSearchStatus() {
-  const res = await fetch(`${BASE_URL}/api/status/search`);
-  if (!res.ok) throw new Error(`Search Status HTTP ${res.status}`);
-  return res.json();
-}
-
-export async function reindexEvents() {
-  const res = await fetch(`${BASE_URL}/api/events/reindex`, { method: 'POST' });
-  if (!res.ok) throw new Error(`Reindex HTTP ${res.status}`);
   return res.json();
 }
 

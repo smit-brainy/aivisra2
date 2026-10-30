@@ -17,8 +17,9 @@ from .types import CameraFrame, CameraState, DetectionResult, GpuFrame
 from .gpu_frame import GpuPreprocessor
 from .preview.preview_cache import PreviewCache
 from .preview.preview_worker import PreviewWorker
-from .events import EventDatabase, VisualSearchManager
+from .events import EventDatabase
 from .events.clip_recorder import ClipRecorder
+from .events.snapshot_store import SnapshotStore
 
 logger = logging.getLogger(__name__)
 
@@ -139,15 +140,14 @@ class StreamCore:
             camera_live_paths = {c.id: getattr(c, "live_path", c.id.lower()) for c in self.cameras}
             self.clip_recorder = ClipRecorder(self.config.events, camera_urls, camera_live_paths=camera_live_paths)
             base_dir = Path(self.config.events.clip_storage_dir).parent
-            self.visual_search_manager = VisualSearchManager(
+            self.snapshot_store = SnapshotStore(
                 base_dir=base_dir,
-                event_db=self.event_db,
-                settings=self.config.events,
+                min_crop_px=self.config.events.min_crop_px,
             )
         else:
             self.event_db = None
             self.clip_recorder = None
-            self.visual_search_manager = None
+            self.snapshot_store = None
 
     def register_camera(
         self,
@@ -473,9 +473,9 @@ class StreamCore:
         ts = result.timestamp if (result.timestamp and result.timestamp > 1_000_000_000) else time.time()
         started_at = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        # Extract and save snapshot crop for visual search
+        # Extract and save snapshot crop for the events UI
         snapshot_rel_path = None
-        if self.visual_search_manager is not None:
+        if self.snapshot_store is not None:
             try:
                 matching_frame = next((f for f in batch if f.camera_id == camera_id), None)
                 if matching_frame is None and hasattr(self, "store"):
@@ -489,7 +489,7 @@ class StreamCore:
                         frame_bgr = matching_frame.to_bgr_cpu()
                     if frame_bgr is not None:
                         bbox = getattr(track, "bbox_xyxy", ())
-                        snapshot_rel_path = self.visual_search_manager.extract_and_save_snapshot(
+                        snapshot_rel_path = self.snapshot_store.extract_and_save_snapshot(
                             frame_bgr=frame_bgr,
                             bbox_xyxy=bbox,
                             camera_id=camera_id,
@@ -529,24 +529,6 @@ class StreamCore:
             metadata=metadata,
             object_class=object_class,
         )
-
-        # Expected clip path convention
-        valid_start = ts if ts > 1_000_000_000 else time.time()
-        timestamp_str = datetime.fromtimestamp(valid_start, tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
-        expected_clip_path = f"clips/{camera_id}/{camera_id}_{timestamp_str}_{event_id}.mp4"
-
-        # Index IMMEDIATELY into vector search so snapshot is instantly searchable
-        if self.visual_search_manager is not None and snapshot_rel_path:
-            self.visual_search_manager.index_event_async(
-                event_id=event_id,
-                camera_id=camera_id,
-                snapshot_rel_path=snapshot_rel_path,
-                clip_rel_path=expected_clip_path,
-                started_at_utc=started_at,
-                track_id=track.global_track_id,
-                bbox=list(track.bbox_xyxy) if hasattr(track, "bbox_xyxy") else [],
-                object_class=object_class,
-            )
 
         # Trigger clip recording asynchronously
         if self.clip_recorder is not None and getattr(self.config.events, "record_on_track_confirmed", True):
@@ -760,8 +742,6 @@ class StreamCore:
                 self.tracks_writer.close()
             if self.clip_recorder is not None:
                 self.clip_recorder.shutdown()
-            if getattr(self, "visual_search_manager", None) is not None:
-                self.visual_search_manager.shutdown()
             if self.event_db is not None:
                 try:
                     self.event_db.close_active_events()

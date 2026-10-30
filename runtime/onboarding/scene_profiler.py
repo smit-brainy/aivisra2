@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 from collections import Counter
-import json
 import logging
 from typing import Any
-import urllib.request
-import urllib.error
 
 from .types import FrameSample, SceneProfile, SceneType
 
@@ -13,19 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class SceneProfiler:
-    """Analyzes representative frames using existing YOLO detector and optional local VLM."""
+    """Analyzes representative frames using the existing YOLO detector."""
 
     def __init__(
         self,
         detector: Any = None,
-        local_vlm_url: str = "http://localhost:11434",
-        vlm_model: str = "llava",
-        enable_vlm: bool = True,
     ) -> None:
         self.detector = detector
-        self.local_vlm_url = local_vlm_url
-        self.vlm_model = vlm_model
-        self.enable_vlm = enable_vlm
 
     def analyze(
         self,
@@ -75,23 +66,12 @@ class SceneProfiler:
         if not visible_objects and object_counts:
             visible_objects = [cls for cls, _ in object_counts.most_common(3)]
 
-        # 3. Check for local VLM
-        vlm_result = None
-        if self.enable_vlm:
-            vlm_result = self._try_local_vlm(samples[len(samples) // 2])
-
-        if vlm_result is not None:
-            scene_type = vlm_result.get("scene_type", SceneType.UNKNOWN)
-            confidence = float(vlm_result.get("scene_confidence", 0.80))
-            attributes = list(vlm_result.get("attributes", []))
-            method = "local_vlm"
-            combined_objects = sorted(list(set(visible_objects) | set(vlm_result.get("objects", []))))
-        else:
-            scene_type, confidence, attributes = self._classify_scene_heuristics(
-                visible_objects, object_counts, detected_per_frame, total_frames
-            )
-            method = "yolo_heuristic"
-            combined_objects = visible_objects
+        # 3. Classify scene from detected objects
+        scene_type, confidence, attributes = self._classify_scene_heuristics(
+            visible_objects, object_counts, detected_per_frame, total_frames
+        )
+        method = "yolo_heuristic"
+        combined_objects = visible_objects
 
         limitations = [
             "Confidence is an automated estimate based on sampled frames.",
@@ -212,50 +192,3 @@ class SceneProfiler:
 
         attributes.append("general_environment")
         return SceneType.OUTDOOR if has_vehicles else SceneType.UNKNOWN, 0.60, attributes
-
-    def _try_local_vlm(self, sample: FrameSample) -> dict[str, Any] | None:
-        """Attempt querying a local Vision-Language Model if available and configured."""
-        try:
-            # 1. Query Ollama /api/tags to check if a vision model is loaded
-            req = urllib.request.Request(f"{self.local_vlm_url}/api/tags", method="GET")
-            with urllib.request.urlopen(req, timeout=1.0) as resp:
-                data = json.loads(resp.read().decode())
-                models = [m.get("name", "") for m in data.get("models", [])]
-                # Check for known vision models: llava, bakllava, minicpm-v, moondream
-                vision_model = next((m for m in models if any(k in m.lower() for k in ("llava", "vision", "moondream", "minicpm"))), None)
-                if not vision_model:
-                    return None
-
-            # 2. If vision model exists, send frame thumbnail
-            import base64
-            import cv2
-            small = cv2.resize(sample.image_bgr, (320, 180))
-            _, buf = cv2.imencode(".jpg", small, [cv2.IMWRITE_JPEG_QUALITY, 70])
-            b64_img = base64.b64encode(buf.tobytes()).decode("ascii")
-
-            prompt = (
-                "Identify scene type (entrance, parking, road, factory, warehouse, retail, office, outdoor), "
-                "visible objects, and attributes. Output strictly in JSON format with keys: "
-                "scene_type, scene_confidence, objects, attributes."
-            )
-            payload = {
-                "model": vision_model,
-                "prompt": prompt,
-                "images": [b64_img],
-                "stream": False,
-                "format": "json",
-            }
-            body = json.dumps(payload).encode("utf-8")
-            post_req = urllib.request.Request(
-                f"{self.local_vlm_url}/api/generate",
-                data=body,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(post_req, timeout=5.0) as post_resp:
-                res_data = json.loads(post_resp.read().decode())
-                raw_response = res_data.get("response", "{}")
-                parsed = json.loads(raw_response)
-                return parsed
-        except Exception:
-            return None

@@ -208,6 +208,9 @@ demo_ui
 backend/__pycache__/
 backend/**/__pycache__/
 backend/**/*.py[cod]
+backend/database.db
+backend/database.db-shm
+backend/database.db-wal
 
 # ─── Preview server backup ────────────────────────────────────
 runtime/streamcore/preview/preview_server.py.bak

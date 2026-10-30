@@ -126,17 +126,6 @@ class EventDatabase:
             if "snapshot_path" not in existing_columns:
                 conn.execute("ALTER TABLE track_events ADD COLUMN snapshot_path TEXT")
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS vector_id_map (
-                    faiss_row INTEGER PRIMARY KEY,
-                    event_id TEXT NOT NULL,
-                    created_at REAL NOT NULL
-                )
-            """)
-            conn.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS idx_vidmap_event
-                ON vector_id_map(event_id)
-            """)
-            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_camera_time
                 ON track_events(camera_id, started_at_utc)
             """)
@@ -468,78 +457,6 @@ class EventDatabase:
                     "events_with_clips": with_clips,
                     "by_camera": {row["camera_id"]: row["c"] for row in by_camera},
                 }
-
-    def record_vector_row(self, faiss_row: int, event_id: str) -> bool:
-        """Map a FAISS row position to an event id (strict 1:1).
-
-        Returns True on success or benign no-op (same event, same row).
-        Returns False and logs on invariant violations: event already mapped
-        to a different row, or the row is held by a different event. Callers
-        treat both as indexing-flow bugs.
-        """
-        event_id = str(event_id)
-        row = int(faiss_row)
-        with self._lock:
-            with self._connect() as conn:
-                mapped = conn.execute(
-                    "SELECT faiss_row FROM vector_id_map WHERE event_id = ?", (event_id,)
-                ).fetchone()
-                if mapped is not None:
-                    if mapped["faiss_row"] == row:
-                        return True
-                    logger.error("vidmap_event_row_mismatch", extra={
-                        "event_id": event_id, "existing_row": mapped["faiss_row"], "new_row": row,
-                    })
-                    return False
-                holder = conn.execute(
-                    "SELECT event_id FROM vector_id_map WHERE faiss_row = ?", (row,)
-                ).fetchone()
-                if holder is not None:
-                    logger.error("vidmap_row_conflict", extra={
-                        "event_id": event_id, "row": row, "holder": holder["event_id"],
-                    })
-                    return False
-                conn.execute(
-                    "INSERT INTO vector_id_map (faiss_row, event_id, created_at) VALUES (?, ?, ?)",
-                    (row, event_id, time.time()),
-                )
-                conn.commit()
-                return True
-
-    def delete_vector_row(self, faiss_row: int) -> None:
-        with self._lock:
-            with self._connect() as conn:
-                conn.execute("DELETE FROM vector_id_map WHERE faiss_row = ?", (int(faiss_row),))
-                conn.commit()
-
-    def get_event_id_for_row(self, faiss_row: int) -> str | None:
-        with self._lock:
-            with self._connect() as conn:
-                row = conn.execute(
-                    "SELECT event_id FROM vector_id_map WHERE faiss_row = ?", (int(faiss_row),)
-                ).fetchone()
-                return row["event_id"] if row else None
-
-    def get_vector_row_for_event(self, event_id: str) -> int | None:
-        with self._lock:
-            with self._connect() as conn:
-                row = conn.execute(
-                    "SELECT faiss_row FROM vector_id_map WHERE event_id = ?", (str(event_id),)
-                ).fetchone()
-                return row["faiss_row"] if row else None
-
-    def all_vector_rows(self) -> list[tuple[int, str]]:
-        with self._lock:
-            with self._connect() as conn:
-                rows = conn.execute(
-                    "SELECT faiss_row, event_id FROM vector_id_map ORDER BY faiss_row ASC"
-                ).fetchall()
-                return [(row["faiss_row"], row["event_id"]) for row in rows]
-
-    def count_vector_rows(self) -> int:
-        with self._lock:
-            with self._connect() as conn:
-                return conn.execute("SELECT COUNT(*) as c FROM vector_id_map").fetchone()["c"]
 
     def close_all_connections(self) -> None:
         """Close all thread-local connections. Call on shutdown."""

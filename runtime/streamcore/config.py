@@ -119,14 +119,6 @@ class EventsConfig:
     retention_days: int = 1
     max_concurrent_recordings: int = 2
     record_on_track_confirmed: bool = True
-    top_k: int = 2
-    search_backend: str = "local"
-    ollama_url: str = ""
-    vlm_model: str = ""
-    vlm_timeout_s: float = 30.0
-    vlm_keep_alive_s: float = 90.0
-    embed_model: str = ""
-    embed_dim: int = 0
     min_crop_px: int = 40
     tracked_classes: list[int] = field(default_factory=list)
     ist_offset_hours: float = 5.5
@@ -278,17 +270,6 @@ def load_config(path: str | Path) -> Config:
         raise ValueError("events.record_on_track_confirmed must be a boolean")
     if not isinstance(config.events.clip_storage_dir, str) or not config.events.clip_storage_dir:
         raise ValueError("events.clip_storage_dir must be nonempty")
-    if config.events.search_backend not in ("local", "ollama", "legacy", "faiss"):
-        raise ValueError("events.search_backend must be local, ollama, faiss, or legacy")
-    ollama_url = config.events.ollama_url
-    if ollama_url and not (ollama_url.startswith("http://") or ollama_url.startswith("https://")):
-        raise ValueError("events.ollama_url must start with http:// or https://")
-    for name in ("vlm_model", "embed_model"):
-        if not isinstance(getattr(config.events, name), str):
-            raise ValueError(f"events.{name} must be a string")
-    _positive("events.vlm_timeout_s", config.events.vlm_timeout_s)
-    _positive("events.vlm_keep_alive_s", config.events.vlm_keep_alive_s)
-    _positive("events.embed_dim", config.events.embed_dim, integer=True, zero=True)
     _positive("events.min_crop_px", config.events.min_crop_px, integer=True, zero=True)
     tracked = config.events.tracked_classes
     if not isinstance(tracked, list) or not all(isinstance(c, int) for c in tracked):

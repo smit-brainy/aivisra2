@@ -132,7 +132,7 @@ Followed by bilinear interpolation and symmetrical letterbox padding into a prea
 
 ## 4. Latency-Aware Dynamic Batching
 
-The scheduling system in [`LatestFrameScheduler`](file:///home/brainy/brainy_neurals/smit/aivisra/mis/runtime/streamcore/scheduling/frame_scheduler.py) and [`StreamCore.process_tick()`](file:///home/brainy/brainy_neurals/smit/aivisra/mis/runtime/streamcore/engine.py) guarantees:
+The scheduling system in [`LatestFrameScheduler`](runtime/streamcore/scheduling/frame_scheduler.py) and [`StreamCore.process_tick()`](runtime/streamcore/engine.py) guarantees:
 1. **Configurable Batching**: `max_batch_size: 8`, `max_batch_wait_ms: 15.0`.
 2. **Immediate Dispatch**: If $N \ge \text{max\_batch\_size}$ frames are ready, the batch dispatches immediately with zero wait time.
 3. **Bounded Waiting**: If fewer streams are ready, the system accumulates ready streams up to `max_batch_wait_ms` (15 ms), then dispatches immediately.

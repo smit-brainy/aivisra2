@@ -1,17 +1,15 @@
 """Persistent UI-editable metadata (camera names, areas, settings).
 
 The StreamCore pipeline configuration stays in ``app.yaml``. This store only
-holds metadata that operators can edit at runtime, so it lives alongside
-``events.db`` in the StreamCore output directory:
+holds metadata that operators can edit at runtime. All application tables,
+including auth tables, live in the central database at ``backend/database.db``
+(see :mod:`backend.database`), which keeps the project path-agnostic.
 
-    runtime/streamcore/output/app_state.db
-
-Override the location with ``STREAMCORE_STATE_DB`` when running tests.
+Override the location with ``STREAMCORE_DB`` when running tests.
 """
 
 from __future__ import annotations
 
-import os
 import sqlite3
 import threading
 import time
@@ -20,78 +18,20 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
+from .database import connect as _db_connect
+from .database import get_db_path, init_db, resolve_db_path
+
 CAMERA_KINDS = ("person", "vehicle", "both")
 CAMERA_LEVELS = ("standard", "enhanced", "off")
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS areas (
-    area_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at REAL NOT NULL,
-    updated_at REAL NOT NULL
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_areas_name
-    ON areas (name COLLATE NOCASE);
-
-CREATE TABLE IF NOT EXISTS camera_metadata (
-    camera_id TEXT PRIMARY KEY,
-    display_name TEXT,
-    area_id TEXT,
-    kind TEXT NOT NULL DEFAULT 'both',
-    level TEXT NOT NULL DEFAULT 'standard',
-    notes TEXT,
-    created_at REAL NOT NULL,
-    updated_at REAL NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS app_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at REAL NOT NULL
-);
-"""
-
-
-def _repo_root_for(config_file: Path) -> Path:
-    """Resolve the repository root for a config at ``runtime/streamcore/*.yaml``."""
-    resolved = config_file.resolve()
-    for parent in resolved.parents:
-        if (parent / "runtime" / "streamcore").is_dir():
-            return parent
-    if len(resolved.parents) >= 3:
-        return resolved.parents[2]
-    return resolved.parent
-
-
-def resolve_db_path() -> Path:
-    """Resolve the state database path from the environment or active config."""
-    override = os.environ.get("STREAMCORE_STATE_DB")
-    if override:
-        return Path(override)
-
-    config_path = Path(os.environ.get("STREAMCORE_CONFIG", "runtime/streamcore/app.yaml"))
-    candidates = [
-        config_path,
-        Path("runtime/streamcore/app.yaml"),
-        Path("../runtime/streamcore/app.yaml"),
-    ]
-    for candidate in candidates:
-        if not candidate.is_file():
-            continue
-        try:
-            import yaml
-
-            data = yaml.safe_load(candidate.read_text()) or {}
-            clip_dir = (data.get("events") or {}).get("clip_storage_dir")
-            if clip_dir:
-                base = _repo_root_for(candidate)
-                return (base / clip_dir).parent / "app_state.db"
-        except Exception:
-            break
-        return _repo_root_for(candidate) / "runtime/streamcore/output/app_state.db"
-
-    return Path("runtime/streamcore/output/app_state.db")
+__all__ = [
+    "CAMERA_KINDS",
+    "CAMERA_LEVELS",
+    "StateStore",
+    "get_state_store",
+    "resolve_db_path",
+    "set_state_store",
+]
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
@@ -102,29 +42,14 @@ class StateStore:
     """Thread-safe SQLite store for operator-editable metadata."""
 
     def __init__(self, db_path: str | Path | None = None) -> None:
-        self.db_path = Path(db_path) if db_path else resolve_db_path()
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.db_path = Path(db_path).expanduser().resolve() if db_path else get_db_path()
+        init_db(self.db_path)
         self._lock = threading.RLock()
-        self._init_schema()
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(self.db_path, timeout=10)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA foreign_keys=ON")
-        try:
+        with _db_connect(self.db_path) as conn:
             yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
-
-    def _init_schema(self) -> None:
-        with self._lock, self._connect() as conn:
-            conn.executescript(_SCHEMA)
 
     # ------------------------------------------------------------------ cameras
     def ensure_camera(self, camera_id: str, display_name: str | None = None) -> dict[str, Any]:

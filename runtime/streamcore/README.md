@@ -103,7 +103,7 @@ StreamCore decouples video ingestion, AI inference, and live client viewing into
 
 ## 3. How to Run: Standard Commands
 
-All commands should be executed from the repository root (`/home/brainy/brainy_neurals/smit/aivisra`):
+All commands should be executed from the repository root:
 
 ### 1. Production Mode with Live Web UI & AI Overlays (Default)
 Runs all configured cameras, performs hardware video decoding on RTX 5070, executes YOLO11n batch inference, and starts the web preview server on port `8765`:
