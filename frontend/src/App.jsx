@@ -171,7 +171,7 @@ export default function App() {
         return (
           <InetraShell session={sess} screen={screen} onSignOut={handleSignOut} onNav={(k, opts) => go(k, opts)} camSummary={onlineSummary} camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}>
             <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <SettingsPage />
+              <SettingsPage session={sess} />
             </main>
           </InetraShell>
         );

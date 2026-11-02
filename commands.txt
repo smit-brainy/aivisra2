@@ -19,7 +19,7 @@ rm -f backend/database.db backend/database.db-shm backend/database.db-wal
 rm -f runtime/streamcore/output/events.db*
 
 # Clear generated clips and snapshots
-rm -rf runtime/streamcore/output/clips/* runtime/streamcore/output/snapshots/*
+rm -rf /home/brainy/brainy_neurals/smit/aivisra2/backend/evidence/video/* /home/brainy/brainy_neurals/smit/aivisra2/backend/evidence/pic/snapshots/*
 
 # ------------------------------------------------------------------------------
 # 2. Running Backend and Frontend

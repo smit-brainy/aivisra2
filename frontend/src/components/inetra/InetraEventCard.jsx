@@ -5,14 +5,11 @@
  * ('card'|'row'), selected, playing, selectable, onPlay, onToggle.
  */
 import React from 'react';
-import { invr, ready } from '../../prototype/api';
+import { getSnapshotUrl } from '../../utils/api';
 
 export default function InetraEventCard({ ev, variant = 'card', selected = false, playing = false, selectable = true, onPlay, onToggle }) {
-  const [readyOk, setReadyOk] = React.useState(!!invr());
-  React.useEffect(() => ready(() => setReadyOk(true)), []);
-  if (!readyOk || !invr()) return null;
-  const I = invr();
-  const e = ev || { id: 'demo', kind: 'Person', type: 'person', camLabel: '3 Lobby corridor', when: 'Today 9:14 AM', dur: '38 s', scene: I.CAM[3].scene, x: 0.42 };
+  if (!ev) return null;
+  const e = ev;
   const isP = e.type !== 'vehicle', isO = e.type === 'other';
   const TONE = isO ? ['var(--teal)', 'var(--teal-tint)', 'var(--teal-deep)'] : isP ? ['var(--sky)', 'var(--sky-tint)', 'var(--sky-deep)'] : ['var(--honey)', 'var(--honey-tint)', 'var(--honey-deep)'];
   const w = isP ? 0.18 : 0.38;
@@ -31,7 +28,8 @@ export default function InetraEventCard({ ev, variant = 'card', selected = false
         className="hvr-row"
       >
         <div style={{ position: 'relative', aspectRatio: '16 / 9', borderRadius: 4, overflow: 'hidden', background: e.scene }}>
-          <div style={{ position: 'absolute', left: box.left, top: box.top, width: box.w, height: box.h, border: `1.5px solid ${box.color}`, borderRadius: 2 }} />
+          {e.snapshotPath && <img src={getSnapshotUrl(e.snapshotPath)} alt={`${e.kind} event`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+          {!e.snapshotPath && <div style={{ position: 'absolute', left: box.left, top: box.top, width: box.w, height: box.h, border: `1.5px solid ${box.color}`, borderRadius: 2 }} />}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
           <span style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.3, textWrap: 'pretty' }}>

@@ -13,7 +13,7 @@ import { invr, merged } from '../../prototype/api';
 import InetraStrip from '../../components/inetra/InetraStrip';
 import InetraEventCard from '../../components/inetra/InetraEventCard';
 import InetraMonthCalendar from '../../components/inetra/InetraMonthCalendar';
-import { fetchCameras, fetchEvents } from '../../utils/api';
+import { fetchCameras, fetchEvent, fetchEvents, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
 
 const STEPS = [
   ['Add your cameras', 'Opens Add cameras. Find them on this network, add them from the recorder, enter an address or upload a list.', 'Add cameras'],
@@ -22,6 +22,11 @@ const STEPS = [
   ['Add the people who will use i-Netra', 'Opens Users in Settings, where you create accounts and give each one a role.', 'Add people'],
 ];
 const NAV_SECTIONS = { 2: 'capacity', 3: 'storage', 4: 'users' };
+
+// Lucide-style ArrowUpRight icon for the card navigation affordance.
+function OpenSearchIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M7 7h10v10" /></svg>;
+}
 
 export default function HomePage({ session, openSearch, navTo }) {
   const admin = session.role === 'admin';
@@ -34,15 +39,16 @@ export default function HomePage({ session, openSearch, navTo }) {
   const [checkHidden, setCheckHidden] = React.useState(false);
   const [dbCameras, setDbCameras] = React.useState([]);
   const [dbEvents, setDbEvents] = React.useState([]);
-  const [dbLoaded, setDbLoaded] = React.useState(false);
+  const [dbLoaded, setDbLoaded] = React.useState(true);
+  const [playingEvent, setPlayingEvent] = React.useState(null);
 
   React.useEffect(() => {
     let disposed = false;
-    const loadCameras = () => fetchCameras().then(value => { if (!disposed) setDbCameras(value || []); }).catch(() => {});
-    const loadEvents = () => fetchEvents({ limit: '1000', offset: '0' }).then(value => { if (!disposed) { setDbEvents(value.events || []); setDbLoaded(true); } }).catch(() => {});
+    const loadCameras = () => fetchCameras().then(value => { if (!disposed) setDbCameras(value || []); }).catch(() => { if (!disposed) setDbCameras([]); });
+    const loadEvents = () => fetchEvents({ limit: '10000', offset: '0' }).then(value => { if (!disposed) setDbEvents(value.events || []); }).catch(() => { if (!disposed) setDbEvents([]); });
     loadCameras(); loadEvents();
     const cameraTimer = window.setInterval(loadCameras, 60000);
-    const eventTimer = window.setInterval(loadEvents, 10000);
+    const eventTimer = window.setInterval(loadEvents, 120000);
     return () => { disposed = true; window.clearInterval(cameraTimer); window.clearInterval(eventTimer); };
   }, []);
 
@@ -52,7 +58,7 @@ export default function HomePage({ session, openSearch, navTo }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  if (!invr()) return null;
+  if (!invr()) return <div style={{ flex: 1, padding: 32, color: 'var(--ink)' }}><h1>Home</h1><p style={{ color: 'var(--muted)' }}>The application is offline. Connect to the backend to view cameras and events.</p></div>;
   const I = invr();
   const scen = I.SCEN.day;
   let now = scen.now;
@@ -63,7 +69,7 @@ export default function HomePage({ session, openSearch, navTo }) {
   const M = merged('day', {});
   const DAY = I.DAY, H = I.H;
   const CAM = M.CAM;
-  const cams = dbLoaded ? dbCameras.map(c => ({ num: c.camera_id, name: c.display_name || c.name || c.camera_id, label: c.display_name || c.name || c.camera_id, status: c.status === 'offline' ? 'offline' : 'online' })) : M.cams;
+  const cams = dbCameras.map(c => ({ num: c.camera_id, name: c.display_name || c.name || c.camera_id, label: c.display_name || c.name || c.camera_id, status: c.status === 'offline' ? 'offline' : 'online' }));
   const offCams = cams.filter(c => c.status === 'offline');
 
   const dOff = hDay === 'today' ? 0 : hDay === 'yesterday' ? -1 : hDayOff;
@@ -98,7 +104,7 @@ export default function HomePage({ session, openSearch, navTo }) {
       return { num: camera.camera_id, name, times: eventTimes, cnt: eventTimes.length, offline: [], isOff: camera.status === 'offline', open: () => openSearch({ cams: [camera.camera_id], preset: 'today' }), pick: time => openSearch({ cams: [camera.camera_id], focusT: time }) };
     }),
   }] : [];
-  const groups = dbLoaded ? realGroups : staticGroups;
+  const groups = realGroups;
   const realTodayEvents = dbEvents.map((event, index) => {
     const stamp = Date.parse(event.started_at_utc || '');
     if (Number.isNaN(stamp)) return null;
@@ -107,11 +113,11 @@ export default function HomePage({ session, openSearch, navTo }) {
     const dayStart = Math.floor(istNow / 86400000) * 86400000;
     const seconds = Math.max(0, Math.min(DAY, (istStamp - dayStart) / 1000));
     const camera = dbCameras.find(item => String(item.camera_id) === String(event.camera_id));
-    return { id: event.event_id || `${event.camera_id}-${event.started_at_utc}-${index}`, cam: event.camera_id, kind: event.object_class || 'Unknown', type: event.object_class === 'person' ? 'person' : event.object_class === 'car' || event.object_class === 'truck' || event.object_class === 'bus' || event.object_class === 'motorcycle' ? 'vehicle' : 'other', t: seconds, dur: event.duration_seconds || 0, cameraName: camera?.display_name || camera?.name || event.camera_name || event.camera_id };
+    return { id: event.event_id || `${event.camera_id}-${event.started_at_utc}-${index}`, cam: event.camera_id, kind: event.object_class || 'Unknown', type: event.object_class === 'person' ? 'person' : event.object_class === 'car' || event.object_class === 'truck' || event.object_class === 'bus' || event.object_class === 'motorcycle' ? 'vehicle' : 'other', t: seconds, dur: event.duration_seconds || 0, cameraName: camera?.display_name || camera?.name || event.camera_name || event.camera_id, snapshot_path: event.snapshot_path, event_id: event.event_id, clip_path: event.clip_path };
   }).filter(Boolean).filter(event => event.t <= DAY);
   let todayEv = scen.noCams ? [] : I.day(0).filter(e => e.t <= now && e.t >= since);
-  if (dbLoaded) todayEv = realTodayEvents;
-  if (dbLoaded) {
+  todayEv = realTodayEvents;
+  {
     times = {};
     todayEv.forEach(event => { (times[event.cam] ||= []).push(event.t); });
   }
@@ -143,7 +149,7 @@ export default function HomePage({ session, openSearch, navTo }) {
     Object.assign({ label: l, key: k, set: () => { setHDay(k); setHCal(k === 'date'); } }, seg(hDay === k)));
   const card = e => {
     const c = M.CAM[e.cam] || I.CAM[e.cam] || { label: e.cameraName || e.cam, scene: '' };
-    return { id: e.id, kind: e.kind, type: e.type, camLabel: e.cameraName || c.label, when: I.when(e.t), dur: I.dur(e.dur), durS: e.dur, scene: c.scene, x: e.x, t: e.t, cam: e.cam };
+    return { id: e.id, kind: e.kind, type: e.type, camLabel: e.cameraName || c.label, when: I.when(e.t), dur: I.dur(e.dur), durS: e.dur, scene: c.scene, x: e.x, t: e.t, cam: e.cam, snapshotPath: e.snapshot_path, eventId: e.id };
   };
 
   return (
@@ -208,7 +214,7 @@ export default function HomePage({ session, openSearch, navTo }) {
                 {I.hourBars(todayEv, 'person', 'var(--sky)', now).map((b, i) => <span key={i} style={{ flex: 1, height: b.h, borderRadius: 1, background: b.c }} />)}
               </div>
               <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>{cmpY(people, yP)}</span>
-              <span style={{ fontSize: 14, color: 'var(--muted)' }}>{`Since ${I.clock(since)} · Open in Search →`}</span>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', fontSize: 14, color: 'var(--muted)' }}><span>{`Since ${I.clock(since)}`}</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--blue-deep)', fontWeight: 600, whiteSpace: 'nowrap' }}>Open in Search <OpenSearchIcon /></span></span>
             </button>
             <button onClick={() => openSearch({ preset: 'today', types: { person: false, vehicle: true, other: false } })} className="hvr-stat" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, padding: '20px 22px', textAlign: 'left', background: 'var(--bone)', border: '1px solid var(--line)', borderRadius: 14, cursor: 'pointer' }}>
               <span style={{ alignSelf: 'flex-start', padding: '5px 8px', borderRadius: 4, background: 'var(--honey-tint)', font: '500 11px/1 var(--font-mono)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--honey-deep)' }}>Vehicles seen</span>
@@ -217,12 +223,12 @@ export default function HomePage({ session, openSearch, navTo }) {
                 {I.hourBars([], 'vehicle', 'var(--honey)', now).map((b, i) => <span key={i} style={{ flex: 1, height: b.h, borderRadius: 1, background: b.c }} />)}
               </div>
               <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>No vehicle events recorded</span>
-              <span style={{ fontSize: 14, color: 'var(--muted)' }}>{`Since ${I.clock(since)} · Open in Search →`}</span>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', fontSize: 14, color: 'var(--muted)' }}><span>{`Since ${I.clock(since)}`}</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--blue-deep)', fontWeight: 600, whiteSpace: 'nowrap' }}>Open in Search <OpenSearchIcon /></span></span>
             </button>
-            <button onClick={() => navTo('cameras', { offlineFirst: offCams.length > 0 })} className="hvr-stat" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, padding: '20px 22px', textAlign: 'left', background: 'var(--bone)', border: '1px solid var(--line)', borderRadius: 14, cursor: 'pointer' }}>
+            <button onClick={() => navTo('cameras', { offlineFirst: offCams.length > 0 })} className="hvr-stat" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, padding: '20px 22px', textAlign: 'left', background: 'var(--bone)', color: 'var(--ink)', border: '1px solid var(--line)', borderRadius: 14, cursor: 'pointer' }}>
               <span style={{ alignSelf: 'flex-start', padding: '5px 8px', borderRadius: 4, background: offCams.length ? 'var(--danger-tint)' : 'var(--success-tint)', font: '500 11px/1 var(--font-mono)', letterSpacing: '.08em', textTransform: 'uppercase', color: offCams.length ? 'var(--danger-deep)' : 'var(--success-deep)' }}>Cameras online</span>
               <span style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 60, lineHeight: 0.95, letterSpacing: '-0.02em' }}>{cams.length - offCams.length}</span>
+                <span style={{ color: 'var(--ink)', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 60, lineHeight: 0.95, letterSpacing: '-0.02em' }}>{cams.length - offCams.length}</span>
                 <span style={{ fontSize: 22, color: 'var(--muted)', whiteSpace: 'nowrap' }}>of {cams.length}</span>
               </span>
               <div aria-hidden="true" style={{ display: 'flex', gap: 3, width: '100%', height: 34, alignItems: 'flex-end' }}>
@@ -258,7 +264,7 @@ export default function HomePage({ session, openSearch, navTo }) {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px 16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 260, flex: 1 }}>
                   <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, fontSize: 17, fontWeight: 500, letterSpacing: '-0.01em' }}>
-                    Activity by camera
+                    Activity by camera <span style={{ padding: '4px 7px', borderRadius: 4, background: 'var(--blue-tint)', color: 'var(--blue-deep)', font: '500 10px/1 var(--font-mono)', letterSpacing: '.05em' }}>Total activity: {todayEv.length}</span>
                     {scen.since != null && dOff === 0 && <span style={{ padding: '4px 7px', borderRadius: 4, background: 'var(--paper-2)', font: '500 11px/1 var(--font-mono)', letterSpacing: '.04em', color: 'var(--ink)' }}>{'Watching since ' + I.clock(scen.since)}</span>}
                   </h2>
                   <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>Each mark is a moment people or vehicles appeared, and darker marks are busier. Click one to open it in Search.</span>
@@ -333,11 +339,12 @@ export default function HomePage({ session, openSearch, navTo }) {
                 </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {todayEv.slice(-5).reverse().map(e => {
+                {todayEv.slice(0, 5).map(e => {
                   const ev = card(e);
-                  return <InetraEventCard key={ev.id} ev={ev} variant="row" selectable={false} onPlay={() => openSearch({ preset: 'today', focusT: ev.t })} />;
+                  return <InetraEventCard key={ev.id} ev={ev} variant="row" selectable={false} onPlay={async () => { try { setPlayingEvent(await fetchEvent(ev.eventId)); } catch (_) { setPlayingEvent(ev); } }} />;
                 })}
               </div>
+      {playingEvent && <div role="dialog" aria-modal="true" onClick={() => setPlayingEvent(null)} style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(0,0,0,.65)' }}><div onClick={e => e.stopPropagation()} style={{ width: 'min(900px, 95vw)', padding: 18, borderRadius: 12, background: 'var(--paper)' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><strong>{playingEvent.object_class || 'Event'} · {playingEvent.camera_name || playingEvent.camera_id}</strong><button type="button" onClick={() => setPlayingEvent(null)}>Close</button></div>{playingEvent.clip_path ? <video controls autoPlay src={getEventClipUrl(playingEvent.event_id)} style={{ width: '100%', maxHeight: '70vh', background: '#111' }} /> : <p style={{ color: 'var(--muted)' }}>The clip is not available for this event.</p>}</div></div>}
               <div style={{ marginTop: 4, padding: '12px 8px 4px', borderTop: '1px solid var(--line-soft)' }}>
                 <a href="#" onClick={e => { e.preventDefault(); openSearch({ preset: 'today' }); }} style={{ height: 26, minHeight: 26, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14.5, fontWeight: 500, color: 'var(--ink)', textDecoration: 'none', borderBottom: '1px solid var(--line)' }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--ink)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)'; }}>See all of today's events in Search</a>
               </div>

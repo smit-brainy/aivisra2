@@ -4,6 +4,12 @@
  * Minimal build-friendly version (style block removed per prototype pattern).
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
+
+function CameraRow({ camera, selected, toggle }) {
+  const id = camera.camera_id || camera.id;
+  return <button type="button" onClick={() => toggle(id)} className="hvr-blue2" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, height: 42, padding: '0 16px', background: selected.has(id) ? 'var(--blue-tint)' : 'transparent', textAlign: 'left' }}><span style={{ width: 18, height: 18, display: 'grid', placeItems: 'center', border: '1.5px solid var(--line)', borderRadius: 4, color: 'var(--blue)' }}>{selected.has(id) ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : null}</span><span style={{ width: 68, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{id}</span><span style={{ flex: 1 }}>{camera.display_name || camera.name || id}</span><span style={{ color: camera.online === false ? 'var(--danger-deep)' : 'var(--muted)', fontSize: 12 }}>{camera.status || 'unknown'}</span></button>;
+}
 
 export default function InetraCameraPicker({
   defaultOpen = true,
@@ -37,17 +43,18 @@ export default function InetraCameraPicker({
 
   return (
     <div style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(v => !v)} aria-expanded={open} style={{ color: 'var(--ink)' }}>
+      <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open} style={{ color: 'var(--ink)', padding: '10px 16px', border: '1px solid var(--line)', borderRadius: 8, background: open ? 'var(--blue-tint)' : 'var(--paper)', fontWeight: 600 }}>
         {label}
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50, width: 420, maxHeight: 560, display: 'flex', flexDirection: 'column', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: '0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50, width: 'min(420px, calc(100vw - 32px))', maxHeight: 'min(560px, calc(100vh - 120px))', display: 'flex', flexDirection: 'column', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: '0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06)', overflow: 'hidden' }}>
           <div style={{ padding: '12px', borderBottom: '1px solid var(--line-soft)' }}>
             <input value={q} onChange={e => setQ(e.target.value)} className="fcs-input" placeholder="Find a camera by name or number" style={{ width: '100%', height: 40, padding: '0 12px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--bone)', fontSize: 14.5, outline: 'none' }} />
           </div>
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '6px 0 8px' }}>
             <button type="button" className="hvr-blue2" onClick={() => choose({ mode: 'all' })} style={{ width: '100%', height: 46, padding: '0 16px', background: value.mode === 'all' ? 'var(--blue-tint)' : 'transparent', textAlign: 'left' }}>Every camera <small style={{ float: 'right', color: 'var(--muted)' }}>{cameras.filter(c => c.online !== false).length} of {cameras.length} online</small></button>
-            {areas.map(area => { const rows = visible.filter(c => c.area_id === area.area_id); if (!rows.length) return null; return <div key={area.area_id}><div style={{ padding: '10px 16px 6px', borderTop: '1px solid var(--line-soft)', font: '500 11px/1 var(--font-mono)', textTransform: 'uppercase', color: 'var(--muted)' }}>{area.name}</div>{rows.map(camera => { const id = camera.camera_id || camera.id; return <button type="button" key={id} onClick={() => toggle(id)} className="hvr-blue2" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, height: 42, padding: '0 16px', background: selected.has(id) ? 'var(--blue-tint)' : 'transparent', textAlign: 'left' }}><span style={{ width: 18, height: 18, border: '1.5px solid var(--line)', borderRadius: 4, color: 'var(--blue)', textAlign: 'center' }}>{selected.has(id) ? '✓' : ''}</span><span style={{ width: 68, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{id}</span><span style={{ flex: 1 }}>{camera.display_name || camera.name || id}</span><span style={{ color: camera.online === false ? 'var(--danger-deep)' : 'var(--muted)', fontSize: 12 }}>{camera.status || 'unknown'}</span></button>; })}</div>; })}
+            {areas.map(area => { const rows = visible.filter(c => c.area_id === area.area_id); if (!rows.length) return null; return <div key={area.area_id}><div style={{ padding: '10px 16px 6px', borderTop: '1px solid var(--line-soft)', font: '500 11px/1 var(--font-mono)', textTransform: 'uppercase', color: 'var(--muted)' }}>{area.name}</div>{rows.map(camera => <CameraRow key={camera.camera_id || camera.id} camera={camera} selected={selected} toggle={toggle} />)}</div>; })}
+            {(() => { const rows = visible.filter(c => !c.area_id || !areas.some(a => a.area_id === c.area_id)); return rows.length ? <div><div style={{ padding: '10px 16px 6px', borderTop: '1px solid var(--line-soft)', font: '500 11px/1 var(--font-mono)', textTransform: 'uppercase', color: 'var(--muted)' }}>Cameras</div>{rows.map(camera => <CameraRow key={camera.camera_id || camera.id} camera={camera} selected={selected} toggle={toggle} />)}</div> : null; })()}
           </div>
         </div>
       )}

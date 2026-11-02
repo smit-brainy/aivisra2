@@ -135,6 +135,16 @@ class EventDatabase:
                 conn.execute("ALTER TABLE inference_events ADD COLUMN snapshot_path TEXT")
             if "camera_name" not in existing_columns:
                 conn.execute("ALTER TABLE inference_events ADD COLUMN camera_name TEXT")
+            # Older runtime versions stored the generated image path only in
+            # metadata. Promote it into the indexed/API-facing column.
+            conn.execute("""
+                UPDATE inference_events
+                SET snapshot_path = json_extract(metadata, '$.snapshot_path')
+                WHERE (snapshot_path IS NULL OR snapshot_path = '')
+                  AND metadata IS NOT NULL
+                  AND json_extract(metadata, '$.snapshot_path') IS NOT NULL
+                  AND json_extract(metadata, '$.snapshot_path') <> ''
+            """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_camera_time
                 ON inference_events(camera_id, started_at_utc)
@@ -459,10 +469,11 @@ class EventDatabase:
         with self._lock:
             with self._connect() as conn:
                 rows = conn.execute(
-                    "SELECT clip_path FROM inference_events WHERE started_at_utc < ? AND clip_path IS NOT NULL",
+                    "SELECT clip_path, snapshot_path FROM inference_events WHERE started_at_utc < ?",
                     (cutoff_utc,),
                 ).fetchall()
                 clip_paths = [row["clip_path"] for row in rows if row["clip_path"]]
+                snapshot_paths = [row["snapshot_path"] for row in rows if row["snapshot_path"]]
 
                 cursor = conn.execute(
                     "DELETE FROM inference_events WHERE started_at_utc < ?",
@@ -485,6 +496,16 @@ class EventDatabase:
                     full_path.unlink()
             except Exception as exc:
                 logger.warning("clip_delete_failed", extra={"path": clip_path, "reason": str(exc)})
+        evidence_root = Path(self.config.clip_storage_dir).parent
+        for snapshot_path in snapshot_paths:
+            try:
+                full_path = evidence_root / "pic" / snapshot_path
+                if not full_path.exists():
+                    full_path = evidence_root / snapshot_path
+                if full_path.exists():
+                    full_path.unlink()
+            except Exception as exc:
+                logger.warning("snapshot_delete_failed", extra={"path": snapshot_path, "reason": str(exc)})
 
         if deleted_count:
             logger.info("event_cleanup_completed", extra={"deleted": deleted_count, "retention_days": retention_days})

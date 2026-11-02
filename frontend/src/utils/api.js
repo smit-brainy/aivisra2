@@ -20,12 +20,23 @@ async function authRequest(path, options = {}) {
 export function login(payload) { return authRequest('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }); }
 export function signup(payload) { return authRequest('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) }); }
 export function logout() { return authRequest('/api/auth/logout', { method: 'POST' }); }
+export function fetchUsers() { return authRequest('/api/auth/users'); }
+export function updateUser(userId, payload) { return authRequest(`/api/auth/users/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify(payload) }); }
+export function deleteUser(userId) { return authRequest(`/api/auth/users/${encodeURIComponent(userId)}`, { method: 'DELETE' }); }
 
 export async function fetchStatus() {
   const res = await fetch(`${BASE_URL}/api/status`);
   if (!res.ok) throw new Error(`Status HTTP ${res.status}`);
   return res.json();
 }
+
+export async function fetchSystemInfo() {
+  const res = await fetch(`${BASE_URL}/api/system-info`);
+  if (!res.ok) throw new Error(`System info HTTP ${res.status}`);
+  return res.json();
+}
+export async function fetchStorageInfo() { const res = await fetch(`${BASE_URL}/api/storage`); if (!res.ok) throw new Error(`Storage HTTP ${res.status}`); return res.json(); }
+export async function updateStorage(payload) { const res = await fetch(`${BASE_URL}/api/storage`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(`Storage update HTTP ${res.status}`); return res.json(); }
 
 export async function fetchCameras() {
   const res = await fetch(`${BASE_URL}/api/cameras`);
@@ -237,6 +248,12 @@ export async function fetchEvents(params = {}) {
   return res.json();
 }
 
+export async function fetchEvent(eventId) {
+  const res = await fetch(`${BASE_URL}/api/events/${encodeURIComponent(eventId)}`);
+  if (!res.ok) throw new Error(`Event HTTP ${res.status}`);
+  return res.json();
+}
+
 export function getStreamUrl(cameraId) {
   return `${BASE_URL}/stream/${cameraId}`;
 }
@@ -247,6 +264,10 @@ export function getFrameUrl(cameraId) {
 
 export function getClipUrl(clipPath) {
   return `${BASE_URL}/api/clips/${clipPath}`;
+}
+
+export function getEventClipUrl(eventId) {
+  return `${BASE_URL}/api/event-clips/${encodeURIComponent(eventId)}`;
 }
 
 export function getSnapshotUrl(filename) {

@@ -5,6 +5,7 @@
  * runtime hover is handled by `useHoverProps` where inline styles conflict.
  */
 import React, { useEffect, useState } from 'react';
+import { ArrowRight, Pencil, Radio, Search, X } from 'lucide-react';
 import { fetchCamera, fetchCameras, fetchAreas, createArea, updateCameraMetadata, updateArea, deleteArea, registerCamera } from '../../utils/api';
 
 class CameraViewErrorBoundary extends React.Component {
@@ -39,6 +40,10 @@ export default function CamerasPage({ openSearch, navTo }) {
       setLoading(false);
     }).catch(() => setLoading(false));
     fetchAreas().then((data) => setAreas(data)).catch(() => {});
+    const telemetryTimer = window.setInterval(() => {
+      fetchCameras().then(setCameras).catch(() => {});
+    }, 5000);
+    return () => window.clearInterval(telemetryTimer);
   }, []);
 
 
@@ -64,10 +69,9 @@ export default function CamerasPage({ openSearch, navTo }) {
   const filtered = cameras.filter(c => {
     const displayName = c.display_name || c.name || c.camera_id || '';
     const matchesSearch = !searchQuery || displayName.toLowerCase().includes(searchQuery.toLowerCase()) || String(c.camera_id || '').startsWith(searchQuery);
-    const matchesArea = areaFilter === 'all' || c.area_id === areaFilter;
     const isOnline = c.status === 'online' || statusFilter === 'all';
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-    return matchesSearch && matchesArea && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   const visible = filtered.slice(0, shown);
@@ -105,14 +109,6 @@ export default function CamerasPage({ openSearch, navTo }) {
         />
       </div>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <span style={{ fontSize: 13, color: 'var(--muted)' }}>Area</span>
-        <select value={areaFilter} onChange={e => setAreaFilter(e.target.value)}
-          style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14 }}>
-          <option value="all">All areas</option>
-          {areas.map(a => <option key={a.area_id} value={a.area_id}>{a.name}</option>)}
-        </select>
-      </div>
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
         <span style={{ fontSize: 13, color: 'var(--muted)' }}>Status</span>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14 }}>
@@ -137,8 +133,8 @@ export default function CamerasPage({ openSearch, navTo }) {
           <option value={filtered.length}>All</option>
         </select>
       </div>
-      <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)} style={{ padding: '6px 14px', fontSize: 14 }}>Add camera <span aria-hidden="true">→</span></button>
       <button type="button" className="hvr-ink-border" onClick={() => { setSearchQuery(''); setAreaFilter('all'); setStatusFilter('all'); setShown(40); }} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14 }}>Show every camera</button>
+      <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)} style={{ padding: '6px 12px', minHeight: 34, borderRadius: 6, fontSize: 14, lineHeight: 1.2, display: 'inline-flex', alignItems: 'center', gap: 6 }}>Add camera <ArrowRight size={16} aria-hidden="true" /></button>
     </div>
   );
 
@@ -191,17 +187,15 @@ export default function CamerasPage({ openSearch, navTo }) {
             <div onClick={() => navTo && navTo('live', { cam: c.camera_id })} style={{ cursor: 'pointer' }}>
             <div style={{ height: 112, margin: '-12px -14px 10px', overflow: 'hidden', background: 'var(--bone)', display: 'grid', placeItems: 'center' }}><img src={`/stream/${encodeURIComponent(c.camera_id)}`} alt={`${c.display_name || c.name || c.camera_id} live preview`} onError={(event) => { event.currentTarget.style.display = 'none'; console.warn('[CamerasPage] live preview unavailable', c.camera_id); }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /><span style={{ color: 'var(--muted)', fontSize: 12 }}>Waiting for live preview…</span></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '4px' }}>
-              <span style={{ width: 28, height: 28, borderRadius: '50%', background: c.status === 'online' ? 'var(--success)' : 'var(--danger)', flexShrink: 0 }} />
               <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ fontSize: 15.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.display_name || c.camera_id}</span>
-                <span style={{ fontSize: 13.5, color: c.status === 'online' ? 'var(--ink)' : 'var(--danger-deep)' }}>{c.kind || 'both'}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13.5, color: c.status === 'online' ? 'var(--success-deep)' : 'var(--danger-deep)' }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: c.status === 'online' ? 'var(--success)' : 'var(--danger)' }} />{c.status === 'online' ? 'Online' : 'Offline'}</span>
               </span>
             </div></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--muted)' }}>
-              <span>FPS: {c.fps || '—'}</span>
-              <span onClick={() => navTo && navTo('search', { cams: [c.camera_id], preset: 'today' })} className="hvr-ink-border" style={{ padding: '2px 6px', border: '1px solid var(--line)', borderRadius: 6, fontSize: 12, fontWeight: 500 }}>Search</span>
-              <span onClick={() => navTo && navTo('live', { cam: c.camera_id })} className="hvr-ink-border" style={{ padding: '2px 6px', border: '1px solid var(--line)', borderRadius: 6, fontSize: 12, fontWeight: 500 }}>Live</span>
-              <span onClick={() => openModal('rename', c.camera_id)} className="hvr-ink-border" style={{ padding: '2px 6px', border: '1px solid var(--line)', borderRadius: 6, fontSize: 12, fontWeight: 500 }}>Rename</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)' }}>
+              <span style={{ width: 88, flexShrink: 0 }}>FPS: {Number.isFinite(Number(c.ai_fps)) ? Number(c.ai_fps).toFixed(1) : '—'}</span>
+              <span role="button" tabIndex={0} onClick={() => navTo && navTo('search', { cams: [c.camera_id], preset: 'today' })} className="hvr-ink-border" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '6px 4px', border: '1px solid var(--line)', borderRadius: 6, fontSize: 12, fontWeight: 500 }}><Search size={13} strokeWidth={2} aria-hidden="true" />Search</span>
+              <span role="button" tabIndex={0} onClick={() => navTo && navTo('live', { cam: c.camera_id })} className="hvr-ink-border" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '6px 4px', border: '1px solid var(--line)', borderRadius: 6, fontSize: 12, fontWeight: 500 }}><Radio size={13} strokeWidth={2} aria-hidden="true" />Live</span>
             </div>
           </div>
         );
@@ -304,7 +298,7 @@ export default function CamerasPage({ openSearch, navTo }) {
       {modalMode && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '24px', width: 400, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto' }}>
-            <button onClick={closeModal} style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, fontSize: 18, cursor: 'pointer' }}>×</button>
+            <button type="button" onClick={closeModal} aria-label="Close modal" style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, display: 'grid', placeItems: 'center', border: 0, background: 'transparent', cursor: 'pointer' }}><X size={17} aria-hidden="true" /></button>
             {modalMode === 'rename' && (
               <div>
                 <h3>Rename camera</h3>
@@ -398,8 +392,7 @@ export default function CamerasPage({ openSearch, navTo }) {
 
       {/* Summary bar */}
       <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '12px 16px', marginTop: '12px', fontSize: 14, color: 'var(--muted)' }}>
-        <span>{filtered.length} of {cameras.length} cameras shown</span>
-        <span style={{ marginLeft: 'auto' }}>{shown} of {filtered.length} visible</span>
+        <span>{filtered.length} of {cameras.length} cameras</span>
       </div>
     </div>
   );

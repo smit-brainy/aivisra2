@@ -28,7 +28,7 @@
  */
 import React, { useEffect } from 'react';
 import { invr, merged } from '../../prototype/api';
-import { fetchCameras, fetchEvents, getClipUrl, getSnapshotUrl } from '../../utils/api';
+import { fetchCameras, fetchEvent, fetchEvents, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
 
 export default function SearchPage({ openSearch, navTo }) {
   const I = invr();
@@ -48,11 +48,30 @@ export default function SearchPage({ openSearch, navTo }) {
   const [sMore, setSMore] = React.useState(false);
   const [sLoading, setSLoading] = React.useState(false);
   const [sError, setSError] = React.useState(false);
-  const [view, setView] = React.useState('cards'); // cards | list | timeline | calendar
-  const [recentSearches, setRecentSearches] = React.useState([]);
   const [dbCameras, setDbCameras] = React.useState([]);
   const [dbEvents, setDbEvents] = React.useState([]);
   const [selectedEvent, setSelectedEvent] = React.useState(null);
+  const vehicleClasses = React.useMemo(() => new Set(['bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat']), []);
+  const matchesTypeFilter = event => {
+    const objectClass = String(event?.object_class || event?.kind || '').toLowerCase();
+    if (objectClass === 'person') return sTypes.person;
+    if (vehicleClasses.has(objectClass)) return sTypes.vehicle;
+    return sTypes.other;
+  };
+  const openEvidence = async event => {
+    if (!event) return;
+    setSelectedEvent(event);
+    try {
+      let latest = await fetchEvent(event.event_id);
+      // Clip recording is asynchronous. Refresh briefly so a card clicked just
+      // after detection can receive its clip path without requiring a reload.
+      for (let attempt = 0; attempt < 5 && !latest.clip_path; attempt += 1) {
+        await new Promise(resolve => window.setTimeout(resolve, 1000));
+        latest = await fetchEvent(event.event_id);
+      }
+      setSelectedEvent(latest);
+    } catch (_) { /* Keep the event summary visible if refresh fails. */ }
+  };
   const [dbFilters, setDbFilters] = React.useState({ start: '', end: '', camera_id: '', object_class: '' });
   const detectingObjects = React.useMemo(
     () => [...new Set(dbEvents.map(event => event.object_class).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
@@ -68,18 +87,6 @@ export default function SearchPage({ openSearch, navTo }) {
   };
 
   useEffect(() => {
-    const load = () => {
-      try { const v = localStorage.getItem('aivisra_search_view'); setView(v || 'cards'); } catch (e) {}
-    };
-    load();
-    const handle = () => { try { localStorage.setItem('aivisra_search_view', view); } catch (e) {} };
-    window.addEventListener('unload', handle);
-    return () => { window.removeEventListener('unload', handle); };
-  }, [view]);
-  useEffect(() => {
-    try { setRecentSearches(JSON.parse(localStorage.getItem('aivisra_recent_searches') || '[]')); } catch (_) {}
-  }, []);
-  useEffect(() => {
     fetchCameras().then(setDbCameras).catch(() => {});
   }, []);
   useEffect(() => {
@@ -94,9 +101,6 @@ export default function SearchPage({ openSearch, navTo }) {
   const applyPreset = preset => {
     const range = presetRange(preset);
     setSTime({ preset, ...range });
-    const next = [{ preset, at: Date.now() }, ...recentSearches.filter(item => item.preset !== preset)].slice(0, 5);
-    setRecentSearches(next);
-    try { localStorage.setItem('aivisra_recent_searches', JSON.stringify(next)); } catch (_) {}
   };
 
   // Helper: format a seconds value into HH:MM or clock string
@@ -143,7 +147,7 @@ export default function SearchPage({ openSearch, navTo }) {
   // data remains only as a visual fallback while the API is unavailable.
   if (dbEvents.length || dbCameras.length) {
     const cameraNames = new Map(dbCameras.map(c => [String(c.camera_id), c.display_name || c.name || c.camera_id]));
-    R.list = dbEvents.map(event => ({
+    R.list = dbEvents.filter(matchesTypeFilter).map(event => ({
       id: event.event_id,
       camNum: event.camera_id,
       camLabel: `${cameraNames.get(String(event.camera_id)) || event.camera_id} (${event.camera_id})`,
@@ -202,25 +206,16 @@ export default function SearchPage({ openSearch, navTo }) {
   };
 
   // Toolbar buttons - create style objects separately to avoid JSX parsing issues
-  const cameraBtnProps = { padding: '4px 8px' };
-  const typeBtnProps = { padding: '2px 6px', fontSize: 12 };
-  const sortBtnProps = { padding: '4px 8' };
-  const viewBtnProps = { padding: '4px 8' };
+  const typeButton = active => ({ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 7, background: active ? 'var(--blue-tint)' : 'var(--paper)', color: active ? 'var(--blue-deep)' : 'var(--ink)', fontSize: 13, fontWeight: active ? 600 : 400, cursor: 'pointer' });
 
   return (
     <div className="search-page" style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 16, padding: '28px 42px 42px' }}>
       <h1 style={{ margin: 0, fontSize: 30, fontWeight: 500 }}>Search</h1>
       <div style={{ display: 'flex', gap: 12, marginBottom: 2, alignItems: 'center', flexWrap: 'wrap', fontSize: 14 }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Start time<input type="datetime-local" value={dbFilters.start} onChange={e => setDbFilters(v => ({ ...v, start: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>End time<input type="datetime-local" value={dbFilters.end} onChange={e => setDbFilters(v => ({ ...v, end: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Start time<input type={dbFilters.start ? 'datetime-local' : 'text'} placeholder="Start date and time" value={dbFilters.start} onFocus={e => { e.currentTarget.type = 'datetime-local'; }} onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }} onChange={e => setDbFilters(v => ({ ...v, start: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>End time<input type={dbFilters.end ? 'datetime-local' : 'text'} placeholder="End date and time" value={dbFilters.end} onFocus={e => { e.currentTarget.type = 'datetime-local'; }} onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }} onChange={e => setDbFilters(v => ({ ...v, end: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Camera<select value={dbFilters.camera_id} onChange={e => setDbFilters(v => ({ ...v, camera_id: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">All cameras</option>{dbCameras.map(c => <option key={c.camera_id} value={c.camera_id}>{c.display_name || c.name || c.camera_id}</option>)}</select></label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Object<select value={dbFilters.object_class} onChange={e => setDbFilters(v => ({ ...v, object_class: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">Currently detected objects</option>{detectingObjects.map(objectClass => <option key={objectClass} value={objectClass}>{objectClass}</option>)}</select></label>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: 'var(--muted)' }}>Cameras</span>
-          <button onClick={() => setSCams(v => ({ mode: v.mode === 'all' ? 'cams' : 'all' }))} className="hvr-ink-border" style={{ ...cameraBtnProps, minWidth: 220, padding: '12px 14px', textAlign: 'left', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', color: 'var(--ink)' }}>
-            <small style={{ display: 'block', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Cameras</small><strong>{sCams.mode === 'all' ? 'Every camera' : 'Selected cameras'}</strong>
-          </button>
-        </div>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>Time</span>
           {['today', 'yesterday', 'lastnight'].map(preset => <button type="button" key={preset} onClick={() => applyPreset(preset)} className="hvr-ink-border" style={{ padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 5, background: sTime.preset === preset ? 'var(--blue-tint)' : 'var(--paper)' }}>{preset === 'lastnight' ? 'Last night' : preset[0].toUpperCase() + preset.slice(1)}</button>)}
@@ -229,27 +224,21 @@ export default function SearchPage({ openSearch, navTo }) {
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>Type</span>
           <span style={{ display: 'flex', gap: 3 }}>
-            <button onClick={() => setSTypes(v => ({ person: !v.person, vehicle: v.vehicle, other: v.other }))} className="hvr-ink-border" style={typeBtnProps}>{sTypes.person ? 'Person' : 'People'}</button>
-            <button onClick={() => setSTypes(v => ({ person: v.person, vehicle: !v.vehicle, other: v.other }))} className="hvr-ink-border" style={typeBtnProps}>{sTypes.vehicle ? 'Vehicle' : 'Vehicles'}</button>
-            <button onClick={() => setSTypes(v => ({ person: v.person, vehicle: v.vehicle, other: !v.other }))} className="hvr-ink-border" style={typeBtnProps}>{sTypes.other ? 'Other' : 'Other objects'}</button>
+            <button type="button" onClick={() => setSTypes(v => ({ person: !v.person, vehicle: v.vehicle, other: v.other }))} className="hvr-ink-border" style={typeButton(sTypes.person)}>Person</button>
+            <button type="button" onClick={() => setSTypes(v => ({ person: v.person, vehicle: !v.vehicle, other: v.other }))} className="hvr-ink-border" style={typeButton(sTypes.vehicle)}>Vehicle</button>
+            <button type="button" onClick={() => setSTypes(v => ({ person: v.person, vehicle: v.vehicle, other: !v.other }))} className="hvr-ink-border" style={typeButton(sTypes.other)}>Other objects</button>
           </span>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>Sort</span>
-          <button onClick={() => setSSort(v => v === 'new' ? 'old' : 'new')} className="hvr-ink-border" style={{ ...sortBtnProps, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', color: 'var(--ink)' }}>{sSort === 'new' ? 'Newest first' : 'Oldest first'}</button>
-        </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: 'var(--muted)' }}>View</span>
-          <button onClick={() => setView(v => ({ cards: 'list', list: 'timeline', timeline: 'calendar', calendar: 'cards' }[v] || 'cards'))} className="hvr-blue2" style={viewBtnProps}>{view}</button>
+          <button type="button" onClick={() => setSSort(v => v === 'new' ? 'old' : 'new')} className="hvr-ink-border" style={{ padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', color: 'var(--ink)' }}>{sSort === 'new' ? 'Newest first' : 'Oldest first'}</button>
         </div>
       </div>
-      {recentSearches.length > 0 && <div style={{ display: 'flex', gap: 6, alignItems: 'center', color: 'var(--muted)', fontSize: 12 }}><span>Recent:</span>{recentSearches.map(item => <button type="button" key={item.preset} onClick={() => applyPreset(item.preset)} className="hvr-underline" style={{ color: 'var(--ink)' }}>{item.preset}</button>)}</div>}
       {sTime.preset === 'custom' && <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', background: 'var(--bone)', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}><label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>From <input type="range" min="0" max={I.DAY} value={sTime.from} onChange={e => setSTime(v => ({ ...v, from: Math.min(Number(e.target.value), v.to) }))} /></label><label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>To <input type="range" min="0" max={I.DAY} value={sTime.to} onChange={e => setSTime(v => ({ ...v, to: Math.max(Number(e.target.value), v.from) }))} /></label><span style={{ color: 'var(--muted)' }}>{fmtTime(sTime.from)} – {fmtTime(sTime.to)}</span></div>}
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: 'var(--muted)', fontSize: 13 }}>RECENT {recentSearches.map(item => <button type="button" key={item.preset} onClick={() => applyPreset(item.preset)} className="hvr-ink-border" style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>■ {item.preset}</button>)}</div>
       <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: 16, color: 'var(--ink)' }}>
         <h2 style={{ marginTop: 0 }}>Search Results <small style={{ color: 'var(--muted)', fontWeight: 400 }}>({R.list.length})</small></h2>
-        {view === 'timeline' ? <div style={{ position: 'relative', height: 180, borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', background: 'var(--bone)' }}>{R.list.slice(0, sShow).map(event => <button type="button" key={event.id} aria-label={`Open ${event.kind} on ${event.camLabel}`} onClick={() => setSelectedEvent(event.evidence || null)} className="hvr-mark" style={{ position: 'absolute', left: `${(event.time / Math.max(1, R.now)) * 100}%`, top: 60 + (event.camNum % 4) * 24, width: 9, height: 18, border: 'none', borderRadius: 3, background: event.dot, cursor: 'pointer' }} />)}</div> : <div style={{ display: 'grid', gridTemplateColumns: view === 'list' ? '1fr' : 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>{R.list.slice(0, sShow).map(event => <button type="button" key={event.id} onClick={() => setSelectedEvent(event.evidence || null)} className="hvr-stat" style={{ textAlign: 'left', border: '1px solid var(--line)', borderRadius: 8, padding: 10, background: 'var(--paper)' }}><strong>{event.kind}</strong><div style={{ color: 'var(--muted)', fontSize: 13 }}>{event.camLabel} · {event.when}</div></button>)}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 12 }}>{R.list.slice(0, sShow).map(event => <button type="button" key={event.id} onClick={() => openEvidence(event.evidence)} className="hvr-stat" style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left', border: '1px solid var(--line)', borderRadius: 10, padding: 10, background: 'var(--paper)', overflow: 'hidden' }}>{event.evidence?.snapshot_path ? <img src={getSnapshotUrl(event.evidence.snapshot_path)} alt={`${event.kind} detection`} style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 6, background: 'var(--bone)' }} /> : <div style={{ width: '100%', height: 140, display: 'grid', placeItems: 'center', borderRadius: 6, background: 'var(--bone)', color: 'var(--muted)', fontSize: 12 }}>No event image</div>}<strong style={{ color: 'var(--ink)' }}>{event.kind}</strong><div style={{ color: 'var(--muted)', fontSize: 13 }}>{event.camLabel} · {event.when}</div></button>)}</div>
         {!R.list.length && <p style={{ color: 'var(--muted)' }}>No events match the current filters.</p>}
       </div>
 
@@ -263,7 +252,7 @@ export default function SearchPage({ openSearch, navTo }) {
         <div style={{ width: 'min(820px, 95vw)', maxHeight: '90vh', overflow: 'auto', background: 'var(--paper)', color: 'var(--ink)', borderRadius: 10, padding: 20 }} onClick={e => e.stopPropagation()}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><h2 style={{ margin: 0 }}>{selectedEvent.object_class || 'Event'} · {selectedEvent.camera_name || selectedEvent.camera_id}</h2><button type="button" onClick={() => setSelectedEvent(null)} style={{ padding: '5px 10px' }}>Close</button></div>
           {selectedEvent.snapshot_path ? <img src={getSnapshotUrl(selectedEvent.snapshot_path)} alt={`${selectedEvent.object_class || 'Event'} evidence`} style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'contain', background: '#111', borderRadius: 6 }} /> : <p style={{ color: 'var(--muted)' }}>No event image is available.</p>}
-          {selectedEvent.clip_path ? <video controls preload="metadata" src={getClipUrl(selectedEvent.clip_path)} style={{ display: 'block', width: '100%', marginTop: 14, borderRadius: 6 }} /> : <p style={{ color: 'var(--muted)' }}>The event video is still being recorded or is unavailable.</p>}
+          {selectedEvent.clip_path ? <video controls preload="metadata" src={getEventClipUrl(selectedEvent.event_id)} style={{ display: 'block', width: '100%', marginTop: 14, borderRadius: 6 }} /> : <p style={{ color: 'var(--muted)' }}>The event video is still being recorded or is unavailable.</p>}
         </div>
       </div>}
     </div>

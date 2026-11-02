@@ -151,7 +151,7 @@ class ClipRecorder:
                 result = subprocess.run(cmd, capture_output=True, timeout=timeout_sec)
                 if result.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
                     rel_path = str(output_path.relative_to(self.output_dir.parent))
-                    logger.info("clip_recorded", extra={"camera_id": camera_id, "event_id": event_id, "path": rel_path, "url": candidate_url})
+                    logger.info("clip_recorded camera_id=%s event_id=%s path=%s mode=stream_copy url=%s", camera_id, event_id, rel_path, candidate_url)
                     return rel_path
                 else:
                     if output_path.exists():
@@ -160,9 +160,7 @@ class ClipRecorder:
                         except Exception:
                             pass
                     stderr_first = result.stderr.decode(errors="ignore")[:300] if result else ""
-                    logger.warning("clip_copy_attempt_failed", extra={
-                        "camera_id": camera_id, "event_id": event_id, "url": candidate_url, "stderr": stderr_first
-                    })
+                    logger.info("clip_copy_attempt_failed camera_id=%s event_id=%s url=%s error=%s; trying_reencode=true", camera_id, event_id, candidate_url, stderr_first or "unknown")
                     # If stream input failed to open (e.g. session limit or unreachable), skip Attempt 2 on this URL
                     if any(e in stderr_first.lower() for e in [
                         "error opening input", "operation not permitted", "connection refused",
@@ -188,7 +186,7 @@ class ClipRecorder:
                     res_fallback = subprocess.run(cmd_fallback, capture_output=True, timeout=timeout_sec)
                     if res_fallback.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
                         rel_path = str(output_path.relative_to(self.output_dir.parent))
-                        logger.info("clip_recorded_fallback", extra={"camera_id": camera_id, "event_id": event_id, "path": rel_path})
+                        logger.info("clip_recorded camera_id=%s event_id=%s path=%s mode=reencode", camera_id, event_id, rel_path)
                         return rel_path
                     else:
                         if output_path.exists():
@@ -217,7 +215,7 @@ class ClipRecorder:
                 output_path.unlink()
             except Exception:
                 pass
-        logger.error("clip_recording_all_urls_failed", extra={"camera_id": camera_id, "event_id": event_id})
+        logger.error("clip_recording_all_urls_failed camera_id=%s event_id=%s", camera_id, event_id)
         return None
 
     def cleanup_old_clips(self, retention_days: int | None = None) -> int:

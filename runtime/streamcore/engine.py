@@ -534,6 +534,7 @@ class StreamCore:
             max_confidence=max_conf,
             metadata=metadata,
             object_class=object_class,
+            snapshot_path=snapshot_rel_path,
         )
 
         # Trigger clip recording asynchronously

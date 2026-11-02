@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import { invr, ready } from '../../prototype/api';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function InetraMonthCalendar({ cams = null, types = null, selA = -1, selB, month = null, nav = true, size = 'compact', keepDays = 30, onPick }) {
   const [readyOk, setReadyOk] = React.useState(!!invr());
@@ -53,9 +54,9 @@ export default function InetraMonthCalendar({ cams = null, types = null, selA = 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontFamily: 'var(--font-sans)', color: 'var(--ink)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <button onClick={() => setMo(cur - 1)} aria-label="Previous month" className="hvr-ink-border" style={{ width: 34, height: 34, border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 14, visibility: nav && cur > -2 ? 'visible' : 'hidden', cursor: 'pointer' }}>←</button>
+        <button onClick={() => setMo(cur - 1)} aria-label="Previous month" className="hvr-ink-border" style={{ width: 34, height: 34, border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', display: 'grid', placeItems: 'center', visibility: nav && cur > -2 ? 'visible' : 'hidden', cursor: 'pointer' }}><ChevronLeft size={17} aria-hidden="true" /></button>
         <span style={{ fontSize: large ? '17px' : '15px', fontWeight: 500, letterSpacing: '-0.01em' }}>{I.monthTitle(cur)}</span>
-        <button onClick={() => setMo(cur + 1)} aria-label="Next month" className="hvr-ink-border" style={{ width: 34, height: 34, border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 14, visibility: nav && cur < 0 ? 'visible' : 'hidden', cursor: 'pointer' }}>→</button>
+        <button onClick={() => setMo(cur + 1)} aria-label="Next month" className="hvr-ink-border" style={{ width: 34, height: 34, border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', display: 'grid', placeItems: 'center', visibility: nav && cur < 0 ? 'visible' : 'hidden', cursor: 'pointer' }}><ChevronRight size={17} aria-hidden="true" /></button>
       </div>
       <div role="grid" aria-label={I.monthTitle(cur)} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap }}>
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((l, i) => (
