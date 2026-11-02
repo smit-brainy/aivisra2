@@ -164,6 +164,18 @@ def get_webrtc_stream(camera_id: str):
     raise HTTPException(status_code=404, detail="not found")
 
 
+@router.get("/api/event-clips/{event_id}")
+def get_event_clip(event_id: str, range: Optional[str] = Header(None)):
+    """Resolve an event's clip path from the central database, then stream it."""
+    engine = get_engine()
+    event_db = getattr(engine, "event_db", None) if engine else None
+    event = event_db.get_event(event_id) if event_db else None
+    if event is None or not event.clip_path:
+        raise HTTPException(status_code=404, detail="Clip is not available for this event")
+    logger.info("event_clip_requested event_id=%s clip_path=%s", event_id, event.clip_path)
+    return get_clip_video(event.clip_path, range)
+
+
 @router.get("/api/clips/{clip_path:path}")
 def get_clip_video(clip_path: str, range: Optional[str] = Header(None)):
     """Serve MP4 video clips with Range request support for seeking and scrubbing."""

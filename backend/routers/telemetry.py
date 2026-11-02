@@ -9,12 +9,90 @@ Serves:
 
 import base64
 import json
+import os
+import platform
+import shutil
+import subprocess
+from datetime import datetime
 from typing import Any, Optional
 from fastapi import APIRouter, Query, Response
 
 from ..dependencies import get_engine, get_cache, get_camera_ids
+from ..database import connect
 
 router = APIRouter(tags=["Telemetry & Detections"])
+
+
+@router.get("/api/system-info")
+def get_system_info():
+    """Return host information used by the Settings > About screen."""
+    engine = get_engine()
+    root = shutil.disk_usage(os.path.abspath(os.sep))
+    ram_total = ram_available = None
+    try:
+        values = {}
+        with open("/proc/meminfo", encoding="utf-8") as meminfo:
+            for line in meminfo:
+                key, value = line.split(":", 1)
+                values[key] = int(value.strip().split()[0]) * 1024
+        ram_total = values.get("MemTotal")
+        ram_available = values.get("MemAvailable")
+    except (OSError, ValueError):
+        pass
+    gpu = "Unavailable"
+    try:
+        result = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], capture_output=True, text=True, timeout=2)
+        if result.returncode == 0 and result.stdout.strip():
+            gpu = result.stdout.strip().splitlines()[0]
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return {
+        "os": f"{platform.system()} {platform.release()}",
+        "ram": {"total_bytes": ram_total, "available_bytes": ram_available},
+        "cpu": platform.processor() or platform.machine() or "Unavailable",
+        "gpu": gpu,
+        "storage": {"total_bytes": root.total, "free_bytes": root.free, "used_bytes": root.used},
+        "time_zone": datetime.now().astimezone().tzname() or "Local time",
+        "current_time": datetime.now().astimezone().isoformat(),
+        "camera_count": len(getattr(engine, "cameras", []) or []) if engine else 0,
+        "software_version": "2.0.0",
+    }
+
+
+def _storage_payload(engine):
+    usage = shutil.disk_usage(os.path.abspath(os.sep))
+    retention = 1
+    with connect() as conn:
+        row = conn.execute("SELECT value FROM app_settings WHERE key = 'retention_days'").fetchone()
+        if row:
+            retention = int(row["value"])
+        events = conn.execute("SELECT COUNT(*) AS c FROM inference_events").fetchone()["c"]
+    return {"retention_days": retention, "total_bytes": usage.total, "used_bytes": usage.used, "free_bytes": usage.free, "event_count": events}
+
+
+@router.get("/api/storage")
+def get_storage_info():
+    return _storage_payload(get_engine())
+
+
+@router.put("/api/storage")
+def update_storage(payload: dict[str, Any]):
+    days = int(payload.get("retention_days", 1))
+    if days < 1 or days > 3650:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="retention_days must be between 1 and 3650")
+    engine = get_engine()
+    if engine is not None and getattr(engine, "event_db", None) is not None:
+        event_db = engine.event_db
+        object.__setattr__(event_db.config, "retention_days", days)
+        if getattr(engine, "clip_recorder", None) is not None:
+            object.__setattr__(engine.clip_recorder.config, "retention_days", days)
+        event_db.cleanup_old_events(days)
+        if getattr(engine, "clip_recorder", None) is not None:
+            engine.clip_recorder.cleanup_old_clips(days)
+    with connect() as conn:
+        conn.execute("INSERT INTO app_settings(key, value, updated_at) VALUES('retention_days', ?, strftime('%s','now')) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at", (str(days),))
+    return _storage_payload(engine)
 
 
 @router.get("/api/status")

@@ -216,12 +216,15 @@ class UserStore:
         self,
         user_id: str,
         *,
+        username: str | None = None,
         display_name: str | None = None,
         role: str | None = None,
         is_active: bool | None = None,
     ) -> dict[str, Any]:
         """Apply a partial update. Raises ``KeyError`` when the user is missing."""
         fields: dict[str, Any] = {}
+        if username is not None:
+            fields["username"] = _clean_username(username)
         if display_name is not None:
             name = display_name.strip()
             if not name:
@@ -240,17 +243,26 @@ class UserStore:
 
         assignments = ", ".join(f"{key} = ?" for key in fields)
         params = list(fields.values()) + [time.time(), user_id]
-        with connect(self.db_path) as conn:
-            cursor = conn.execute(
-                f"UPDATE users SET {assignments}, updated_at = ? WHERE user_id = ?",
-                params,
-            )
+        try:
+            with connect(self.db_path) as conn:
+                cursor = conn.execute(
+                    f"UPDATE users SET {assignments}, updated_at = ? WHERE user_id = ?",
+                    params,
+                )
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("That username is already in use") from exc
             if cursor.rowcount == 0:
                 raise KeyError(user_id)
             row = conn.execute(
                 "SELECT * FROM users WHERE user_id = ?", (user_id,)
             ).fetchone()
         return public_user(row)
+
+    def delete_user(self, user_id: str) -> None:
+        with connect(self.db_path) as conn:
+            cursor = conn.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+            if cursor.rowcount == 0:
+                raise KeyError(user_id)
 
     def set_password(self, user_id: str, password: str) -> None:
         """Replace a user's password (policy-checked)."""

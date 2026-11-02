@@ -96,6 +96,7 @@ def _camera_payload(camera: Any, meta: dict[str, Any], areas: dict[str, dict[str
         "state": health.get("state"),
         "online": status_value == "online",
         "fps": health.get("actual_fps"),
+        "ai_fps": health.get("ai_fps"),
         "expected_fps": health.get("expected_fps"),
         "frame_age_ms": health.get("frame_age_ms"),
         "last_frame_time": health.get("last_frame_time"),

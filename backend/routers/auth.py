@@ -12,6 +12,14 @@ from ..schemas.models import AuthCredentials, AuthSetupRequest, SignupRequest
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
+def _require_admin(request: Request) -> dict:
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    resolved = get_session_store().resolve_session(token) if token else None
+    if not resolved or resolved["user"].get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Administrator access required")
+    return resolved["user"]
+
+
 def _request_ip(request: Request) -> str | None:
     return request.client.host if request.client else None
 
@@ -108,3 +116,57 @@ def logout(request: Request, response: Response):
     )
     response.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return {"logged_out": True}
+
+
+@router.get("/users")
+def list_users(request: Request):
+    _require_admin(request)
+    return {"users": get_user_store().list_users()}
+
+
+@router.patch("/users/{user_id}")
+def update_user(user_id: str, payload: dict, request: Request):
+    actor = _require_admin(request)
+    users = get_user_store()
+    target = users.get_user(user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    role = payload.get("role")
+    if role == "user":
+        role = "viewer"
+    if role == "viewer" and target["role"] == "admin" and users.count_active_admins() <= 1:
+        raise HTTPException(status_code=400, detail="At least one active administrator is required")
+    try:
+        updated = users.update_user(
+            user_id,
+            username=payload.get("username"),
+            display_name=payload.get("display_name"),
+            role=role,
+            is_active=payload.get("is_active"),
+        )
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    try:
+        get_audit_log().record("user.update", user_id=actor["user_id"], resource=f"users/{user_id}", detail=payload, ip=_request_ip(request))
+    except Exception:
+        pass
+    return updated
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: str, request: Request):
+    actor = _require_admin(request)
+    if actor["user_id"] == user_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account")
+    users = get_user_store()
+    target = users.get_user(user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target["role"] == "admin" and users.count_active_admins() <= 1:
+        raise HTTPException(status_code=400, detail="At least one active administrator is required")
+    users.delete_user(user_id)
+    try:
+        get_audit_log().record("user.delete", user_id=actor["user_id"], resource=f"users/{user_id}", ip=_request_ip(request))
+    except Exception:
+        pass
+    return {"user_id": user_id, "deleted": True}
