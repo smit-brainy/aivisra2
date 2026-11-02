@@ -224,3 +224,5 @@ runtime/streamcore/output/snapshots/
 runtime/streamcore/output/*.db
 runtime/streamcore/output/*.db-shm
 runtime/streamcore/output/*.db-wal
+backend/evidence/*
+!backend/evidence/.gitignore

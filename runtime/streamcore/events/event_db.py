@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import sqlite3
 import threading
 import time
@@ -20,6 +21,7 @@ class TrackEvent:
     track_id: str
     track_session_id: str
     camera_id: str
+    camera_name: str | None
     event_type: str
     object_class: str
     started_at_utc: str
@@ -41,6 +43,7 @@ class TrackEvent:
             "track_id": self.track_id,
             "track_session_id": self.track_session_id,
             "camera_id": self.camera_id,
+            "camera_name": self.camera_name,
             "event_type": self.event_type,
             "object_class": self.object_class,
             "started_at_utc": self.started_at_utc,
@@ -65,6 +68,7 @@ class TrackEvent:
             track_id=row["track_id"],
             track_session_id=row["track_session_id"],
             camera_id=row["camera_id"],
+            camera_name=row["camera_name"] if "camera_name" in keys else None,
             event_type=row["event_type"],
             object_class=row["object_class"],
             started_at_utc=row["started_at_utc"],
@@ -85,7 +89,10 @@ class TrackEvent:
 class EventDatabase:
     def __init__(self, config: EventsConfig) -> None:
         self.config = config
-        self.db_path = Path(config.clip_storage_dir).parent / "events.db"
+        # Inference events are part of the central application database.
+        # Keep the same override used by backend.database for tests/deployments.
+        default_db = Path(__file__).resolve().parents[3] / "backend" / "database.db"
+        self.db_path = Path(os.environ.get("STREAMCORE_DB") or default_db).expanduser().resolve()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self._local = threading.local()
@@ -97,11 +104,12 @@ class EventDatabase:
             conn.execute("PRAGMA busy_timeout=30000")
             conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS track_events (
+                CREATE TABLE IF NOT EXISTS inference_events (
                     event_id TEXT PRIMARY KEY,
                     track_id TEXT NOT NULL,
                     track_session_id TEXT NOT NULL,
                     camera_id TEXT NOT NULL,
+                    camera_name TEXT,
                     event_type TEXT NOT NULL,
                     object_class TEXT NOT NULL,
                     started_at_utc TEXT NOT NULL,
@@ -120,29 +128,67 @@ class EventDatabase:
             """)
             # Idempotent migration for legacy databases created before the
             # description/snapshot_path columns existed.
-            existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(track_events)")}
+            existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(inference_events)")}
             if "description" not in existing_columns:
-                conn.execute("ALTER TABLE track_events ADD COLUMN description TEXT")
+                conn.execute("ALTER TABLE inference_events ADD COLUMN description TEXT")
             if "snapshot_path" not in existing_columns:
-                conn.execute("ALTER TABLE track_events ADD COLUMN snapshot_path TEXT")
+                conn.execute("ALTER TABLE inference_events ADD COLUMN snapshot_path TEXT")
+            if "camera_name" not in existing_columns:
+                conn.execute("ALTER TABLE inference_events ADD COLUMN camera_name TEXT")
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_camera_time
-                ON track_events(camera_id, started_at_utc)
+                ON inference_events(camera_id, started_at_utc)
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_track
-                ON track_events(track_id, track_session_id)
+                ON inference_events(track_id, track_session_id)
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_active
-                ON track_events(camera_id) WHERE ended_at_utc IS NULL
+                ON inference_events(camera_id) WHERE ended_at_utc IS NULL
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_type
-                ON track_events(event_type)
+                ON inference_events(event_type)
             """)
             conn.commit()
+        self._migrate_legacy_events()
         logger.info("event_db_initialized", extra={"path": str(self.db_path)})
+
+    def _migrate_legacy_events(self) -> None:
+        """Copy legacy runtime events into the central database once."""
+        legacy_path = Path(__file__).resolve().parents[3] / "runtime" / "streamcore" / "output" / "events.db"
+        if legacy_path.resolve() == self.db_path or not legacy_path.is_file():
+            return
+        try:
+            legacy = sqlite3.connect(legacy_path)
+            legacy.row_factory = sqlite3.Row
+            columns = {row[1] for row in legacy.execute("PRAGMA table_info(track_events)")}
+            if not columns:
+                legacy.close()
+                return
+            camera_name_sql = "camera_name" if "camera_name" in columns else "NULL"
+            rows = legacy.execute(f"""
+                SELECT event_id, track_id, track_session_id, camera_id, {camera_name_sql},
+                       event_type, object_class, started_at_utc, ended_at_utc,
+                       duration_seconds, max_confidence, avg_confidence, description,
+                       snapshot_path, clip_path, clip_recorded, metadata, created_at, updated_at
+                FROM track_events
+            """).fetchall()
+            with self._connect() as conn:
+                conn.executemany("""
+                    INSERT OR IGNORE INTO inference_events (
+                        event_id, track_id, track_session_id, camera_id, camera_name,
+                        event_type, object_class, started_at_utc, ended_at_utc,
+                        duration_seconds, max_confidence, avg_confidence, description,
+                        snapshot_path, clip_path, clip_recorded, metadata, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, [tuple(row) for row in rows])
+                conn.commit()
+            legacy.close()
+            logger.info("legacy_events_migrated", extra={"source": str(legacy_path), "count": len(rows)})
+        except Exception as exc:
+            logger.warning("legacy_events_migration_failed", extra={"source": str(legacy_path), "reason": str(exc)})
 
     def _get_connection(self) -> sqlite3.Connection:
         """Get or create a persistent connection for the current thread."""
@@ -178,6 +224,7 @@ class EventDatabase:
         started_at_utc: str,
         max_confidence: float,
         metadata: dict[str, Any],
+        camera_name: str | None = None,
         object_class: str = "person",
         description: str | None = None,
         snapshot_path: str | None = None,
@@ -188,19 +235,20 @@ class EventDatabase:
             with self._connect() as conn:
                 conn.execute(
                     """
-                    INSERT INTO track_events (
-                        event_id, track_id, track_session_id, camera_id,
+                    INSERT INTO inference_events (
+                        event_id, track_id, track_session_id, camera_id, camera_name,
                         event_type, object_class, started_at_utc,
                         max_confidence, avg_confidence,
                         description, snapshot_path,
                         metadata, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         event_id,
                         track_id,
                         track_session_id,
                         camera_id,
+                        camera_name,
                         event_type,
                         object_class,
                         started_at_utc,
@@ -235,7 +283,7 @@ class EventDatabase:
                 meta_json = json.dumps(metadata) if metadata is not None else None
                 cursor = conn.execute(
                     """
-                    UPDATE track_events
+                    UPDATE inference_events
                     SET ended_at_utc = COALESCE(?, ended_at_utc),
                         duration_seconds = COALESCE(?, duration_seconds),
                         avg_confidence = COALESCE(?, avg_confidence),
@@ -267,7 +315,7 @@ class EventDatabase:
         with self._lock:
             with self._connect() as conn:
                 row = conn.execute(
-                    "SELECT * FROM track_events WHERE event_id = ?", (event_id,)
+                    "SELECT * FROM inference_events WHERE event_id = ?", (event_id,)
                 ).fetchone()
                 return TrackEvent.from_row(row) if row else None
 
@@ -285,7 +333,7 @@ class EventDatabase:
                 for i in range(0, len(cleaned_ids), chunk_size):
                     chunk = cleaned_ids[i : i + chunk_size]
                     placeholders = ",".join("?" for _ in chunk)
-                    query = f"SELECT * FROM track_events WHERE event_id IN ({placeholders})"
+                    query = f"SELECT * FROM inference_events WHERE event_id IN ({placeholders})"
                     rows = conn.execute(query, chunk).fetchall()
                     for r in rows:
                         ev = TrackEvent.from_row(r)
@@ -300,7 +348,7 @@ class EventDatabase:
                 if track_session_id is not None:
                     row = conn.execute(
                         """
-                        SELECT * FROM track_events
+                        SELECT * FROM inference_events
                         WHERE track_id = ? AND track_session_id = ?
                         ORDER BY created_at DESC LIMIT 1
                         """,
@@ -309,7 +357,7 @@ class EventDatabase:
                 else:
                     row = conn.execute(
                         """
-                        SELECT * FROM track_events
+                        SELECT * FROM inference_events
                         WHERE track_id = ?
                         ORDER BY created_at DESC LIMIT 1
                         """,
@@ -351,7 +399,7 @@ class EventDatabase:
             with self._connect() as conn:
                 rows = conn.execute(
                     f"""
-                    SELECT * FROM track_events
+                    SELECT * FROM inference_events
                     {where_clause}
                     ORDER BY started_at_utc DESC
                     LIMIT ? OFFSET ?
@@ -371,7 +419,7 @@ class EventDatabase:
             with self._connect() as conn:
                 rows = conn.execute(
                     f"""
-                    SELECT * FROM track_events
+                    SELECT * FROM inference_events
                     WHERE {' AND '.join(conditions)}
                     ORDER BY started_at_utc DESC
                     """,
@@ -387,7 +435,7 @@ class EventDatabase:
             with self._connect() as conn:
                 cursor = conn.execute(
                     """
-                    UPDATE track_events
+                    UPDATE inference_events
                     SET ended_at_utc = ?,
                         duration_seconds = MAX(0.0, ? - created_at),
                         updated_at = ?
@@ -411,13 +459,13 @@ class EventDatabase:
         with self._lock:
             with self._connect() as conn:
                 rows = conn.execute(
-                    "SELECT clip_path FROM track_events WHERE started_at_utc < ? AND clip_path IS NOT NULL",
+                    "SELECT clip_path FROM inference_events WHERE started_at_utc < ? AND clip_path IS NOT NULL",
                     (cutoff_utc,),
                 ).fetchall()
                 clip_paths = [row["clip_path"] for row in rows if row["clip_path"]]
 
                 cursor = conn.execute(
-                    "DELETE FROM track_events WHERE started_at_utc < ?",
+                    "DELETE FROM inference_events WHERE started_at_utc < ?",
                     (cutoff_utc,),
                 )
                 deleted_count = cursor.rowcount
@@ -445,11 +493,11 @@ class EventDatabase:
     def get_stats(self) -> dict[str, Any]:
         with self._lock:
             with self._connect() as conn:
-                total = conn.execute("SELECT COUNT(*) as c FROM track_events").fetchone()["c"]
-                active = conn.execute("SELECT COUNT(*) as c FROM track_events WHERE ended_at_utc IS NULL").fetchone()["c"]
-                with_clips = conn.execute("SELECT COUNT(*) as c FROM track_events WHERE clip_recorded = 1").fetchone()["c"]
+                total = conn.execute("SELECT COUNT(*) as c FROM inference_events").fetchone()["c"]
+                active = conn.execute("SELECT COUNT(*) as c FROM inference_events WHERE ended_at_utc IS NULL").fetchone()["c"]
+                with_clips = conn.execute("SELECT COUNT(*) as c FROM inference_events WHERE clip_recorded = 1").fetchone()["c"]
                 by_camera = conn.execute(
-                    "SELECT camera_id, COUNT(*) as c FROM track_events GROUP BY camera_id"
+                    "SELECT camera_id, COUNT(*) as c FROM inference_events GROUP BY camera_id"
                 ).fetchall()
                 return {
                     "total_events": total,

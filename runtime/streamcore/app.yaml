@@ -50,11 +50,13 @@ tracking:
   tracker: bytetrack
   class_aware: true
   min_hits_to_confirm: 3
-  lost_timeout_ms: 1000
-  end_timeout_ms: 3000
+  # Keep a track alive through short detector/RTSP gaps. Events are created
+  # once a track is confirmed and closed only after this end timeout.
+  lost_timeout_ms: 3000
+  end_timeout_ms: 10000
   track_high_thresh: 0.5
   track_low_thresh: 0.1
-  match_thresh: 0.8
+  match_thresh: 0.9
   max_trajectory_points: 128
   minimum_crop_improvement: 0.05
   export_json: false
@@ -70,12 +72,12 @@ diagnostic_preview:
 evidence:
   enabled: true
   key_frames_per_track: 3
-  local_output_dir: runtime/streamcore/output
+  local_output_dir: backend/evidence
 
 events:
   enabled: true
   clip_duration_seconds: 10
-  clip_storage_dir: runtime/streamcore/output/clips
+  clip_storage_dir: backend/evidence/video
   retention_days: 1
   max_concurrent_recordings: 2
   record_on_track_confirmed: true

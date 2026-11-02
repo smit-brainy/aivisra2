@@ -1,4 +1,5 @@
 import logging
+import json
 import time
 import uuid
 from datetime import datetime, timezone
@@ -139,7 +140,9 @@ class StreamCore:
             camera_urls = {c.id: c.uri for c in self.cameras}
             camera_live_paths = {c.id: getattr(c, "live_path", c.id.lower()) for c in self.cameras}
             self.clip_recorder = ClipRecorder(self.config.events, camera_urls, camera_live_paths=camera_live_paths)
-            base_dir = Path(self.config.events.clip_storage_dir).parent
+            # Keep the temporary demo evidence layout in backend/evidence:
+            # video clips under video/ and event images under pic/.
+            base_dir = Path(self.config.events.clip_storage_dir).parent / "pic"
             self.snapshot_store = SnapshotStore(
                 base_dir=base_dir,
                 min_crop_px=self.config.events.min_crop_px,
@@ -511,6 +514,8 @@ class StreamCore:
         }
 
         object_class = str(getattr(track, "class_name", "person") or "person")
+        camera_config = next((camera for camera in self.cameras if camera.id == camera_id), None)
+        camera_name = getattr(camera_config, "name", None) or camera_id
 
         track_session = "default"
         if getattr(self, "spatial_manager", None) is not None:
@@ -524,6 +529,7 @@ class StreamCore:
             track_id=track.global_track_id,
             track_session_id=track_session,
             camera_id=camera_id,
+            camera_name=camera_name,
             started_at_utc=started_at,
             max_confidence=max_conf,
             metadata=metadata,
@@ -606,7 +612,37 @@ class StreamCore:
                 self.csv_writer.write_sample(report, usage)
 
             print(format_report(report, usage, self.config.runtime.mode, verbose_cameras=self.verbose_cameras), flush=True)
-            logger.info("metrics", extra={"report": report, "resources": usage})
+            camera_log = {
+                cid: {
+                    "decode_fps": values.get("decode_fps"),
+                    "ai_fps": values.get("ai_fps"),
+                    "preview_fps": values.get("preview_fps"),
+                    "inference_ms": values.get("average_total_latency_ms"),
+                    "frame_age_ms": values.get("frame_age_ms"),
+                    "reconnect_count": values.get("reconnect_count"),
+                    "last_error": values.get("last_error"),
+                    "state": values.get("state"),
+                    "health": values.get("health"),
+                    "decoder": values.get("decoder_name"),
+                    "decoder_type": values.get("decoder_type"),
+                }
+                for cid, values in report.get("cameras", {}).items()
+            }
+            logger.info("metrics_report %s", json.dumps({
+                "decode_fps": report.get("decode_fps_total"),
+                "ai_fps": report.get("ai_actual_fps"),
+                "preview_fps": report.get("preview_encode_fps"),
+                "inference_ms": report.get("inference_avg_ms"),
+                "frame_age_ms": {
+                    "avg": report.get("frame_age_avg_ms"),
+                    "p95": report.get("frame_age_p95_ms"),
+                    "p99": report.get("frame_age_p99_ms"),
+                },
+                "gpu": usage.get("gpus", []),
+                "gpu_status": usage.get("gpu_status"),
+                "reconnect_total": report.get("reconnect_total"),
+                "rtsp": camera_log,
+            }, default=str, separators=(",", ":")))
 
     def run(self, duration_seconds: float | None = None) -> None:
         from dataclasses import replace

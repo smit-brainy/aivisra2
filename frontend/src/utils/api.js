@@ -5,6 +5,22 @@
 
 const BASE_URL = '';
 
+async function authRequest(path, options = {}) {
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { credentials: 'include', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+  } catch (error) {
+    throw new Error('The backend is offline. Please start the FastAPI server and try again.');
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || `Request failed (${res.status})`);
+  return body;
+}
+
+export function login(payload) { return authRequest('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }); }
+export function signup(payload) { return authRequest('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) }); }
+export function logout() { return authRequest('/api/auth/logout', { method: 'POST' }); }
+
 export async function fetchStatus() {
   const res = await fetch(`${BASE_URL}/api/status`);
   if (!res.ok) throw new Error(`Status HTTP ${res.status}`);

@@ -9,6 +9,7 @@ Serves:
 
 import time
 import asyncio
+import logging
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, Request, Response
@@ -17,6 +18,16 @@ from fastapi.responses import StreamingResponse
 from ..dependencies import get_engine, get_cache, get_camera_ids
 
 router = APIRouter(tags=["Streams"])
+logger = logging.getLogger("streamcore.backend.streams")
+_active_mjpeg_streams = 0
+
+
+def _encode_raw_frame(raw_frame):
+    """Encode one raw frame without running this work on the async loop."""
+    import cv2
+    image = raw_frame.to_bgr_cpu() if hasattr(raw_frame, "to_bgr_cpu") else raw_frame.image
+    encoded, buffer = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    return buffer.tobytes() if encoded else None
 
 # Minimal valid 1x1 black JPEG for empty frame placeholder
 TINY_JPEG = (
@@ -37,6 +48,7 @@ def get_camera_frame(camera_id: str):
 
     preview = cache.latest(camera_id) if cache is not None else None
     if preview is None:
+        logger.warning("preview_unavailable camera_id=%s", camera_id)
         return Response(
             content=TINY_JPEG,
             media_type="image/jpeg",
@@ -57,8 +69,8 @@ def get_camera_frame(camera_id: str):
 
 
 @router.get("/stream/{camera_id}")
-async def stream_mjpeg(camera_id: str):
-    """Multipart MJPEG video stream."""
+async def stream_mjpeg(camera_id: str, inference: bool = True):
+    """Multipart MJPEG video stream with optional inference overlays."""
     if camera_id.endswith(".mjpg"):
         camera_id = camera_id[:-len(".mjpg")]
 
@@ -68,6 +80,9 @@ async def stream_mjpeg(camera_id: str):
 
     cache = get_cache()
     engine = get_engine()
+    global _active_mjpeg_streams
+    _active_mjpeg_streams += 1
+    logger.info("stream_opened camera_id=%s inference=%s active_mjpeg_streams=%d", camera_id, inference, _active_mjpeg_streams)
 
     async def frame_generator():
         last_seq = -1
@@ -82,19 +97,45 @@ async def stream_mjpeg(camera_id: str):
                     cache.touch(camera_id, 10.0)
                 last_touch = now_m
 
-            preview = cache.latest(camera_id) if cache is not None else None
-            if preview is not None and preview.sequence != last_seq:
-                last_seq = preview.sequence
+            if inference:
+                preview = cache.latest(camera_id) if cache is not None else None
+                jpeg = preview.jpeg if preview is not None else None
+                sequence = preview.sequence if preview is not None else -1
+            else:
+                store = getattr(engine, "store", None)
+                raw_frame = store.latest(camera_id, last_seq) if store is not None else None
+                jpeg = None
+                sequence = getattr(raw_frame, "sequence", -1)
+                if raw_frame is not None:
+                    try:
+                        jpeg = await asyncio.to_thread(_encode_raw_frame, raw_frame)
+                    except Exception as exc:
+                        logger.warning("raw_preview_encode_failed camera_id=%s reason=%s", camera_id, type(exc).__name__)
+            if jpeg is not None and sequence != last_seq:
+                last_seq = sequence
                 header = (
                     b"--frame\r\n"
                     b"Content-Type: image/jpeg\r\n"
-                    b"Content-Length: " + str(len(preview.jpeg)).encode() + b"\r\n\r\n"
+                    b"Content-Length: " + str(len(jpeg)).encode() + b"\r\n\r\n"
                 )
-                yield header + preview.jpeg + b"\r\n"
+                yield header + jpeg + b"\r\n"
             await asyncio.sleep(0.015)
 
+    async def logged_generator():
+        global _active_mjpeg_streams
+        try:
+            async for chunk in frame_generator():
+                yield chunk
+        except asyncio.CancelledError:
+            logger.info("stream_client_disconnected camera_id=%s", camera_id)
+            raise
+        finally:
+            _active_mjpeg_streams = max(0, _active_mjpeg_streams - 1)
+            logger.info("stream_closed camera_id=%s inference=%s", camera_id, inference)
+            logger.info("stream_state active_mjpeg_streams=%d", _active_mjpeg_streams)
+
     return StreamingResponse(
-        frame_generator(),
+        logged_generator(),
         media_type="multipart/x-mixed-replace; boundary=frame",
         headers={
             "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -147,6 +188,10 @@ def get_clip_video(clip_path: str, range: Optional[str] = Header(None)):
         matches = list(clips_dir.glob(f"**/{Path(clip_clean).name}"))
         if matches:
             file_path = matches[0]
+    if not file_path.is_file():
+        legacy_candidate = Path("runtime/streamcore/output/clips").resolve() / Path(clip_clean).name
+        if legacy_candidate.is_file():
+            file_path = legacy_candidate
 
     if not file_path.is_file() or not (base_dir in file_path.resolve().parents or file_path.resolve().is_relative_to(base_dir)):
         raise HTTPException(status_code=404, detail="Clip not found")

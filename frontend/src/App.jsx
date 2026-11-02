@@ -14,13 +14,14 @@ import InetraShell from './components/inetra/InetraShell';
 import InetraPlaceholder from './components/inetra/InetraPlaceholder';
 import HomePage from './pages/home/HomePage';
 import './prototype/invr-data';
-import { fetchCameras, fetchStatus } from './utils/api';
+import { fetchCameras, fetchStatus, logout } from './utils/api';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('inetra');
   const [cameras, setCameras] = useState([]);
   const [selectedCam, setSelectedCam] = useState('CAM001');
   const [status, setStatus] = useState(null);
+  const [onlineSummary, setOnlineSummary] = useState('0 of 0 cameras online');
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('aivisra_theme') || 'light';
   });
@@ -34,7 +35,8 @@ export default function App() {
     localStorage.setItem('aivisra_session', JSON.stringify(user));
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try { await logout(); } catch (error) { /* Clear local state even if the backend is unavailable. */ }
     setSession(null);
     localStorage.removeItem('aivisra_session');
   };
@@ -52,9 +54,8 @@ export default function App() {
     fetchCameras()
       .then((cams) => {
         setCameras(cams);
-        if (cameras.length > 0 && !selectedCam) {
-          setSelectedCam(cameras[0].camera_id);
-        }
+        setOnlineSummary(`${cams.filter((camera) => camera.online || camera.status === 'online').length} of ${cams.length} cameras online`);
+        if (cams.length > 0 && !selectedCam) setSelectedCam(cams[0].camera_id);
       })
       .catch(() => {});
   };
@@ -62,6 +63,8 @@ export default function App() {
   useEffect(() => {
     loadCameras();
     fetchStatus().then(setStatus).catch(() => {});
+    const timer = window.setInterval(loadCameras, 60000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const handleSelectCameraFromGrid = (camId) => {
@@ -94,11 +97,7 @@ export default function App() {
         try { sessionStorage.setItem('aivisra_inetra_opts', JSON.stringify({ opts: opts || {}, to: next.screen })); } catch (x) {}
         handleSignedIn(next);
       };
-      const camSummary = !INVR ? 'No cameras yet' : (() => {
-        const M = INVR.merge({}, 'day');
-        const off = M.cams.filter(c => c.status === 'offline');
-        return `${M.cams.length - off.length} of ${M.cams.length} cameras online`;
-      })();
+      const camSummary = onlineSummary;
       // Render the appropriate verbatim screen.
       if (screen === 'home') {
         return (
@@ -107,7 +106,7 @@ export default function App() {
             screen={screen}
             onSignOut={handleSignOut}
             onNav={(k, opts) => go(k, opts)}
-            camSummary={camSummary}
+            camSummary={onlineSummary}
             camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
           >
             <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -127,7 +126,7 @@ export default function App() {
             screen={screen}
             onSignOut={handleSignOut}
             onNav={(k, opts) => go(k, opts)}
-            camSummary={camSummary}
+            camSummary={onlineSummary}
             camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
           >
             <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -147,7 +146,7 @@ export default function App() {
             screen={screen}
             onSignOut={handleSignOut}
             onNav={(k, opts) => go(k, opts)}
-            camSummary={camSummary}
+            camSummary={onlineSummary}
             camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
           >
             <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -161,7 +160,7 @@ export default function App() {
       }
       if (screen === 'cameras') {
         return (
-          <InetraShell session={sess} screen={screen} onSignOut={handleSignOut} onNav={(k, opts) => go(k, opts)} camSummary={camSummary} camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}>
+          <InetraShell session={sess} screen={screen} onSignOut={handleSignOut} onNav={(k, opts) => go(k, opts)} camSummary={onlineSummary} camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}>
             <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <CamerasPage openSearch={(o) => go('search', o)} navTo={(t, o) => go(t, o)} />
             </main>
@@ -170,7 +169,7 @@ export default function App() {
       }
       if (screen === 'settings') {
         return (
-          <InetraShell session={sess} screen={screen} onSignOut={handleSignOut} onNav={(k, opts) => go(k, opts)} camSummary={camSummary} camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}>
+          <InetraShell session={sess} screen={screen} onSignOut={handleSignOut} onNav={(k, opts) => go(k, opts)} camSummary={onlineSummary} camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}>
             <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <SettingsPage />
             </main>
@@ -184,7 +183,7 @@ export default function App() {
           screen={screen}
           onSignOut={handleSignOut}
           onNav={(k, opts) => go(k, opts)}
-          camSummary={camSummary}
+          camSummary={onlineSummary}
           camDot={INVR ? (INVR.SCEN.day.offline[16] != null ? 'var(--danger)' : 'var(--success)') : 'var(--paper-3)'}
         >
           <main style={{ gridColumn: 2, gridRow: 2, position: 'relative', minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -201,6 +200,7 @@ export default function App() {
   return (
     <div className="app-container">
       <Navbar
+        legacy
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         theme={theme}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TopBar, Sidebar } from './InetraChrome';
+import Navbar, { Sidebar } from '../Navbar';
 
 /**
  * I-Netra app shell — verbatim grid chrome from the prototype
@@ -22,7 +22,7 @@ export default function InetraShell({ session, screen, onNav, onSignOut, camSumm
         WebkitFontSmoothing: 'antialiased',
       }}
     >
-      <TopBar
+      <Navbar
         session={session}
         onSignOut={onSignOut}
         onNav={onNav}

@@ -12,6 +12,8 @@ Serves:
 - /api/cameras/{camera_id}/onboarding/reset (POST)
 """
 
+import json
+import time
 from typing import Any
 from fastapi import APIRouter, HTTPException, Request, status
 
@@ -25,6 +27,7 @@ from ..schemas.models import (
     ApplyCapabilitiesRequest,
 )
 from ..state_store import get_state_store
+from ..database import connect, init_db
 from runtime.onboarding.onboarding_service import sanitize_rtsp_url
 
 router = APIRouter(tags=["Cameras & Onboarding"])
@@ -237,6 +240,27 @@ def register_camera(payload: CameraRegisterRequest):
             status_code=400,
             detail="Missing camera_id or rtsp_url in request payload.",
         )
+
+    init_db()
+    try:
+        with connect() as conn:
+            conn.execute(
+                """INSERT INTO cameras
+                (camera_id, name, uri, codec, decoder, decoding_fps, status,
+                 camera_metadata, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    camera_id, (payload.name or camera_id).strip(), rtsp_url,
+                    payload.codec, payload.decoder, payload.decoding_fps,
+                    payload.status,
+                    json.dumps(payload.camera_metadata) if payload.camera_metadata is not None else None,
+                    time.time(), time.time(),
+                ),
+            )
+    except Exception as exc:
+        if "UNIQUE" in str(exc).upper():
+            raise HTTPException(status_code=409, detail=f"Camera ID '{camera_id}' already exists") from exc
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     engine = get_engine()
     service = getattr(engine, "onboarding_service", None) if engine else None

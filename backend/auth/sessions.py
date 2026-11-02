@@ -4,10 +4,8 @@ Sessions are opaque bearer tokens. Only the SHA-256 of the token is stored, so
 a leaked database cannot be replayed as a live cookie. The raw token is handed
 to the caller once (for the ``HttpOnly`` cookie) and never persisted.
 
-There is no idle or absolute timeout by design: ``expires_at`` is filled with
-:data:`backend.database.NO_EXPIRY` and :meth:`SessionStore.resolve_session`
-does not reject old sessions. ``last_seen_at`` is still maintained for
-observability, and logout revokes the row.
+Sessions do not expire. Logout deletes the session row, so the database only
+stores the session identity and observability fields.
 """
 
 from __future__ import annotations
@@ -20,7 +18,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..database import NO_EXPIRY, connect, get_db_path, init_db
+from ..database import connect, get_db_path, init_db
 from .users import PUBLIC_USER_FIELDS
 
 SESSION_COOKIE_NAME = "aivisra_session"
@@ -31,11 +29,9 @@ SELECT
     s.session_id,
     s.user_id,
     s.created_at  AS session_created_at,
-    s.expires_at,
     s.last_seen_at,
     s.ip,
     s.user_agent,
-    s.revoked,
     u.username,
     u.display_name,
     u.role,
@@ -58,11 +54,9 @@ def _session_dict(row: sqlite3.Row) -> dict[str, Any]:
         "session_id": row["session_id"],
         "user_id": row["user_id"],
         "created_at": row["session_created_at"],
-        "expires_at": row["expires_at"],
         "last_seen_at": row["last_seen_at"],
         "ip": row["ip"],
         "user_agent": row["user_agent"],
-        "revoked": bool(row["revoked"]),
     }
 
 
@@ -90,12 +84,7 @@ class SessionStore:
 
     # ------------------------------------------------------------------ create
     def create_session(
-        self,
-        user_id: str,
-        *,
-        ip: str | None = None,
-        user_agent: str | None = None,
-        expires_at: float = NO_EXPIRY,
+        self, user_id: str, *, ip: str | None = None, user_agent: str | None = None
     ) -> tuple[str, dict[str, Any]]:
         """Create a session and return ``(raw_token, session)``.
 
@@ -111,19 +100,10 @@ class SessionStore:
                 conn.execute(
                     """
                     INSERT INTO sessions
-                        (session_id, user_id, created_at, expires_at,
-                         last_seen_at, ip, user_agent, revoked)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                        (session_id, user_id, created_at, last_seen_at, ip, user_agent)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
-                    (
-                        session_id,
-                        user_id,
-                        now,
-                        float(expires_at),
-                        now,
-                        ip,
-                        user_agent,
-                    ),
+                    (session_id, user_id, now, now, ip, user_agent),
                 )
         except sqlite3.IntegrityError as exc:
             raise KeyError(f"Unknown user_id: {user_id}") from exc
@@ -132,29 +112,22 @@ class SessionStore:
             "session_id": session_id,
             "user_id": user_id,
             "created_at": now,
-            "expires_at": float(expires_at),
             "last_seen_at": now,
             "ip": ip,
             "user_agent": user_agent,
-            "revoked": False,
         }
         return token, session
 
     # ------------------------------------------------------------------- read
     def resolve_session(self, token: str, *, touch: bool = True) -> dict[str, Any] | None:
-        """Return ``{"session": ..., "user": ...}`` for a live token, else ``None``.
-
-        Missing and revoked sessions return ``None``. Expiry and account state
-        are *not* enforced here (no timeout policy); callers may inspect
-        ``user["is_active"]`` before granting access.
-        """
+        """Return ``{"session": ..., "user": ...}`` for a token, else ``None``."""
         if not token:
             return None
         session_id = hash_token(token)
 
         with connect(self.db_path) as conn:
             row = conn.execute(_SESSION_SELECT + " WHERE s.session_id = ?", (session_id,)).fetchone()
-            if row is None or row["revoked"]:
+            if row is None:
                 return None
             if touch:
                 now = time.time()
@@ -172,8 +145,6 @@ class SessionStore:
         self, user_id: str, *, include_revoked: bool = False
     ) -> list[dict[str, Any]]:
         sql = _SESSION_SELECT + " WHERE s.user_id = ?"
-        if not include_revoked:
-            sql += " AND s.revoked = 0"
         sql += " ORDER BY s.created_at DESC"
         with connect(self.db_path) as conn:
             rows = conn.execute(sql, (user_id,)).fetchall()
@@ -184,17 +155,17 @@ class SessionStore:
         """Update ``last_seen_at`` for a stored session id (the hash)."""
         with connect(self.db_path) as conn:
             cursor = conn.execute(
-                "UPDATE sessions SET last_seen_at = ? WHERE session_id = ? AND revoked = 0",
+                "UPDATE sessions SET last_seen_at = ? WHERE session_id = ?",
                 (time.time(), session_id),
             )
         return cursor.rowcount > 0
 
     # ----------------------------------------------------------------- revoke
     def revoke_session(self, session_id: str) -> bool:
-        """Revoke by stored session id (the hash)."""
+        """Delete by stored session id (the hash)."""
         with connect(self.db_path) as conn:
             cursor = conn.execute(
-                "UPDATE sessions SET revoked = 1 WHERE session_id = ? AND revoked = 0",
+                "DELETE FROM sessions WHERE session_id = ?",
                 (session_id,),
             )
         return cursor.rowcount > 0
@@ -206,28 +177,13 @@ class SessionStore:
         return self.revoke_session(hash_token(token))
 
     def revoke_all_for_user(self, user_id: str) -> int:
-        """Revoke every live session for a user. Returns the number revoked."""
+        """Delete every session for a user. Returns the number deleted."""
         with connect(self.db_path) as conn:
             cursor = conn.execute(
-                "UPDATE sessions SET revoked = 1 WHERE user_id = ? AND revoked = 0",
+                "DELETE FROM sessions WHERE user_id = ?",
                 (user_id,),
             )
         return cursor.rowcount
-
-    # ---------------------------------------------------------------- cleanup
-    def purge_expired(self, now: float | None = None) -> int:
-        """Delete rows whose ``expires_at`` has passed.
-
-        Not called automatically, because the product has no expiry policy;
-        this exists for deployments that later enable one.
-        """
-        with connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "DELETE FROM sessions WHERE expires_at <= ?",
-                (time.time() if now is None else float(now),),
-            )
-        return cursor.rowcount
-
 
 _SESSION_STORE: SessionStore | None = None
 _SESSION_STORE_LOCK = threading.Lock()

@@ -10,6 +10,9 @@ from typing import Any, Optional
 import os
 import logging
 from pathlib import Path
+import json
+
+from .database import connect, init_db
 
 logger = logging.getLogger("streamcore.backend")
 
@@ -46,12 +49,22 @@ def get_engine() -> Any:
                 break
 
     try:
-        from runtime.streamcore.config import load_config, load_cameras
+        from runtime.streamcore.config import load_config, CameraConfig
         from runtime.streamcore.engine import StreamCore
 
         logger.info(f"Standalone Backend: Initializing StreamCore with {cfg_file}")
         cfg = load_config(str(cfg_file))
-        cams = load_cameras(cfg_file)
+        init_db()
+        with connect() as conn:
+            rows = conn.execute("SELECT * FROM cameras ORDER BY created_at ASC").fetchall()
+        cams = [
+            CameraConfig(
+                row["camera_id"], row["uri"], row["codec"], row["decoder"],
+                row["status"] not in ("disabled", "offline"),
+                row["camera_id"].lower(), row["decoding_fps"], row["decoding_fps"],
+            )
+            for row in rows
+        ]
         _ENGINE = StreamCore(cfg, cams)
         _CACHE = _ENGINE.preview_cache
 

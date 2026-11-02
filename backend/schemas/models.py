@@ -1,7 +1,123 @@
-"""Pydantic schemas for StreamCore REST API."""
+"""Pydantic schemas for the StreamCore REST API and database records."""
 
 from typing import Any, Optional
 from pydantic import BaseModel, Field
+
+
+class DatabaseModel(BaseModel):
+    """Common configuration for models populated from SQLite rows."""
+
+    model_config = {"from_attributes": True}
+
+
+class Area(DatabaseModel):
+    area_id: str
+    name: str
+    sort_order: int = 0
+    created_at: float
+    updated_at: float
+
+
+class AreaResponse(Area):
+    camera_count: int = 0
+
+
+class CameraMetadata(DatabaseModel):
+    camera_id: str
+    display_name: Optional[str] = None
+    area_id: Optional[str] = None
+    kind: str = "both"
+    level: str = "standard"
+    notes: Optional[str] = None
+    created_at: float
+    updated_at: float
+
+
+class Camera(DatabaseModel):
+    camera_id: str
+    name: str
+    uri: str
+    codec: str = "h264"
+    decoder: str = "auto"
+    decoding_fps: Optional[float] = None
+    status: str = "active"
+    camera_metadata: Optional[dict[str, Any]] = None
+    created_at: float
+    updated_at: float
+
+
+class InferenceEvent(DatabaseModel):
+    event_id: str
+    track_id: str
+    track_session_id: str
+    camera_id: str
+    camera_name: Optional[str] = None
+    event_type: str
+    object_class: str
+    started_at_utc: str
+    ended_at_utc: Optional[str] = None
+    duration_seconds: Optional[float] = None
+    max_confidence: Optional[float] = None
+    avg_confidence: Optional[float] = None
+    description: Optional[str] = None
+    snapshot_path: Optional[str] = None
+    clip_path: Optional[str] = None
+    clip_recorded: bool = False
+    metadata: Optional[dict[str, Any]] = None
+    created_at: float
+    updated_at: float
+
+
+class AppSetting(DatabaseModel):
+    key: str
+    value: str
+    updated_at: float
+
+
+class PublicUser(DatabaseModel):
+    """User representation safe to return from API endpoints."""
+
+    user_id: str
+    username: str
+    display_name: str = ""
+    role: str = Field("operator", pattern="^(admin|operator|viewer)$")
+    is_active: bool = True
+    last_login_at: Optional[float] = None
+    created_at: float
+    updated_at: float
+
+
+class Session(DatabaseModel):
+    session_id: str
+    user_id: str
+    created_at: float
+    last_seen_at: float
+    ip: Optional[str] = None
+    user_agent: Optional[str] = None
+
+
+class AuditLogEntry(DatabaseModel):
+    id: int
+    user_id: Optional[str] = None
+    action: str
+    resource: Optional[str] = None
+    detail: Optional[str] = None
+    ip: Optional[str] = None
+    created_at: float
+
+
+class AuthCredentials(BaseModel):
+    username: str = Field(..., min_length=1, max_length=120)
+    password: str = Field(..., min_length=3, max_length=15)
+
+
+class AuthSetupRequest(AuthCredentials):
+    display_name: Optional[str] = Field(None, max_length=120)
+
+
+class SignupRequest(AuthCredentials):
+    display_name: Optional[str] = Field(None, max_length=120)
+    role: str = Field("operator", pattern="^(admin|operator|viewer)$")
 
 
 class CameraRegisterRequest(BaseModel):
@@ -11,6 +127,9 @@ class CameraRegisterRequest(BaseModel):
     uri: Optional[str] = None
     codec: str = "h264"
     decoder: str = "auto"
+    decoding_fps: Optional[float] = None
+    status: str = "active"
+    camera_metadata: Optional[dict[str, Any]] = None
     live_path: Optional[str] = None
 
 

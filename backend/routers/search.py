@@ -94,7 +94,10 @@ def get_snapshot(filename: str):
     base_dir = (
         Path(clip_dir).parent if clip_dir else _DEFAULT_OUTPUT_DIR
     ).resolve()
-    snap_dir = (base_dir / "snapshots").resolve()
+    # Current evidence layout is backend/evidence/pic; retain snapshots/ for
+    # older events created before the demo evidence layout was introduced.
+    snap_dir = (base_dir / "pic").resolve()
+    legacy_snap_dir = (base_dir / "snapshots").resolve()
 
     clean_name = filename.strip("/")
     if clean_name.startswith("snapshots/"):
@@ -105,10 +108,17 @@ def get_snapshot(filename: str):
         file_path = snap_dir.parent / clean_name
     if not file_path.is_file():
         file_path = snap_dir / Path(clean_name).name
+    if not file_path.is_file():
+        file_path = legacy_snap_dir / clean_name
     if not file_path.is_file() and Path(clean_name).name:
         matches = list(snap_dir.glob(f"**/{Path(clean_name).name}"))
         if matches:
             file_path = matches[0]
+    if not file_path.is_file():
+        legacy_output = Path("runtime/streamcore/output").resolve()
+        legacy_candidate = legacy_output / clean_name
+        if legacy_candidate.is_file():
+            file_path = legacy_candidate
 
     try:
         if file_path.is_file() and (

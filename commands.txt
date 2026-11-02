@@ -34,6 +34,8 @@ python3 -m runtime.streamcore.main --config runtime/streamcore/app.yaml --previe
 ./run_backend.sh 8765
 # Or directly via Python:
 # python3 -m backend.run --port 8765
+# Or directly with Uvicorn:
+# python3 -m uvicorn backend.app:app --host 127.0.0.1 --port 8765
 
 # B.2 Start Frontend (Vite Hot-Reload Dev Server with API Proxy):
 ./run_frontend.sh
