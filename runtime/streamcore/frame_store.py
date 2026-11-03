@@ -20,6 +20,14 @@ class LatestFrameStore:
         with self._lock:
             self._allowed = self._allowed | {camera_id}
 
+    def unregister_camera(self, camera_id: str) -> None:
+        """Remove a camera and release its last frame, if necessary."""
+        with self._lock:
+            self._allowed = self._allowed - {camera_id}
+            previous = self._frames.pop(camera_id, None)
+            if previous is not None and hasattr(previous, "release"):
+                previous.release()
+
     def put(self, frame: CameraFrame | GpuFrame) -> bool:
         with self._lock:
             if frame.camera_id not in self._allowed:

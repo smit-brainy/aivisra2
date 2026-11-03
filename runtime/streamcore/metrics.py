@@ -103,6 +103,14 @@ class MetricsRegistry:
                 self._source_groups[camera_id] = camera_id
                 self._physical_sources += 1
 
+    def unregister_camera(self, camera_id: str) -> None:
+        """Discard metrics so reusing an ID starts with a clean state."""
+        with self._lock:
+            self._cameras.pop(camera_id, None)
+            self._previous.pop(camera_id, None)
+            self._source_groups.pop(camera_id, None)
+            self._physical_sources = len(set(self._source_groups.values()))
+
     def configure_sources(self, source_for: dict[str, str]) -> None:
         with self._lock:
             self._source_groups = dict(source_for)

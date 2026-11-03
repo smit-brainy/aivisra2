@@ -2,7 +2,7 @@
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 from time import monotonic
 from typing import Any, Callable
 
@@ -20,7 +20,15 @@ class PreviewWorker(Thread):
                  config: PreviewConfig, stop: Event,
                  results_fn: Callable[[], dict[str, Any]] | None = None) -> None:
         super().__init__(name="preview-worker", daemon=True)
-        self.source_groups = source_groups
+        # Keep a worker-owned copy.  The engine can add/remove cameras while
+        # this thread is iterating its sources; sharing the engine dictionary
+        # directly made ``dict changed size during iteration`` terminate this
+        # worker and stopped all new previews until the backend was restarted.
+        self.source_groups = {
+            source_id: list(aliases)
+            for source_id, aliases in source_groups.items()
+        }
+        self._sources_lock = Lock()
         self.store = store
         self.cache = cache
         self.metrics = metrics
@@ -35,9 +43,15 @@ class PreviewWorker(Thread):
 
     def register_camera(self, camera_id: str) -> None:
         """Make a camera added after startup visible to the sampler."""
-        self.source_groups.setdefault(camera_id, [camera_id])
-        self.last_sequence.setdefault(camera_id, -1)
-        self.last_encode_time.setdefault(camera_id, 0.0)
+        with self._sources_lock:
+            self.source_groups.setdefault(camera_id, [camera_id])
+            self.last_sequence.setdefault(camera_id, -1)
+            self.last_encode_time.setdefault(camera_id, 0.0)
+
+    def unregister_camera(self, camera_id: str) -> None:
+        """Stop sampling a camera removed from the running engine."""
+        with self._sources_lock:
+            self.source_groups.pop(camera_id, None)
 
     def _encode_source(self, item: tuple[str, list[str]], now: float, results: dict[str, Any], is_large_fleet: bool) -> None:
         import cv2
@@ -48,7 +62,7 @@ class PreviewWorker(Thread):
             is_active = any(self.cache.is_active(cid) for cid in aliases)
             if not is_active and (now - self.last_encode_time.get(source_id, 0.0)) < 0.2:
                 return
-        frame = self.store.latest(source_id, self.last_sequence[source_id])
+        frame = self.store.latest(source_id, self.last_sequence.get(source_id, -1))
         if frame is None:
             return
         if hasattr(frame, "to_bgr_cpu"):
@@ -103,9 +117,14 @@ class PreviewWorker(Thread):
     def tick(self) -> None:
         now = monotonic()
         results = self.results_fn() if self.results_fn is not None else {}
-        is_large_fleet = len(self.source_groups) > 8
+        with self._sources_lock:
+            source_items = [
+                (source_id, list(aliases))
+                for source_id, aliases in self.source_groups.items()
+            ]
+        is_large_fleet = len(source_items) > 8
         items = sorted(
-            self.source_groups.items(),
+            source_items,
             key=lambda it: not any(self.cache.is_active(cid) for cid in it[1]),
         )
 
@@ -126,5 +145,10 @@ class PreviewWorker(Thread):
         period = 1 / self.config.fps
         while not self.stop_event.is_set():
             started = monotonic()
-            self.tick()
+            try:
+                self.tick()
+            except Exception:
+                # A transient per-cycle failure must not permanently kill the
+                # preview service.  The next cycle can recover automatically.
+                logger.exception("preview_worker_tick_failed")
             self.stop_event.wait(max(0, started + period - monotonic()))

@@ -97,8 +97,23 @@ def get_cache() -> Any:
 
 
 def get_camera_ids() -> list[str]:
-    """Return list of configured camera identifiers."""
+    """Return persisted and runtime camera identifiers.
+
+    A newly created camera is committed before its background reader finishes
+    attaching.  Including persisted IDs lets an MJPEG request wait for that
+    reader instead of returning a transient 404 that browsers cache as a
+    failed image.
+    """
     eng = get_engine()
-    if eng is None or not getattr(eng, "cameras", None):
-        return ["CAM001"]
-    return [c.id for c in eng.cameras]
+    camera_ids = {
+        c.id for c in (getattr(eng, "cameras", None) or [])
+    }
+    try:
+        with connect() as conn:
+            camera_ids.update(
+                row["camera_id"]
+                for row in conn.execute("SELECT camera_id FROM cameras").fetchall()
+            )
+    except Exception:
+        logger.exception("camera_id_lookup_failed")
+    return sorted(camera_ids)

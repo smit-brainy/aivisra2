@@ -146,6 +146,13 @@ class OnboardingService:
                 "registered_at": self._camera_states[cid]["registered_at"],
             }
 
+    def unregister_camera(self, camera_id: str) -> None:
+        """Discard transient onboarding state for a deleted camera."""
+        with self._lock:
+            self._camera_states.pop(camera_id, None)
+            self._scene_profiles.pop(camera_id, None)
+            self._draft_recommendations.pop(camera_id, None)
+
     def start_analysis(
         self,
         camera_id: str,

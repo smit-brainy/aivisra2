@@ -9,6 +9,38 @@ import { ArrowRight, Pencil, Radio, Search, Trash2, X } from 'lucide-react';
 import { deleteCamera, fetchCamera, fetchCameras, fetchAreas, createArea, updateCameraMetadata, updateArea, deleteArea, registerCamera } from '../../utils/api';
 import NotificationPopup from '../../components/NotificationPopup';
 
+function CameraPreview({ camera }) {
+  const [retry, setRetry] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const cameraId = camera.camera_id;
+
+  useEffect(() => {
+    if (!failed) return undefined;
+    const timer = window.setTimeout(() => {
+      setRetry(value => value + 1);
+      setFailed(false);
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [failed]);
+
+  return (
+    <div style={{ height: 112, margin: '-12px -14px 10px', overflow: 'hidden', background: 'var(--bone)', display: 'grid', placeItems: 'center' }}>
+      <span style={{ gridArea: '1 / 1', color: 'var(--muted)', fontSize: 12 }}>Waiting for live preview…</span>
+      <img
+        key={retry}
+        src={`/stream/${encodeURIComponent(cameraId)}?preview_attempt=${retry}`}
+        alt={`${camera.display_name || camera.name || cameraId} live preview`}
+        onLoad={() => setFailed(false)}
+        onError={() => {
+          console.warn('[CamerasPage] live preview unavailable; retrying', cameraId);
+          setFailed(true);
+        }}
+        style={{ gridArea: '1 / 1', width: '100%', height: '100%', objectFit: 'cover', visibility: failed ? 'hidden' : 'visible' }}
+      />
+    </div>
+  );
+}
+
 class CameraViewErrorBoundary extends React.Component {
   state = { error: null };
   static getDerivedStateFromError(error) { return { error }; }
@@ -204,7 +236,7 @@ export default function CamerasPage({ openSearch, navTo }) {
         return (
           <div key={c.camera_id} className="hvr-bone" style={{ border: '1px solid var(--line)', borderRadius: 14, background: 'var(--paper)', padding: '12px 14px', cursor: 'pointer', marginBottom: '4px' }}>
             <div onClick={() => navTo && navTo('live', { cam: c.camera_id })} style={{ cursor: 'pointer' }}>
-            <div style={{ height: 112, margin: '-12px -14px 10px', overflow: 'hidden', background: 'var(--bone)', display: 'grid', placeItems: 'center' }}><img src={`/stream/${encodeURIComponent(c.camera_id)}`} alt={`${c.display_name || c.name || c.camera_id} live preview`} onError={(event) => { event.currentTarget.style.display = 'none'; console.warn('[CamerasPage] live preview unavailable', c.camera_id); }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /><span style={{ color: 'var(--muted)', fontSize: 12 }}>Waiting for live preview…</span></div>
+            <CameraPreview camera={c} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '4px' }}>
               <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ fontSize: 15.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.display_name || c.camera_id}</span>

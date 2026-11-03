@@ -179,7 +179,6 @@ class StreamCore:
                 enabled=True,
                 live_path=live_path or camera_id.lower(),
             )
-            self.cameras.append(new_cam)
             self.source_groups[camera_id] = [camera_id]
 
             if hasattr(self.store, "register_camera"):
@@ -196,6 +195,12 @@ class StreamCore:
             if getattr(self, "clip_recorder", None) is not None:
                 self.clip_recorder.camera_urls[camera_id] = uri
                 self.clip_recorder.camera_live_paths[camera_id] = live_path or camera_id.lower()
+
+            # Publish the camera to the AI loop only after all of its stores
+            # and scheduler entries exist.  Publishing it first allowed the AI
+            # thread to observe an ID that was not registered in the scheduler
+            # yet, causing a transient KeyError during dynamic attachment.
+            self.cameras.append(new_cam)
 
             # If engine is actively running and readers started, start reader for the newly added camera
             if hasattr(self, "_active_readers") and not self.stop_event.is_set() and self._readers_started_at is not None:
@@ -220,6 +225,10 @@ class StreamCore:
                     )
                     reader.start()
                     self._active_readers.append(reader)
+                    logger.info("dynamic_camera_reader_started", extra={
+                        "camera_id": camera_id,
+                        "decoder": new_cam.decoder,
+                    })
                 except Exception as exc:
                     self.metrics.state(camera_id, CameraState.OFFLINE)
                     self.metrics.record_error(camera_id, str(exc))
@@ -242,9 +251,19 @@ class StreamCore:
                         self._active_readers.remove(reader)
             self.cameras[:] = [item for item in self.cameras if item.id != camera_id]
             self.source_groups.pop(camera_id, None)
+            if hasattr(self.store, "unregister_camera"):
+                self.store.unregister_camera(camera_id)
+            if hasattr(self.metrics, "unregister_camera"):
+                self.metrics.unregister_camera(camera_id)
+            preview_worker = getattr(self, "preview_worker", None)
+            if preview_worker is not None and hasattr(preview_worker, "unregister_camera"):
+                preview_worker.unregister_camera(camera_id)
             if hasattr(self.preview_cache, "unregister_camera"):
                 self.preview_cache.unregister_camera(camera_id)
             self.scheduler.unregister_camera(camera_id)
+            with self._results_lock:
+                self._results.pop(camera_id, None)
+                self._camera_capabilities.pop(camera_id, None)
             logger.info("camera_unregistered", extra={"camera_id": camera_id})
             return True
 

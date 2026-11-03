@@ -360,6 +360,9 @@ def delete_camera(camera_id: str):
         row = conn.execute("SELECT camera_id FROM cameras WHERE camera_id = ?", (camera_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Unknown camera: {camera_id}")
+    service = getattr(engine, "onboarding_service", None) if engine else None
+    if service is not None and hasattr(service, "unregister_camera"):
+        service.unregister_camera(camera_id)
     remover = getattr(engine, "unregister_camera", None) if engine else None
     if remover is not None:
         remover(camera_id)

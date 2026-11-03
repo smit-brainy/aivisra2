@@ -826,6 +826,20 @@ class GStreamerReader(Thread):
         """Stop this reader without stopping the other camera readers."""
         self._camera_stop.set()
 
+    def _wait_for_stop(self, timeout: float) -> bool:
+        """Wait for either the engine or this individual camera to stop."""
+        deadline = monotonic() + max(0.0, timeout)
+        while True:
+            if self.stop_event.is_set() or self._camera_stop.is_set():
+                return True
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                return False
+            # Waiting only on the engine event used to leave deleted readers
+            # alive for the full exponential reconnect delay.  They could then
+            # overwrite the state of a camera re-added with the same ID.
+            self._camera_stop.wait(min(0.2, remaining))
+
     def run(
         self,
     ) -> None:
@@ -957,9 +971,7 @@ class GStreamerReader(Thread):
                         jitter,
                     )
 
-                    if self.stop_event.wait(
-                        actual_delay
-                    ):
+                    if self._wait_for_stop(actual_delay):
                         break
 
                     for camera_id in self.camera_ids:
@@ -984,9 +996,12 @@ class GStreamerReader(Thread):
                         except Exception:
                             pass
         finally:
-            self._set_state(
-                CameraState.STOPPED
-            )
+            # A locally removed reader must not overwrite metrics belonging to
+            # a newly registered reader that reuses the same camera ID.
+            if self.stop_event.is_set() or not self._camera_stop.is_set():
+                self._set_state(
+                    CameraState.STOPPED
+                )
 
 
 def validate_single_source_pipeline(
