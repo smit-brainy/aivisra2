@@ -121,6 +121,7 @@ class StreamCore:
 
         self._camera_capabilities: dict[str, set[str]] = {}
         self._active_readers: list[Any] = []
+        self.preview_worker: PreviewWorker | None = None
         try:
             from ..onboarding import OnboardingService
             self.onboarding_service: Any = OnboardingService(engine=self, detector=self.detector)
@@ -185,6 +186,9 @@ class StreamCore:
                 self.store.register_camera(camera_id)
             if hasattr(self.preview_cache, "register_camera"):
                 self.preview_cache.register_camera(camera_id)
+            preview_worker = getattr(self, "preview_worker", None)
+            if preview_worker is not None and hasattr(preview_worker, "register_camera"):
+                preview_worker.register_camera(camera_id)
             if hasattr(self.metrics, "register_camera"):
                 self.metrics.register_camera(camera_id)
             if hasattr(self.scheduler, "register_camera"):
@@ -223,9 +227,40 @@ class StreamCore:
 
             return new_cam
 
+    def unregister_camera(self, camera_id: str) -> bool:
+        """Stop and remove a dynamically registered camera."""
+        with self._resources_lock:
+            camera = next((item for item in self.cameras if item.id == camera_id), None)
+            if camera is None:
+                return False
+            for reader in list(self._active_readers):
+                reader_camera = getattr(getattr(reader, "camera", None), "id", None)
+                if reader_camera == camera_id:
+                    try:
+                        reader.stop()
+                    finally:
+                        self._active_readers.remove(reader)
+            self.cameras[:] = [item for item in self.cameras if item.id != camera_id]
+            self.source_groups.pop(camera_id, None)
+            if hasattr(self.preview_cache, "unregister_camera"):
+                self.preview_cache.unregister_camera(camera_id)
+            self.scheduler.unregister_camera(camera_id)
+            logger.info("camera_unregistered", extra={"camera_id": camera_id})
+            return True
+
     def set_camera_capabilities(self, camera_id: str, capabilities: set[str]) -> None:
         with self._results_lock:
             self._camera_capabilities[camera_id] = set(capabilities)
+
+    def set_camera_target_fps(self, camera_id: str, target_fps: float) -> None:
+        """Apply a camera's inference rate without restarting its reader."""
+        if target_fps <= 0:
+            raise ValueError("target_fps must be positive")
+        self.scheduler.set_target_fps(float(target_fps), camera_id=camera_id)
+        logger.info("camera_inference_rate_updated", extra={
+            "camera_id": camera_id,
+            "target_ai_fps": float(target_fps),
+        })
 
     def _detector(self) -> Detector | None:
         from .inference.registry import create_detector
@@ -733,6 +768,7 @@ class StreamCore:
                                                self.preview_cache, self.metrics,
                                                self.config.preview, self.stop_event,
                                                results_fn=self.latest_results)
+                self.preview_worker = preview_worker
                 preview_worker.start()
             if self.config.ai.enabled and self.detector is not None:
                 ai_worker = Thread(target=self._ai_loop, name="ai-scheduler", daemon=True)

@@ -37,6 +37,11 @@ class LatestFrameScheduler:
         self.stale_frames_dropped[camera_id] = 0
         self.scheduler_skips[camera_id] = 0
 
+    def unregister_camera(self, camera_id: str) -> None:
+        for mapping in (self.intervals, self.last_sequence, self.next_due,
+                        self.replaced_frames, self.stale_frames_dropped, self.scheduler_skips):
+            mapping.pop(camera_id, None)
+
     def select(self, store: LatestFrameStore, camera_ids: list[str],
                now: float | None = None, *, respect_rate: bool = True,
                max_batch_size: int | None = None) -> list[Any]:

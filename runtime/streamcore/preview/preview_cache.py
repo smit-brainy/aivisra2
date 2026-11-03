@@ -25,6 +25,12 @@ class PreviewCache:
         with self._lock:
             self._allowed = self._allowed | {camera_id}
 
+    def unregister_camera(self, camera_id: str) -> None:
+        with self._lock:
+            self._allowed = self._allowed - {camera_id}
+            self._latest.pop(camera_id, None)
+            self._active_until.pop(camera_id, None)
+
     def touch(self, camera_id: str, duration_seconds: float = 3.0) -> None:
         """Mark camera as actively viewed by client."""
         with self._lock:

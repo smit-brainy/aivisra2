@@ -13,8 +13,12 @@ Serves:
 """
 
 import json
+import logging
+import threading
 import time
+from types import SimpleNamespace
 from typing import Any
+from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, Request, status
 
 from ..dependencies import get_engine
@@ -27,10 +31,13 @@ from ..schemas.models import (
     ApplyCapabilitiesRequest,
 )
 from ..state_store import get_state_store
-from ..database import connect, init_db
+from ..database import connect
 from runtime.onboarding.onboarding_service import sanitize_rtsp_url
 
 router = APIRouter(tags=["Cameras & Onboarding"])
+logger = logging.getLogger("streamcore.backend.cameras")
+
+DETAIL_FPS = {"low": 1.0, "standard": 5.0, "high": 15.0, "maximum": 25.0}
 
 
 def _camera_health(engine: Any) -> dict[str, dict[str, Any]]:
@@ -45,22 +52,21 @@ def _camera_health(engine: Any) -> dict[str, dict[str, Any]]:
 
 
 def _normalize_status(health: dict[str, Any] | None) -> str:
-    """Collapse engine state/health into the UI's online/degraded/offline wording."""
+    """Return connection status; health remains available as a separate field."""
     if not health:
         return "unknown"
-    value = str(health.get("health") or "").upper()
     state = str(health.get("state") or "").upper()
-    if value == "HEALTHY":
+    # A stream with an active reader is online even when its FPS health is
+    # degraded. The health field still exposes that performance detail.
+    if state == "CONNECTED":
         return "online"
+    value = str(health.get("health") or "").upper()
     if value in ("DEGRADED", "STALE"):
         return "degraded"
     if value == "RECONNECTING":
         return "reconnecting"
     if value == "OFFLINE":
         return "offline"
-    # Fall back to the stream state when health has not been computed yet.
-    if state == "CONNECTED":
-        return "online"
     if state == "DEGRADED":
         return "degraded"
     if state == "RECONNECTING":
@@ -69,7 +75,7 @@ def _normalize_status(health: dict[str, Any] | None) -> str:
 
 
 def _camera_payload(camera: Any, meta: dict[str, Any], areas: dict[str, dict[str, Any]],
-                    health: dict[str, Any] | None) -> dict[str, Any]:
+                    health: dict[str, Any] | None, stored: Any = None) -> dict[str, Any]:
     area_id = meta.get("area_id")
     area = areas.get(area_id) if area_id else None
     display_name = meta.get("display_name") or camera.id
@@ -84,9 +90,10 @@ def _camera_payload(camera: Any, meta: dict[str, Any], areas: dict[str, dict[str
         "kind": meta.get("kind") or "both",
         "level": meta.get("level") or "standard",
         "notes": meta.get("notes"),
-        "rtsp_url": sanitize_rtsp_url(camera.uri),
-        "codec": camera.codec,
-        "decoder": camera.decoder,
+        "rtsp_url": sanitize_rtsp_url((stored["uri"] if stored else camera.uri)),
+        "codec": stored["codec"] if stored else camera.codec,
+        "decoder": stored["decoder"] if stored else camera.decoder,
+        "decoding_fps": stored["decoding_fps"] if stored else None,
         "enabled": camera.enabled,
         "live_path": camera.live_path,
         "stream_url": f"/stream/{camera.id}",
@@ -123,19 +130,31 @@ def get_capabilities():
 def get_cameras():
     """List configured cameras with operator metadata and live health."""
     engine = get_engine()
-    cameras = _configured_cameras(engine)
-    if not cameras:
-        return []
-
     store = get_state_store()
     areas = {area["area_id"]: area for area in store.list_areas()}
     health_by_camera = _camera_health(engine)
+    running = {camera.id: camera for camera in _configured_cameras(engine)}
+    # Read all camera configuration in one short transaction.  Opening a new
+    # SQLite connection for every camera made this endpoint increasingly slow
+    # while the event writer was active, which caused the UI to fall back to an
+    # empty list under load.
+    with connect() as conn:
+        rows = conn.execute("SELECT camera_id, name, uri, codec, decoder, status, decoding_fps FROM cameras ORDER BY created_at ASC").fetchall()
+    cameras = []
+    for row in rows:
+        cameras.append(running.get(row["camera_id"]) or SimpleNamespace(
+            id=row["camera_id"], uri=row["uri"], codec=row["codec"], decoder=row["decoder"],
+            enabled=row["status"] not in ("disabled", "offline"), live_path=None,
+        ))
+    if not cameras:
+        cameras = list(running.values())
     return [
         _camera_payload(
             camera,
             store.ensure_camera(camera.id, camera.id),
             areas,
             health_by_camera.get(camera.id),
+            next((row for row in rows if row["camera_id"] == camera.id), None),
         )
         for camera in cameras
     ]
@@ -160,19 +179,60 @@ def get_camera(camera_id: str):
 
 @router.put("/api/cameras/{camera_id}")
 def update_camera_metadata(camera_id: str, payload: CameraMetadataRequest):
-    """Update operator-editable camera metadata (name, area, kind, level, notes)."""
+    """Update operator-editable metadata and persisted stream configuration."""
     engine = get_engine()
-    if not any(c.id == camera_id for c in _configured_cameras(engine)):
+    with connect() as conn:
+        stored_camera = conn.execute("SELECT 1 FROM cameras WHERE camera_id = ?", (camera_id,)).fetchone()
+    if not any(c.id == camera_id for c in _configured_cameras(engine)) and stored_camera is None:
         raise HTTPException(status_code=404, detail=f"Unknown camera: {camera_id}")
 
     fields = payload.model_dump(exclude_unset=True)
+    stream_fields = {}
+    if "camera_id" in fields:
+        stream_fields["camera_id"] = fields.pop("camera_id")
+    if "name" in fields:
+        stream_fields["name"] = fields.pop("name")
+    if "uri" in fields or "rtsp_url" in fields:
+        stream_fields["uri"] = fields.pop("uri", fields.pop("rtsp_url", None))
+    for key in ("codec", "decoder", "decoding_fps"):
+        if key in fields:
+            stream_fields[key] = fields.pop(key)
+    if "display_name" in fields and "name" not in stream_fields:
+        stream_fields["name"] = fields["display_name"]
     store = get_state_store()
     try:
         store.update_camera(camera_id, fields)
+        if "level" in fields and engine is not None:
+            target_fps = DETAIL_FPS[fields["level"]]
+            setter = getattr(engine, "set_camera_target_fps", None)
+            if setter is not None:
+                setter(camera_id, target_fps)
+        if stream_fields:
+            assignments = ", ".join(f"{key} = ?" for key in stream_fields)
+            values = list(stream_fields.values()) + [time.time(), camera_id]
+            with connect() as conn:
+                cursor = conn.execute(
+                    f"UPDATE cameras SET {assignments}, updated_at = ? WHERE camera_id = ?",
+                    values,
+                )
+                if cursor.rowcount == 0:
+                    raise ValueError(f"Camera '{camera_id}' is not stored in the database")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    camera = next(c for c in engine.cameras if c.id == camera_id)
+    camera = next((c for c in _configured_cameras(engine) if c.id == camera_id), None)
+    if camera is None:
+        with connect() as conn:
+            row = conn.execute("SELECT camera_id, uri, codec, decoder, status FROM cameras WHERE camera_id = ?", (camera_id,)).fetchone()
+        if row is None:
+            # The ID may have been changed; return the persisted record when possible.
+            new_id = stream_fields.get("camera_id", camera_id)
+            with connect() as conn:
+                row = conn.execute("SELECT camera_id, uri, codec, decoder, status FROM cameras WHERE camera_id = ?", (new_id,)).fetchone()
+        if row is not None:
+            camera = SimpleNamespace(id=row["camera_id"], uri=row["uri"], codec=row["codec"], decoder=row["decoder"], enabled=row["status"] not in ("disabled", "offline"), live_path=None)
+    if camera is None:
+        raise HTTPException(status_code=404, detail=f"Unknown camera: {camera_id}")
     areas = {area["area_id"]: area for area in store.list_areas()}
     return _camera_payload(
         camera,
@@ -233,7 +293,7 @@ def delete_area(area_id: str):
 
 @router.post("/api/cameras", status_code=status.HTTP_201_CREATED)
 def register_camera(payload: CameraRegisterRequest):
-    """Register and onboard a new camera stream."""
+    """Persist a camera and attach its stream without blocking the API request."""
     camera_id = (payload.camera_id or payload.name or "").strip()
     rtsp_url = (payload.rtsp_url or payload.uri or "").strip()
     if not camera_id or not rtsp_url:
@@ -241,8 +301,9 @@ def register_camera(payload: CameraRegisterRequest):
             status_code=400,
             detail="Missing camera_id or rtsp_url in request payload.",
         )
+    if urlsplit(rtsp_url).scheme not in ("rtsp", "rtsps", "file", "videotestsrc"):
+        raise HTTPException(status_code=400, detail="RTSP URL must use rtsp:// or rtsps://")
 
-    init_db()
     try:
         with connect() as conn:
             conn.execute(
@@ -263,27 +324,49 @@ def register_camera(payload: CameraRegisterRequest):
             raise HTTPException(status_code=409, detail=f"Camera ID '{camera_id}' already exists") from exc
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    engine = get_engine()
-    service = getattr(engine, "onboarding_service", None) if engine else None
-    if service is None:
-        raise HTTPException(status_code=500, detail="Onboarding service not initialized")
+    def attach_stream() -> None:
+        try:
+            # Metadata creation and stream startup can both contend with event
+            # writers; keep them off the HTTP request path.
+            get_state_store().ensure_camera(camera_id, payload.name or camera_id)
+            engine = get_engine()
+            service = getattr(engine, "onboarding_service", None) if engine else None
+            if service is None:
+                raise RuntimeError("Onboarding service not initialized")
+            service.register_camera(
+                camera_id=camera_id,
+                rtsp_uri=rtsp_url,
+                codec=payload.codec,
+                decoder=payload.decoder,
+                live_path=payload.live_path,
+            )
+            logger.info("camera_stream_attach_started camera_id=%s", camera_id)
+        except Exception as exc:
+            with connect() as conn:
+                conn.execute(
+                    "UPDATE cameras SET status = ?, updated_at = ? WHERE camera_id = ?",
+                    ("offline", time.time(), camera_id),
+                )
+            logger.exception("camera_stream_attach_failed camera_id=%s error=%s", camera_id, exc)
 
-    try:
-        result = service.register_camera(
-            camera_id=camera_id,
-            rtsp_uri=rtsp_url,
-            codec=payload.codec,
-            decoder=payload.decoder,
-            live_path=payload.live_path,
-        )
-        get_state_store().ensure_camera(camera_id, payload.name or camera_id)
-        return result
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except RuntimeError as re_err:
-        raise HTTPException(status_code=500, detail=str(re_err))
-    except Exception as ex:
-        raise HTTPException(status_code=500, detail=str(ex))
+    threading.Thread(target=attach_stream, name=f"camera-attach-{camera_id}", daemon=True).start()
+    return {"camera_id": camera_id, "status": "connecting", "message": "Camera saved; connecting to stream."}
+
+
+@router.delete("/api/cameras/{camera_id}")
+def delete_camera(camera_id: str):
+    engine = get_engine()
+    with connect() as conn:
+        row = conn.execute("SELECT camera_id FROM cameras WHERE camera_id = ?", (camera_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Unknown camera: {camera_id}")
+    remover = getattr(engine, "unregister_camera", None) if engine else None
+    if remover is not None:
+        remover(camera_id)
+    with connect() as conn:
+        conn.execute("DELETE FROM cameras WHERE camera_id = ?", (camera_id,))
+    get_state_store().delete_camera(camera_id)
+    return {"camera_id": camera_id, "deleted": True}
 
 
 @router.get("/api/cameras/{camera_id}/onboarding/status")

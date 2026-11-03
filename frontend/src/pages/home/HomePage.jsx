@@ -32,7 +32,6 @@ export default function HomePage({ session, openSearch, navTo }) {
   const admin = session.role === 'admin';
   const [hDay, setHDay] = React.useState('today');       // 'today' | 'yesterday' | 'date'
   const [hDayOff, setHDayOff] = React.useState(-2);
-  const [hArea, setHArea] = React.useState('all');
   const [hCal, setHCal] = React.useState(false);
   const [steps, setSteps] = React.useState(null);        // admin checklist states {1..4}
   const [forceChecklist, setForceChecklist] = React.useState(false);
@@ -44,8 +43,8 @@ export default function HomePage({ session, openSearch, navTo }) {
 
   React.useEffect(() => {
     let disposed = false;
-    const loadCameras = () => fetchCameras().then(value => { if (!disposed) setDbCameras(value || []); }).catch(() => { if (!disposed) setDbCameras([]); });
-    const loadEvents = () => fetchEvents({ limit: '10000', offset: '0' }).then(value => { if (!disposed) setDbEvents(value.events || []); }).catch(() => { if (!disposed) setDbEvents([]); });
+    const loadCameras = () => fetchCameras().then(value => { if (!disposed) setDbCameras(value || []); }).catch(error => { console.warn('[HomePage] camera list refresh failed', error); });
+    const loadEvents = () => fetchEvents({ limit: '10000', offset: '0' }).then(value => { if (!disposed) setDbEvents(value.events || []); }).catch(error => { console.warn('[HomePage] event refresh failed', error); });
     loadCameras(); loadEvents();
     const cameraTimer = window.setInterval(loadCameras, 60000);
     const eventTimer = window.setInterval(loadEvents, 120000);
@@ -74,7 +73,7 @@ export default function HomePage({ session, openSearch, navTo }) {
 
   const dOff = hDay === 'today' ? 0 : hDay === 'yesterday' ? -1 : hDayOff;
   let times = I.camTimes(dOff), dStart = dOff * DAY;
-  const areas = (hArea === 'all' ? M.areas : M.areas.filter(a => a.id === hArea)).filter(a => a.cams.length);
+  const areas = M.areas.filter(a => a.cams.length);
   const since = scen.since || 0;
   const staticGroups = areas.map(a => ({
     name: a.name, toneBg: I.areaTone(a.id).bg, toneInk: I.areaTone(a.id).ink, count: a.cams.length + (a.cams.length === 1 ? ' camera' : ' cameras'),
@@ -280,14 +279,11 @@ export default function HomePage({ session, openSearch, navTo }) {
                       <button onClick={() => setHCal(v => !v)} aria-expanded={hCal} className="hvr-ink-border" style={{ height: 40, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', border: `1px solid ${hCal ? 'var(--blue)' : 'var(--line)'}`, borderRadius: 8, background: 'var(--paper)', fontSize: 14, whiteSpace: 'nowrap', cursor: 'pointer' }}>{I.dayLong(dOff)}<span style={{ fontSize: 11, color: 'var(--muted)' }}>▾</span></button>
                       {hCal && (
                         <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 40, width: 380, padding: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: '0 30px 60px -30px rgba(10,10,11,.35), 0 2px 6px rgba(10,10,11,.06)' }}>
-                          <InetraMonthCalendar size="compact" cams={hArea === 'all' ? null : ((M.areas.find(a => a.id === hArea) || { cams: [] }).cams)} selA={dOff} selB={dOff} onPick={off => { setHDayOff(off); setHDay(off === 0 ? 'today' : off === -1 ? 'yesterday' : 'date'); setHCal(false); }} />
+                          <InetraMonthCalendar size="compact" cams={null} selA={dOff} selB={dOff} onPick={off => { setHDayOff(off); setHDay(off === 0 ? 'today' : off === -1 ? 'yesterday' : 'date'); setHCal(false); }} />
                         </div>
                       )}
                     </div>
                   )}
-                  <select value={hArea} onChange={e => setHArea(e.target.value)} aria-label="Area" style={{ height: 40, padding: '0 32px 0 12px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', fontSize: 14, appearance: 'none', WebkitAppearance: 'none', backgroundImage: 'linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%)', backgroundPosition: 'calc(100% - 16px) 18px, calc(100% - 11px) 18px', backgroundSize: '5px 5px', backgroundRepeat: 'no-repeat', cursor: 'pointer' }}>
-                    {[{ value: 'all', label: 'All areas' }].concat(M.areas.map(a => ({ value: a.id, label: a.name }))).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
                 </div>
               </div>
               {/* midnightNote only for scen midnight (not wired yet in 'day') */}

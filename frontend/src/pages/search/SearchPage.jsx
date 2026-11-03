@@ -26,7 +26,7 @@
  *
  * Props: openSearch(opts), navTo(t, opts) — same signatures as HomePage
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { invr, merged } from '../../prototype/api';
 import { fetchCameras, fetchEvent, fetchEvents, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
 
@@ -51,6 +51,7 @@ export default function SearchPage({ openSearch, navTo }) {
   const [dbCameras, setDbCameras] = React.useState([]);
   const [dbEvents, setDbEvents] = React.useState([]);
   const [selectedEvent, setSelectedEvent] = React.useState(null);
+  const evidenceRequestRef = useRef(0);
   const vehicleClasses = React.useMemo(() => new Set(['bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat']), []);
   const matchesTypeFilter = event => {
     const objectClass = String(event?.object_class || event?.kind || '').toLowerCase();
@@ -60,6 +61,8 @@ export default function SearchPage({ openSearch, navTo }) {
   };
   const openEvidence = async event => {
     if (!event) return;
+    const requestId = evidenceRequestRef.current + 1;
+    evidenceRequestRef.current = requestId;
     setSelectedEvent(event);
     try {
       let latest = await fetchEvent(event.event_id);
@@ -67,10 +70,15 @@ export default function SearchPage({ openSearch, navTo }) {
       // after detection can receive its clip path without requiring a reload.
       for (let attempt = 0; attempt < 5 && !latest.clip_path; attempt += 1) {
         await new Promise(resolve => window.setTimeout(resolve, 1000));
+        if (evidenceRequestRef.current !== requestId) return;
         latest = await fetchEvent(event.event_id);
       }
-      setSelectedEvent(latest);
+      if (evidenceRequestRef.current === requestId) setSelectedEvent(latest);
     } catch (_) { /* Keep the event summary visible if refresh fails. */ }
+  };
+  const closeEvidence = () => {
+    evidenceRequestRef.current += 1;
+    setSelectedEvent(null);
   };
   const [dbFilters, setDbFilters] = React.useState({ start: '', end: '', camera_id: '', object_class: '' });
   const detectingObjects = React.useMemo(
@@ -98,27 +106,10 @@ export default function SearchPage({ openSearch, navTo }) {
     setSLoading(true);
     fetchEvents(params).then(body => setDbEvents(body.events || [])).catch(() => setDbEvents([])).finally(() => setSLoading(false));
   }, [dbFilters]);
-  const applyPreset = preset => {
-    const range = presetRange(preset);
-    setSTime({ preset, ...range });
-  };
-
   // Helper: format a seconds value into HH:MM or clock string
   const fmtTime = (s) => {
     const m = Math.floor(s / 60), r = s % 60;
     return r ? `${m} min ${r} s` : `${m} min`;
-  };
-
-  // Preset → {from, to} seconds
-  const presetRange = (preset) => {
-    const now = I.SCEN.day?.now ?? 40800;
-    const DAY = I.DAY ?? 86400;
-    const H = I.H ?? 3600;
-    if (preset === 'today') return { from: 0, to: now };
-    if (preset === 'yesterday') { const st = now - DAY; return { from: st, to: now }; }
-    if (preset === 'lastnight') { const st = now - 13 * DAY; return { from: st, to: now }; }
-    if (preset === 'custom') return { from: sTime.from, to: sTime.to };
-    return { from: 0, to: now };
   };
 
   // Compute search results from INVR data (simplified)
@@ -157,7 +148,7 @@ export default function SearchPage({ openSearch, navTo }) {
       dot: 'var(--sky)',
       confidence: event.max_confidence,
       evidence: event,
-    }));
+    })).sort((a, b) => sSort === 'new' ? b.time - a.time : a.time - b.time);
   }
 
   // If no INVR data, render placeholder
@@ -216,11 +207,6 @@ export default function SearchPage({ openSearch, navTo }) {
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>End time<input type={dbFilters.end ? 'datetime-local' : 'text'} placeholder="End date and time" value={dbFilters.end} onFocus={e => { e.currentTarget.type = 'datetime-local'; }} onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }} onChange={e => setDbFilters(v => ({ ...v, end: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Camera<select value={dbFilters.camera_id} onChange={e => setDbFilters(v => ({ ...v, camera_id: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">All cameras</option>{dbCameras.map(c => <option key={c.camera_id} value={c.camera_id}>{c.display_name || c.name || c.camera_id}</option>)}</select></label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Object<select value={dbFilters.object_class} onChange={e => setDbFilters(v => ({ ...v, object_class: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">Currently detected objects</option>{detectingObjects.map(objectClass => <option key={objectClass} value={objectClass}>{objectClass}</option>)}</select></label>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: 'var(--muted)' }}>Time</span>
-          {['today', 'yesterday', 'lastnight'].map(preset => <button type="button" key={preset} onClick={() => applyPreset(preset)} className="hvr-ink-border" style={{ padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 5, background: sTime.preset === preset ? 'var(--blue-tint)' : 'var(--paper)' }}>{preset === 'lastnight' ? 'Last night' : preset[0].toUpperCase() + preset.slice(1)}</button>)}
-          <button type="button" onClick={() => setSTime(v => ({ ...v, preset: 'custom' }))} className="hvr-ink-border" style={{ padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 5, background: sTime.preset === 'custom' ? 'var(--blue-tint)' : 'var(--paper)' }}>Custom</button>
-        </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>Type</span>
           <span style={{ display: 'flex', gap: 3 }}>
@@ -234,7 +220,6 @@ export default function SearchPage({ openSearch, navTo }) {
           <button type="button" onClick={() => setSSort(v => v === 'new' ? 'old' : 'new')} className="hvr-ink-border" style={{ padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 8, background: 'var(--paper)', color: 'var(--ink)' }}>{sSort === 'new' ? 'Newest first' : 'Oldest first'}</button>
         </div>
       </div>
-      {sTime.preset === 'custom' && <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', background: 'var(--bone)', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }}><label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>From <input type="range" min="0" max={I.DAY} value={sTime.from} onChange={e => setSTime(v => ({ ...v, from: Math.min(Number(e.target.value), v.to) }))} /></label><label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>To <input type="range" min="0" max={I.DAY} value={sTime.to} onChange={e => setSTime(v => ({ ...v, to: Math.max(Number(e.target.value), v.from) }))} /></label><span style={{ color: 'var(--muted)' }}>{fmtTime(sTime.from)} – {fmtTime(sTime.to)}</span></div>}
 
       <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: 16, color: 'var(--ink)' }}>
         <h2 style={{ marginTop: 0 }}>Search Results <small style={{ color: 'var(--muted)', fontWeight: 400 }}>({R.list.length})</small></h2>
@@ -248,9 +233,9 @@ export default function SearchPage({ openSearch, navTo }) {
         </button>
       </div>
       {showPlayer && playerStrip()}
-      {selectedEvent && <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setSelectedEvent(null)}>
+      {selectedEvent && <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={closeEvidence}>
         <div style={{ width: 'min(820px, 95vw)', maxHeight: '90vh', overflow: 'auto', background: 'var(--paper)', color: 'var(--ink)', borderRadius: 10, padding: 20 }} onClick={e => e.stopPropagation()}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><h2 style={{ margin: 0 }}>{selectedEvent.object_class || 'Event'} · {selectedEvent.camera_name || selectedEvent.camera_id}</h2><button type="button" onClick={() => setSelectedEvent(null)} style={{ padding: '5px 10px' }}>Close</button></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><h2 style={{ margin: 0 }}>{selectedEvent.object_class || 'Event'} · {selectedEvent.camera_name || selectedEvent.camera_id}</h2><button type="button" onClick={closeEvidence} style={{ padding: '5px 10px' }}>Close</button></div>
           {selectedEvent.snapshot_path ? <img src={getSnapshotUrl(selectedEvent.snapshot_path)} alt={`${selectedEvent.object_class || 'Event'} evidence`} style={{ display: 'block', width: '100%', maxHeight: 420, objectFit: 'contain', background: '#111', borderRadius: 6 }} /> : <p style={{ color: 'var(--muted)' }}>No event image is available.</p>}
           {selectedEvent.clip_path ? <video controls preload="metadata" src={getEventClipUrl(selectedEvent.event_id)} style={{ display: 'block', width: '100%', marginTop: 14, borderRadius: 6 }} /> : <p style={{ color: 'var(--muted)' }}>The event video is still being recorded or is unavailable.</p>}
         </div>

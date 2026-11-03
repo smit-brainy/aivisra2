@@ -22,7 +22,7 @@ from .database import connect as _db_connect
 from .database import get_db_path, init_db, resolve_db_path
 
 CAMERA_KINDS = ("person", "vehicle", "both")
-CAMERA_LEVELS = ("standard", "enhanced", "off")
+CAMERA_LEVELS = ("low", "standard", "high", "maximum")
 
 __all__ = [
     "CAMERA_KINDS",
@@ -119,6 +119,11 @@ class StateStore:
                 "SELECT * FROM camera_metadata WHERE camera_id = ?", (camera_id,)
             ).fetchone()
         return _row_to_dict(row)
+
+    def delete_camera(self, camera_id: str) -> bool:
+        with self._lock, self._connect() as conn:
+            cursor = conn.execute("DELETE FROM camera_metadata WHERE camera_id = ?", (camera_id,))
+        return cursor.rowcount > 0
 
     # -------------------------------------------------------------------- areas
     def area_exists(self, area_id: str) -> bool:

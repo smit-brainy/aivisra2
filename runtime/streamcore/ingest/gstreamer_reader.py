@@ -102,6 +102,7 @@ class GStreamerReader(Thread):
         self.store = store
         self.metrics = metrics
         self.stop_event = stop
+        self._camera_stop = Event()
 
         self.Gst, self.GstVideo = gst
 
@@ -821,6 +822,10 @@ class GStreamerReader(Thread):
                 state,
             )
 
+    def stop(self) -> None:
+        """Stop this reader without stopping the other camera readers."""
+        self._camera_stop.set()
+
     def run(
         self,
     ) -> None:
@@ -832,7 +837,7 @@ class GStreamerReader(Thread):
         )
 
         try:
-            while not self.stop_event.is_set():
+            while not self.stop_event.is_set() and not self._camera_stop.is_set():
 
                 pipeline = None
 
@@ -866,7 +871,7 @@ class GStreamerReader(Thread):
                     bus = pipeline.get_bus()
                     self._last_decoded_at = monotonic()
 
-                    while not self.stop_event.is_set():
+                    while not self.stop_event.is_set() and not self._camera_stop.is_set():
                         if monotonic() - connected_at >= self.config.reconnect_reset_seconds:
                             reconnect_delay = self.config.reconnect_initial_seconds
 

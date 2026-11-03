@@ -33,6 +33,12 @@ class PreviewWorker(Thread):
         n_workers = min(16, max(4, len(source_groups) // 2))
         self._pool = ThreadPoolExecutor(max_workers=n_workers, thread_name_prefix="prev-enc")
 
+    def register_camera(self, camera_id: str) -> None:
+        """Make a camera added after startup visible to the sampler."""
+        self.source_groups.setdefault(camera_id, [camera_id])
+        self.last_sequence.setdefault(camera_id, -1)
+        self.last_encode_time.setdefault(camera_id, 0.0)
+
     def _encode_source(self, item: tuple[str, list[str]], now: float, results: dict[str, Any], is_large_fleet: bool) -> None:
         import cv2
         source_id, aliases = item

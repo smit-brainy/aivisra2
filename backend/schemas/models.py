@@ -136,6 +136,13 @@ class CameraRegisterRequest(BaseModel):
 class CameraMetadataRequest(BaseModel):
     """Partial update of operator-editable camera metadata."""
 
+    camera_id: Optional[str] = Field(None, min_length=1, max_length=120)
+    name: Optional[str] = Field(None, max_length=120)
+    uri: Optional[str] = Field(None, max_length=2048)
+    rtsp_url: Optional[str] = Field(None, max_length=2048)
+    codec: Optional[str] = Field(None, max_length=40)
+    decoder: Optional[str] = Field(None, max_length=80)
+    decoding_fps: Optional[float] = Field(None, gt=0)
     display_name: Optional[str] = Field(None, max_length=120)
     area_id: Optional[str] = None
     kind: Optional[str] = None

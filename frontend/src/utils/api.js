@@ -39,9 +39,22 @@ export async function fetchStorageInfo() { const res = await fetch(`${BASE_URL}/
 export async function updateStorage(payload) { const res = await fetch(`${BASE_URL}/api/storage`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!res.ok) throw new Error(`Storage update HTTP ${res.status}`); return res.json(); }
 
 export async function fetchCameras() {
-  const res = await fetch(`${BASE_URL}/api/cameras`);
-  if (!res.ok) throw new Error(`Cameras HTTP ${res.status}`);
-  return res.json();
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(`${BASE_URL}/api/cameras`, { signal: controller.signal, cache: 'no-store' });
+      if (!res.ok) throw new Error(`Cameras HTTP ${res.status}`);
+      return await res.json();
+    } catch (error) {
+      lastError = error?.name === 'AbortError' ? new Error('Camera list request timed out') : error;
+      if (attempt < 2) await new Promise(resolve => window.setTimeout(resolve, 250 * (attempt + 1)));
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+  throw lastError || new Error('Unable to load cameras');
 }
 
 export async function fetchCamera(cameraId) {
@@ -136,13 +149,31 @@ export async function applyCameraCapabilities(cameraId, payload) {
 }
 
 export async function registerCamera(payload) {
-  const res = await fetch(`${BASE_URL}/api/cameras`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`Register Camera HTTP ${res.status}`);
-  return res.json();
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(`${BASE_URL}/api/cameras`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.detail || `Register Camera HTTP ${res.status}`);
+    return body;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('Camera registration timed out. Check whether the camera was saved before retrying.');
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+export async function deleteCamera(cameraId) {
+  const res = await fetch(`${BASE_URL}/api/cameras/${encodeURIComponent(cameraId)}`, { method: 'DELETE' });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || `Delete Camera HTTP ${res.status}`);
+  return body;
 }
 
 export async function getOnboardingStatus(cameraId) {

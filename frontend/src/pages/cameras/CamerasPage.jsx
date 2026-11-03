@@ -5,8 +5,9 @@
  * runtime hover is handled by `useHoverProps` where inline styles conflict.
  */
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Pencil, Radio, Search, X } from 'lucide-react';
-import { fetchCamera, fetchCameras, fetchAreas, createArea, updateCameraMetadata, updateArea, deleteArea, registerCamera } from '../../utils/api';
+import { ArrowRight, Pencil, Radio, Search, Trash2, X } from 'lucide-react';
+import { deleteCamera, fetchCamera, fetchCameras, fetchAreas, createArea, updateCameraMetadata, updateArea, deleteArea, registerCamera } from '../../utils/api';
+import NotificationPopup from '../../components/NotificationPopup';
 
 class CameraViewErrorBoundary extends React.Component {
   state = { error: null };
@@ -30,6 +31,11 @@ export default function CamerasPage({ openSearch, navTo }) {
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '', status: 'active' });
   const [addError, setAddError] = useState('');
+  const [addingCamera, setAddingCamera] = useState(false);
+  const [editForm, setEditForm] = useState({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '' });
+  const [editError, setEditError] = useState('');
+  const [editSelectedId, setEditSelectedId] = useState('');
+  const [notification, setNotification] = useState(null);
 
   // Load data on mount
   useEffect(() => {
@@ -52,12 +58,15 @@ export default function CamerasPage({ openSearch, navTo }) {
   const handleAddCamera = async (event) => {
     event.preventDefault();
     setAddError('');
+    setAddingCamera(true);
     try {
       await registerCamera({ ...addForm, decoding_fps: addForm.decoding_fps === '' ? null : Number(addForm.decoding_fps), rtsp_url: addForm.uri });
       setAddOpen(false);
       setAddForm({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '', status: 'active' });
+      // Do not keep the form blocked while the heavier health/list request runs.
       refreshCameras();
     } catch (error) { setAddError(error.message || 'Could not add camera.'); }
+    finally { setAddingCamera(false); }
   };
 
   // Sync browser back/forward with view preference
@@ -76,6 +85,13 @@ export default function CamerasPage({ openSearch, navTo }) {
 
   const visible = filtered.slice(0, shown);
   const isEnd = shown >= filtered.length && filtered.length > 0;
+  const statusPresentation = status => {
+    if (status === 'online') return { label: 'Online', dot: 'var(--success)', color: 'var(--success-deep)' };
+    if (status === 'degraded') return { label: 'Degraded', dot: 'var(--honey)', color: 'var(--honey-deep)' };
+    if (status === 'reconnecting') return { label: 'Reconnecting', dot: 'var(--honey)', color: 'var(--honey-deep)' };
+    if (status === 'unknown') return { label: 'Starting…', dot: 'var(--muted)', color: 'var(--muted)' };
+    return { label: 'Offline', dot: 'var(--danger)', color: 'var(--danger-deep)' };
+  };
 
   // ---- area management state ----
   const [editArea, setEditArea] = useState(null);
@@ -134,7 +150,9 @@ export default function CamerasPage({ openSearch, navTo }) {
         </select>
       </div>
       <button type="button" className="hvr-ink-border" onClick={() => { setSearchQuery(''); setAreaFilter('all'); setStatusFilter('all'); setShown(40); }} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14 }}>Show every camera</button>
+      <button type="button" className="hvr-ink-border" onClick={() => { setEditSelectedId(cameras[0]?.camera_id || ''); setEditError(''); setModalMode('edit-picker'); }} style={{ padding: '6px 12px', minHeight: 34, borderRadius: 6, fontSize: 14, lineHeight: 1.2, display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--line)', background: 'var(--paper)', color: 'var(--ink)' }}><Pencil size={15} aria-hidden="true" />Edit camera</button>
       <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)} style={{ padding: '6px 12px', minHeight: 34, borderRadius: 6, fontSize: 14, lineHeight: 1.2, display: 'inline-flex', alignItems: 'center', gap: 6 }}>Add camera <ArrowRight size={16} aria-hidden="true" /></button>
+      <button type="button" onClick={() => { setModalCameraId(cameras[0]?.camera_id || ''); setModalMode('remove-picker'); }} disabled={!cameras.length} style={{ padding: '6px 12px', minHeight: 34, borderRadius: 6, fontSize: 14, lineHeight: 1.2, display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--danger)', background: 'var(--paper)', color: 'var(--danger-deep)', opacity: cameras.length ? 1 : .55 }}><Trash2 size={15} aria-hidden="true" />Delete camera</button>
     </div>
   );
 
@@ -181,6 +199,7 @@ export default function CamerasPage({ openSearch, navTo }) {
   const gridView = () => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(236px, 1fr))', gap: 14, padding: '4px 0 14px' }}>
       {visible.map(c => {
+        const status = statusPresentation(c.status);
         // useHoverProps for the .hvr-bone background hover
         return (
           <div key={c.camera_id} className="hvr-bone" style={{ border: '1px solid var(--line)', borderRadius: 14, background: 'var(--paper)', padding: '12px 14px', cursor: 'pointer', marginBottom: '4px' }}>
@@ -189,7 +208,7 @@ export default function CamerasPage({ openSearch, navTo }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '4px' }}>
               <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ fontSize: 15.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.display_name || c.camera_id}</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13.5, color: c.status === 'online' ? 'var(--success-deep)' : 'var(--danger-deep)' }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: c.status === 'online' ? 'var(--success)' : 'var(--danger)' }} />{c.status === 'online' ? 'Online' : 'Offline'}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13.5, color: status.color }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: status.dot }} />{status.label}</span>
               </span>
             </div></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)' }}>
@@ -211,6 +230,11 @@ export default function CamerasPage({ openSearch, navTo }) {
       const camera = cameras.find(item => item.camera_id === cameraId);
       setRenamePayload({ camera_id: cameraId, new_name: camera?.display_name || camera?.name || '' });
     }
+    if (mode === 'edit') {
+      const camera = cameras.find(item => item.camera_id === cameraId) || {};
+      setEditError('');
+      setEditForm({ camera_id: camera.camera_id || cameraId, name: camera.display_name || camera.name || '', uri: camera.rtsp_url || camera.uri || '', codec: camera.codec || 'h264', decoder: camera.decoder || 'auto', decoding_fps: camera.decoding_fps ?? '' });
+    }
   };
   const closeModal = () => setModalMode(null);
   const handleRename = async () => {
@@ -222,15 +246,24 @@ export default function CamerasPage({ openSearch, navTo }) {
       fetchCameras().then(setCameras).catch(() => {});
       } catch (e) { alert('Failed to rename: ' + e.message); }
   };
+  const handleEdit = async event => {
+    event.preventDefault();
+    setEditError('');
+    const nextId = editForm.camera_id.trim();
+    if (!nextId || !editForm.name.trim() || !editForm.uri.trim()) { setEditError('Camera ID, name, and RTSP URL are required.'); return; }
+    try {
+      await updateCameraMetadata(modalCameraId, { camera_id: nextId, name: editForm.name.trim(), uri: editForm.uri.trim(), codec: editForm.codec.trim(), decoder: editForm.decoder.trim(), decoding_fps: editForm.decoding_fps === '' ? null : Number(editForm.decoding_fps), display_name: editForm.name.trim() });
+      setModalMode(null);
+      refreshCameras();
+    } catch (error) { setEditError(error.message || 'Could not update camera.'); }
+  };
   const handleRemove = async () => {
     if (!modalCameraId) return;
     if (window.confirm('Remove camera ' + modalCameraId + '?')) {
       try {
-        // The backend doesn't have a delete camera endpoint in the current routers,
-        // so we just hide it from the UI by clearing the display_name and marking offline.
-        // In a full implementation, there would be a DELETE /api/cameras endpoint.
-        alert('Camera removal not yet implemented on backend; camera kept in list.');
-      } catch (e) { alert('Failed to process removal: ' + e.message); }
+        await deleteCamera(modalCameraId);
+        setCameras(current => current.filter(camera => camera.camera_id !== modalCameraId));
+      } catch (e) { setNotification({ type: 'error', title: 'Camera deletion failed', message: e.message || 'The camera could not be deleted.' }); }
       setModalMode(null);
     }
   };
@@ -270,6 +303,7 @@ export default function CamerasPage({ openSearch, navTo }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12, padding: '24px 32px 32px' }}>
+      <NotificationPopup notification={notification} onClose={() => setNotification(null)} />
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: 12 }}>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 500 }}>Cameras</h1>
         <span style={{ color: 'var(--muted)', fontSize: 14 }}>{cameras.length} cameras · {areas.length} areas</span>
@@ -290,7 +324,7 @@ export default function CamerasPage({ openSearch, navTo }) {
             {[['camera_id', 'Camera number / ID', 'CAM001'], ['name', 'Camera name', 'Main gate'], ['uri', 'RTSP URL', 'rtsp://user:password@host/stream']].map(([key, label, placeholder]) => <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>{label}</span><input required value={addForm[key]} placeholder={placeholder} onChange={e => setAddForm({ ...addForm, [key]: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>)}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>Codec</span><input value={addForm.codec} onChange={e => setAddForm({ ...addForm, codec: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label><label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>Decoder</span><input value={addForm.decoder} onChange={e => setAddForm({ ...addForm, decoder: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label></div>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>Decoding FPS</span><input type="number" min="1" step="1" value={addForm.decoding_fps} onChange={e => setAddForm({ ...addForm, decoding_fps: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 6 }}><button type="button" onClick={() => setAddOpen(false)} style={{ border: 0, background: 'transparent', color: 'var(--ink)', cursor: 'pointer' }}>Cancel</button><div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => alert('CSV camera import is planned as an upcoming feature.')} style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Upload CSV (coming soon)</button><button type="submit" className="btn btn-primary">Add camera</button></div></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 6 }}><button type="button" disabled={addingCamera} onClick={() => setAddOpen(false)} style={{ border: 0, background: 'transparent', color: 'var(--ink)', cursor: addingCamera ? 'wait' : 'pointer' }}>Cancel</button><div style={{ display: 'flex', gap: 8 }}><button type="button" disabled={addingCamera} onClick={() => alert('CSV camera import is planned as an upcoming feature.')} style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Upload CSV (coming soon)</button><button type="submit" disabled={addingCamera} className="btn btn-primary">{addingCamera ? 'Adding camera…' : 'Add camera'}</button></div></div>
           </form>
         </div>
       )}
@@ -299,6 +333,26 @@ export default function CamerasPage({ openSearch, navTo }) {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '24px', width: 400, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto' }}>
             <button type="button" onClick={closeModal} aria-label="Close modal" style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, display: 'grid', placeItems: 'center', border: 0, background: 'transparent', cursor: 'pointer' }}><X size={17} aria-hidden="true" /></button>
+            {modalMode === 'edit-picker' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h3 style={{ margin: 0 }}>Edit camera</h3>
+                <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>Choose a camera to edit.</p>
+                <select value={editSelectedId} onChange={e => setEditSelectedId(e.target.value)} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }}>
+                  {cameras.map(camera => <option key={camera.camera_id} value={camera.camera_id}>{camera.display_name || camera.name || camera.camera_id} ({camera.camera_id})</option>)}
+                </select>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}><button type="button" onClick={closeModal} style={{ padding: '7px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button><button type="button" className="btn btn-primary" onClick={() => openModal('edit', editSelectedId)} disabled={!editSelectedId}>Continue</button></div>
+              </div>
+            )}
+            {modalMode === 'remove-picker' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h3 style={{ margin: 0 }}>Delete camera</h3>
+                <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>Choose the camera to permanently remove from the database and runtime.</p>
+                <select value={modalCameraId} onChange={e => setModalCameraId(e.target.value)} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }}>
+                  {cameras.map(camera => <option key={camera.camera_id} value={camera.camera_id}>{camera.display_name || camera.name || camera.camera_id} ({camera.camera_id})</option>)}
+                </select>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}><button type="button" onClick={closeModal} style={{ padding: '7px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button><button type="button" onClick={() => setModalMode('remove')} disabled={!modalCameraId} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', border: 0, borderRadius: 6, background: 'var(--danger)', color: 'var(--paper)' }}><Trash2 size={14} />Continue</button></div>
+              </div>
+            )}
             {modalMode === 'rename' && (
               <div>
                 <h3>Rename camera</h3>
@@ -314,13 +368,23 @@ export default function CamerasPage({ openSearch, navTo }) {
                 </div>
               </div>
             )}
+            {modalMode === 'edit' && (
+              <form onSubmit={handleEdit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <h3 style={{ margin: 0 }}>Edit camera</h3>
+                <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>Update the camera configuration stored in the database.</p>
+                {editError && <div role="alert" style={{ padding: 9, borderRadius: 6, background: 'var(--danger-tint)', color: 'var(--danger-deep)', fontSize: 13 }}>{editError}</div>}
+                {[['camera_id', 'Camera number / ID'], ['name', 'Camera name'], ['uri', 'RTSP URL'], ['codec', 'Codec'], ['decoder', 'Decoder']].map(([key, label]) => <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}><span>{label}</span><input required value={editForm[key]} onChange={e => setEditForm({ ...editForm, [key]: e.target.value })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }} /></label>)}
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}><span>Decoding FPS</span><input type="number" min="1" step="1" value={editForm.decoding_fps} onChange={e => setEditForm({ ...editForm, decoding_fps: e.target.value })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }} /></label>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}><button type="button" onClick={closeModal} style={{ padding: '7px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button><button type="submit" className="btn btn-primary" style={{ padding: '7px 12px' }}>Save changes</button></div>
+              </form>
+            )}
             {modalMode === 'remove' && (
               <div>
                 <h3>Remove camera</h3>
                 <p>Remove camera <strong>{modalCameraId}</strong>?</p>
                 <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-end' }}>
                   <button onClick={closeModal} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button>
-                  <button onClick={handleRemove} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--danger)', color: 'var(--paper)' }}>Remove</button>
+                  <button onClick={handleRemove} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--danger)', color: 'var(--paper)' }}><Trash2 size={14} />Remove</button>
                 </div>
               </div>
             )}

@@ -34,10 +34,17 @@ export default function LivePage({ session, openSearch, navTo }) {
   const [showBoxes, setShowBoxes] = React.useState(true);
   const [fullScreen, setFullScreen] = React.useState(false);
   React.useEffect(() => {
+    let disposed = false;
     Promise.all([fetchCameras(), fetchAreas()]).then(([loaded, loadedAreas]) => {
+      if (disposed) return;
       setCameras(loaded);
       setAreas(loadedAreas);
-    }).catch(() => { setCameras([]); setAreas([]); });
+    }).catch((error) => {
+      // A temporary API failure must not erase the currently rendered camera
+      // set. The next navigation/reload can retry without showing 0 cameras.
+      console.warn('[LivePage] camera list refresh failed', error);
+    });
+    return () => { disposed = true; };
   }, []);
   const chosen = selection.mode === 'all' ? cameras : selection.mode === 'area' ? cameras.filter(c => c.area_id === selection.area) : cameras.filter(c => (selection.cams || []).includes(c.camera_id));
   const changeLayout = size => {

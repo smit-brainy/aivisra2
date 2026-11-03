@@ -251,8 +251,9 @@ class UserStore:
                 )
         except sqlite3.IntegrityError as exc:
             raise ValueError("That username is already in use") from exc
-            if cursor.rowcount == 0:
-                raise KeyError(user_id)
+        if cursor.rowcount == 0:
+            raise KeyError(user_id)
+        with connect(self.db_path) as conn:
             row = conn.execute(
                 "SELECT * FROM users WHERE user_id = ?", (user_id,)
             ).fetchone()
