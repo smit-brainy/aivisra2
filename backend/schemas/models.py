@@ -54,7 +54,12 @@ class InferenceEvent(DatabaseModel):
     camera_id: str
     camera_name: Optional[str] = None
     event_type: str
+    event_status: str = "CLOSED"
     object_class: str
+    rule_id: Optional[str] = None
+    geometry_id: Optional[str] = None
+    event_time_utc: Optional[str] = None
+    config_version: Optional[int] = None
     started_at_utc: str
     ended_at_utc: Optional[str] = None
     duration_seconds: Optional[float] = None
@@ -65,6 +70,13 @@ class InferenceEvent(DatabaseModel):
     clip_path: Optional[str] = None
     clip_recorded: bool = False
     metadata: Optional[dict[str, Any]] = None
+    evidence_id: Optional[str] = None
+    evidence_capture_timestamp_utc: Optional[str] = None
+    evidence_bbox: Optional[list[float]] = None
+    evidence_crop_filename: Optional[str] = None
+    evidence_crop_jpeg_url: Optional[str] = None
+    evidence_quality_score: Optional[float] = None
+    evidence_source_dimensions: Optional[list[int]] = None
     created_at: float
     updated_at: float
 

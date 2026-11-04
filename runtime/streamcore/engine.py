@@ -129,15 +129,10 @@ class StreamCore:
             logger.warning("onboarding_service_init_deferred", extra={"reason": str(exc)})
             self.onboarding_service = None
 
-        try:
-            from ..intelligence import SpatialManager
-            self.spatial_manager: Any = SpatialManager()
-        except Exception as exc:
-            logger.warning("spatial_manager_init_deferred", extra={"reason": str(exc)})
-            self.spatial_manager = None
-
+        # The central database is also used for spatial (zone/line/dwell)
+        # events, regardless of whether clip capture is enabled.
+        self.event_db = EventDatabase(self.config.events)
         if getattr(self.config, "events", None) and self.config.events.enabled:
-            self.event_db = EventDatabase(self.config.events)
             camera_urls = {c.id: c.uri for c in self.cameras}
             camera_live_paths = {c.id: getattr(c, "live_path", c.id.lower()) for c in self.cameras}
             self.clip_recorder = ClipRecorder(self.config.events, camera_urls, camera_live_paths=camera_live_paths)
@@ -149,9 +144,16 @@ class StreamCore:
                 min_crop_px=self.config.events.min_crop_px,
             )
         else:
-            self.event_db = None
             self.clip_recorder = None
             self.snapshot_store = None
+
+        try:
+            from ..intelligence import SpatialManager
+            from ..intelligence.event_store import DatabaseEventStore
+            self.spatial_manager: Any = SpatialManager(event_store=DatabaseEventStore(self.event_db))
+        except Exception as exc:
+            logger.warning("spatial_manager_init_deferred", extra={"reason": str(exc)})
+            self.spatial_manager = None
 
     def register_camera(
         self,

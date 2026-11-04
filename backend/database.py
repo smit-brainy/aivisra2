@@ -109,7 +109,12 @@ CREATE TABLE IF NOT EXISTS inference_events (
     camera_id TEXT NOT NULL,
     camera_name TEXT,
     event_type TEXT NOT NULL,
+    event_status TEXT NOT NULL DEFAULT 'CLOSED',
     object_class TEXT NOT NULL,
+    rule_id TEXT,
+    geometry_id TEXT,
+    event_time_utc TEXT,
+    config_version INTEGER,
     started_at_utc TEXT NOT NULL,
     ended_at_utc TEXT,
     duration_seconds REAL,
@@ -120,6 +125,13 @@ CREATE TABLE IF NOT EXISTS inference_events (
     clip_path TEXT,
     clip_recorded INTEGER NOT NULL DEFAULT 0,
     metadata TEXT,
+    evidence_id TEXT,
+    evidence_capture_timestamp_utc TEXT,
+    evidence_bbox TEXT,
+    evidence_crop_filename TEXT,
+    evidence_crop_jpeg_url TEXT,
+    evidence_quality_score REAL,
+    evidence_source_dimensions TEXT,
     created_at REAL NOT NULL,
     updated_at REAL NOT NULL
 );
@@ -199,6 +211,24 @@ def init_db(db_path: str | Path | None = None) -> Path:
             palette = ("red", "blue", "green", "purple", "orange", "yellow", "brown")
             for index, row in enumerate(conn.execute("SELECT area_id FROM areas ORDER BY created_at ASC").fetchall()):
                 conn.execute("UPDATE areas SET color_key = ? WHERE area_id = ?", (palette[index % len(palette)], row["area_id"]))
+        inference_columns = {row["name"] for row in conn.execute("PRAGMA table_info(inference_events)")}
+        inference_migrations = {
+            "event_status": "TEXT NOT NULL DEFAULT 'CLOSED'",
+            "rule_id": "TEXT",
+            "geometry_id": "TEXT",
+            "event_time_utc": "TEXT",
+            "config_version": "INTEGER",
+            "evidence_id": "TEXT",
+            "evidence_capture_timestamp_utc": "TEXT",
+            "evidence_bbox": "TEXT",
+            "evidence_crop_filename": "TEXT",
+            "evidence_crop_jpeg_url": "TEXT",
+            "evidence_quality_score": "REAL",
+            "evidence_source_dimensions": "TEXT",
+        }
+        for column, definition in inference_migrations.items():
+            if column not in inference_columns:
+                conn.execute(f"ALTER TABLE inference_events ADD COLUMN {column} {definition}")
         user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
         if "approval_status" not in user_columns:
             conn.execute("ALTER TABLE users ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'accepted'")

@@ -23,7 +23,12 @@ class TrackEvent:
     camera_id: str
     camera_name: str | None
     event_type: str
+    event_status: str
     object_class: str
+    rule_id: str | None
+    geometry_id: str | None
+    event_time_utc: str | None
+    config_version: int | None
     started_at_utc: str
     ended_at_utc: str | None
     duration_seconds: float | None
@@ -34,6 +39,13 @@ class TrackEvent:
     clip_path: str | None
     clip_recorded: bool
     metadata: dict[str, Any]
+    evidence_id: str | None
+    evidence_capture_timestamp_utc: str | None
+    evidence_bbox: list[float] | None
+    evidence_crop_filename: str | None
+    evidence_crop_jpeg_url: str | None
+    evidence_quality_score: float | None
+    evidence_source_dimensions: list[int] | None
     created_at: float
     updated_at: float
 
@@ -45,7 +57,12 @@ class TrackEvent:
             "camera_id": self.camera_id,
             "camera_name": self.camera_name,
             "event_type": self.event_type,
+            "event_status": self.event_status,
             "object_class": self.object_class,
+            "rule_id": self.rule_id,
+            "geometry_id": self.geometry_id,
+            "event_time_utc": self.event_time_utc,
+            "config_version": self.config_version,
             "started_at_utc": self.started_at_utc,
             "ended_at_utc": self.ended_at_utc,
             "duration_seconds": self.duration_seconds,
@@ -56,6 +73,13 @@ class TrackEvent:
             "clip_path": self.clip_path,
             "clip_recorded": self.clip_recorded,
             "metadata": self.metadata,
+            "evidence_id": self.evidence_id,
+            "evidence_capture_timestamp_utc": self.evidence_capture_timestamp_utc,
+            "evidence_bbox": self.evidence_bbox,
+            "evidence_crop_filename": self.evidence_crop_filename,
+            "evidence_crop_jpeg_url": self.evidence_crop_jpeg_url,
+            "evidence_quality_score": self.evidence_quality_score,
+            "evidence_source_dimensions": self.evidence_source_dimensions,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -70,7 +94,12 @@ class TrackEvent:
             camera_id=row["camera_id"],
             camera_name=row["camera_name"] if "camera_name" in keys else None,
             event_type=row["event_type"],
+            event_status=row["event_status"] if "event_status" in keys else "CLOSED",
             object_class=row["object_class"],
+            rule_id=row["rule_id"] if "rule_id" in keys else None,
+            geometry_id=row["geometry_id"] if "geometry_id" in keys else None,
+            event_time_utc=row["event_time_utc"] if "event_time_utc" in keys else None,
+            config_version=row["config_version"] if "config_version" in keys else None,
             started_at_utc=row["started_at_utc"],
             ended_at_utc=row["ended_at_utc"],
             duration_seconds=row["duration_seconds"],
@@ -81,6 +110,13 @@ class TrackEvent:
             clip_path=row["clip_path"],
             clip_recorded=bool(row["clip_recorded"]),
             metadata=json.loads(row["metadata"]) if row["metadata"] else {},
+            evidence_id=row["evidence_id"] if "evidence_id" in keys else None,
+            evidence_capture_timestamp_utc=row["evidence_capture_timestamp_utc"] if "evidence_capture_timestamp_utc" in keys else None,
+            evidence_bbox=json.loads(row["evidence_bbox"]) if "evidence_bbox" in keys and row["evidence_bbox"] else None,
+            evidence_crop_filename=row["evidence_crop_filename"] if "evidence_crop_filename" in keys else None,
+            evidence_crop_jpeg_url=row["evidence_crop_jpeg_url"] if "evidence_crop_jpeg_url" in keys else None,
+            evidence_quality_score=row["evidence_quality_score"] if "evidence_quality_score" in keys else None,
+            evidence_source_dimensions=json.loads(row["evidence_source_dimensions"]) if "evidence_source_dimensions" in keys and row["evidence_source_dimensions"] else None,
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
@@ -111,7 +147,12 @@ class EventDatabase:
                     camera_id TEXT NOT NULL,
                     camera_name TEXT,
                     event_type TEXT NOT NULL,
+                    event_status TEXT NOT NULL DEFAULT 'CLOSED',
                     object_class TEXT NOT NULL,
+                    rule_id TEXT,
+                    geometry_id TEXT,
+                    event_time_utc TEXT,
+                    config_version INTEGER,
                     started_at_utc TEXT NOT NULL,
                     ended_at_utc TEXT,
                     duration_seconds REAL,
@@ -122,6 +163,13 @@ class EventDatabase:
                     clip_path TEXT,
                     clip_recorded BOOLEAN DEFAULT 0,
                     metadata TEXT,
+                    evidence_id TEXT,
+                    evidence_capture_timestamp_utc TEXT,
+                    evidence_bbox TEXT,
+                    evidence_crop_filename TEXT,
+                    evidence_crop_jpeg_url TEXT,
+                    evidence_quality_score REAL,
+                    evidence_source_dimensions TEXT,
                     created_at REAL NOT NULL,
                     updated_at REAL NOT NULL
                 )
@@ -135,6 +183,16 @@ class EventDatabase:
                 conn.execute("ALTER TABLE inference_events ADD COLUMN snapshot_path TEXT")
             if "camera_name" not in existing_columns:
                 conn.execute("ALTER TABLE inference_events ADD COLUMN camera_name TEXT")
+            migrations = {
+                "event_status": "TEXT NOT NULL DEFAULT 'CLOSED'", "rule_id": "TEXT", "geometry_id": "TEXT",
+                "event_time_utc": "TEXT", "config_version": "INTEGER", "evidence_id": "TEXT",
+                "evidence_capture_timestamp_utc": "TEXT", "evidence_bbox": "TEXT",
+                "evidence_crop_filename": "TEXT", "evidence_crop_jpeg_url": "TEXT",
+                "evidence_quality_score": "REAL", "evidence_source_dimensions": "TEXT",
+            }
+            for column, definition in migrations.items():
+                if column not in existing_columns:
+                    conn.execute(f"ALTER TABLE inference_events ADD COLUMN {column} {definition}")
             # Older runtime versions stored the generated image path only in
             # metadata. Promote it into the indexed/API-facing column.
             conn.execute("""
@@ -274,6 +332,53 @@ class EventDatabase:
                 conn.commit()
         logger.info("track_event_created", extra={"event_id": event_id, "track_id": track_id, "camera_id": camera_id})
         return event_id
+
+    def upsert_spatial_event(self, event: Any) -> str:
+        """Persist zone, line, dwell, and occupancy events in inference_events."""
+        payload = event.to_dict()
+        evidence = payload.get("evidence") or {}
+        metadata = dict(payload.get("metadata") or {})
+        now = time.time()
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO inference_events (
+                        event_id, track_id, track_session_id, camera_id, event_type, event_status,
+                        object_class, rule_id, geometry_id, event_time_utc, config_version,
+                        started_at_utc, ended_at_utc, max_confidence, avg_confidence, metadata,
+                        evidence_id, evidence_capture_timestamp_utc, evidence_bbox,
+                        evidence_crop_filename, evidence_crop_jpeg_url, evidence_quality_score,
+                        evidence_source_dimensions, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(event_id) DO UPDATE SET
+                        event_status = excluded.event_status,
+                        ended_at_utc = excluded.ended_at_utc,
+                        max_confidence = excluded.max_confidence,
+                        avg_confidence = excluded.avg_confidence,
+                        metadata = excluded.metadata,
+                        evidence_id = excluded.evidence_id,
+                        evidence_capture_timestamp_utc = excluded.evidence_capture_timestamp_utc,
+                        evidence_bbox = excluded.evidence_bbox,
+                        evidence_crop_filename = excluded.evidence_crop_filename,
+                        evidence_crop_jpeg_url = excluded.evidence_crop_jpeg_url,
+                        evidence_quality_score = excluded.evidence_quality_score,
+                        evidence_source_dimensions = excluded.evidence_source_dimensions,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        payload["event_id"], payload["track_id"], payload["track_session_id"], payload["camera_id"],
+                        payload["event_type"], payload.get("event_status", "CLOSED"), payload.get("object_class", "unknown"),
+                        payload.get("rule_id"), payload.get("geometry_id"), payload.get("event_time_utc"), payload.get("config_version"),
+                        payload["started_at_utc"], payload.get("ended_at_utc"), payload.get("confidence", 0.0), payload.get("confidence", 0.0), json.dumps(metadata),
+                        evidence.get("evidence_id"), evidence.get("capture_timestamp_utc"), json.dumps(evidence.get("bbox")) if evidence.get("bbox") is not None else None,
+                        evidence.get("crop_filename"), evidence.get("crop_jpeg_url"), evidence.get("quality_score"),
+                        json.dumps(evidence.get("source_dimensions")) if evidence.get("source_dimensions") is not None else None,
+                        now, now,
+                    ),
+                )
+                conn.commit()
+        return payload["event_id"]
 
     def update_track_event(
         self,

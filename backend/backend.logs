@@ -88927,3 +88927,128 @@ Could not receive message. (Received end-of-file))
 2026-11-04 16:25:59,528 INFO events.db: track_event_created
 2026-11-04 16:26:00,434 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-651da8b23d4c url=rtsp://admin123:admin123@192.168.1.55/stream1 error=unknown; trying_reencode=true
 2026-11-04 16:26:00,434 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-93dc92db5738 url=rtsp://admin123:admin123@192.168.1.55/stream1 error=unknown; trying_reencode=true
+2026-11-04 17:17:49,556 INFO streamcore.backend: Standalone Backend: Initializing StreamCore with runtime/streamcore/app.yaml
+2026-11-04 17:17:49,679 INFO events.db: event_db_initialized
+2026-11-04 17:17:49,679 INFO events.clip_recorder: clip_recorder_started
+2026-11-04 17:17:49,685 INFO intelligence.manager: spatial_configuration_loaded
+2026-11-04 17:17:49,685 INFO streamcore.backend: Standalone Backend: Starting StreamCore video pipeline thread
+2026-11-04 17:17:51,840 INFO events.db: track_event_created
+2026-11-04 17:17:51,862 INFO events.db: track_event_created
+2026-11-04 17:17:51,888 INFO events.db: track_event_created
+2026-11-04 17:17:51,911 INFO events.db: track_event_created
+2026-11-04 17:17:51,932 INFO events.db: track_event_created
+2026-11-04 17:17:51,954 INFO events.db: track_event_created
+2026-11-04 17:17:51,971 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-32976f57a8fb url=rtsp://admin123:admin123@192.168.1.55/stream1 error=[in#0 @ 0x5923c04c9ec0] Error opening input: Operation not permitted
+Error opening input file rtsp://admin123:admin123@192.168.1.55/stream1.
+Error opening input files: Operation not permitted
+; trying_reencode=true
+2026-11-04 17:17:51,976 INFO events.db: track_event_created
+2026-11-04 17:17:51,999 INFO events.db: track_event_created
+2026-11-04 17:17:52,022 INFO events.db: track_event_created
+2026-11-04 17:17:52,294 INFO events.db: track_event_created
+2026-11-04 17:17:52,458 INFO events.db: track_event_created
+2026-11-04 17:17:54,892 INFO events.db: track_event_created
+2026-11-04 17:17:55,440 INFO runtime.streamcore.engine: metrics_report {"decode_fps":32.000640597966346,"ai_fps":18.857520352373026,"preview_fps":25.143360469830704,"inference_ms":9.92718787783815,"frame_age_ms":{"avg":17.30150249932194,"p95":28.121067998654325,"p99":28.121067998654325},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":16,"used_mib":1842.0,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":23.238560434237467,"ai_fps":13.143120245593321,"preview_fps":18.857520352373026,"inference_ms":32.958786724876795,"frame_age_ms":6.481936999989557,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":8.76208016372888,"ai_fps":5.7144001067797054,"preview_fps":6.285840117457676,"inference_ms":29.50470549979703,"frame_age_ms":28.121067998654325,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:17:55,673 INFO events.db: track_event_created
+2026-11-04 17:17:55,680 INFO events.db: track_event_created
+2026-11-04 17:17:55,688 INFO events.db: track_event_created
+2026-11-04 17:17:55,695 INFO events.db: track_event_created
+2026-11-04 17:17:55,703 INFO events.db: track_event_created
+2026-11-04 17:17:55,710 INFO events.db: track_event_created
+2026-11-04 17:17:55,718 INFO events.db: track_event_created
+2026-11-04 17:17:56,536 INFO events.db: track_event_created
+2026-11-04 17:17:57,130 INFO events.db: track_event_created
+2026-11-04 17:17:57,313 INFO events.db: track_event_created
+2026-11-04 17:17:57,439 INFO events.db: track_event_created
+2026-11-04 17:17:59,036 INFO events.db: track_event_created
+2026-11-04 17:17:59,513 INFO events.db: track_event_created
+2026-11-04 17:17:59,763 INFO events.db: track_event_created
+2026-11-04 17:18:00,441 INFO runtime.streamcore.engine: metrics_report {"decode_fps":41.37450436014345,"ai_fps":33.77918471915093,"preview_fps":31.980293225231648,"inference_ms":6.539062508566601,"frame_age_ms":{"avg":30.419682499768896,"p95":125.67528200088418,"p99":125.67528200088418},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":16,"used_mib":1936.0,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":24.384973584239134,"ai_fps":21.586697927031363,"preview_fps":20.387436931085176,"inference_ms":27.211865425939592,"frame_age_ms":25.139252000371926,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.989530775904313,"ai_fps":12.192486792119567,"preview_fps":11.592856294146474,"inference_ms":12.777980098451467,"frame_age_ms":27.204574000279536,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:01,069 INFO events.db: track_event_created
+2026-11-04 17:18:01,593 INFO events.db: track_event_created
+2026-11-04 17:18:01,596 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-1c83c8d06bf3 path=video/CAM001/CAM001_20261104_114751_evt-1c83c8d06bf3.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream1
+2026-11-04 17:18:01,667 INFO events.db: track_event_created
+2026-11-04 17:18:01,889 INFO events.db: track_event_created
+2026-11-04 17:18:02,519 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-32976f57a8fb path=video/CAM001/CAM001_20261104_114751_evt-32976f57a8fb.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream2
+2026-11-04 17:18:02,620 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-19f4c40f2d2e url=rtsp://admin123:admin123@192.168.1.55/stream1 error=[in#0 @ 0x5ce703409ec0] Error opening input: Operation not permitted
+Error opening input file rtsp://admin123:admin123@192.168.1.55/stream1.
+Error opening input files: Operation not permitted
+; trying_reencode=true
+2026-11-04 17:18:02,632 INFO streamcore.backend.streams: stream_opened camera_id=CAM001 inference=True active_mjpeg_streams=1
+2026-11-04 17:18:02,638 INFO streamcore.backend.streams: stream_opened camera_id=CAM002 inference=True active_mjpeg_streams=2
+2026-11-04 17:18:04,097 INFO events.db: track_event_created
+2026-11-04 17:18:04,894 INFO events.db: track_event_created
+2026-11-04 17:18:05,443 INFO runtime.streamcore.engine: metrics_report {"decode_fps":41.38789610150172,"ai_fps":35.78953334381066,"preview_fps":32.19058585672356,"inference_ms":5.588644661561988,"frame_age_ms":{"avg":25.674355318105054,"p95":115.38048200054618,"p99":125.67528200088418},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":14,"used_mib":1938.0,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":24.79274935548895,"ai_fps":21.79362644958303,"preview_fps":19.994152706039475,"inference_ms":29.749183853242574,"frame_age_ms":8.507685999575187,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.595146746012766,"ai_fps":13.995906894227634,"preview_fps":12.196433150684081,"inference_ms":16.618536257036403,"frame_age_ms":42.922943001030944,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:06,390 INFO events.db: track_event_created
+2026-11-04 17:18:06,971 INFO events.db: track_event_created
+2026-11-04 17:18:08,047 INFO events.db: track_event_created
+2026-11-04 17:18:08,237 INFO events.db: track_event_created
+2026-11-04 17:18:08,761 INFO streamcore.backend.streams: stream_opened camera_id=CAM001 inference=True active_mjpeg_streams=3
+2026-11-04 17:18:08,770 INFO streamcore.backend.streams: stream_opened camera_id=CAM002 inference=True active_mjpeg_streams=4
+2026-11-04 17:18:09,016 INFO events.db: track_event_created
+2026-11-04 17:18:09,398 INFO events.db: track_event_created
+2026-11-04 17:18:09,953 INFO events.db: track_event_created
+2026-11-04 17:18:10,444 INFO runtime.streamcore.engine: metrics_report {"decode_fps":40.391138168134546,"ai_fps":33.792585893142274,"preview_fps":31.193156209054408,"inference_ms":4.334827259997837,"frame_age_ms":{"avg":34.75823044431713,"p95":125.67528200088418,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":8,"used_mib":1878.0,"total_mib":12227.0,"decoder_percent":0}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":23.994735545426465,"ai_fps":22.19513037951948,"preview_fps":20.395525213612498,"inference_ms":22.72139181084574,"frame_age_ms":3.565962999346084,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.396402622708084,"ai_fps":11.597455513622792,"preview_fps":10.79763099544191,"inference_ms":13.88182118986653,"frame_age_ms":147.63251399926958,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:11,851 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-deb8b604e6e7 path=video/CAM001/CAM001_20261104_114751_evt-deb8b604e6e7.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream1
+2026-11-04 17:18:12,922 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-19f4c40f2d2e path=video/CAM001/CAM001_20261104_114751_evt-19f4c40f2d2e.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream2
+2026-11-04 17:18:13,071 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-4be0a0172d7c url=rtsp://admin123:admin123@192.168.1.55/stream1 error=[in#0 @ 0x626a1b2d9ec0] Error opening input: Operation not permitted
+Error opening input file rtsp://admin123:admin123@192.168.1.55/stream1.
+Error opening input files: Operation not permitted
+; trying_reencode=true
+2026-11-04 17:18:13,479 INFO events.db: track_event_created
+2026-11-04 17:18:15,445 INFO runtime.streamcore.engine: metrics_report {"decode_fps":41.390357967103725,"ai_fps":35.39175536317565,"preview_fps":32.19250064108068,"inference_ms":4.392462969972257,"frame_age_ms":{"avg":34.66144091295143,"p95":115.38048200054618,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":15,"used_mib":1876.0,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":24.394317255974176,"ai_fps":21.79492279427201,"preview_fps":20.195295433224523,"inference_ms":22.93832960553652,"frame_age_ms":51.69473400019342,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.99604071112955,"ai_fps":13.59683256890364,"preview_fps":11.997205207856153,"inference_ms":16.146279073489175,"frame_age_ms":57.97525699927064,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:15,739 INFO events.db: track_event_created
+2026-11-04 17:18:16,991 INFO events.db: track_event_created
+2026-11-04 17:18:17,437 INFO events.db: track_event_created
+2026-11-04 17:18:17,793 INFO events.db: track_event_created
+2026-11-04 17:18:20,446 INFO runtime.streamcore.engine: metrics_report {"decode_fps":41.39020427141429,"ai_fps":35.79152929750318,"preview_fps":31.59252306706985,"inference_ms":4.356092881964287,"frame_age_ms":{"avg":32.5535854422714,"p95":115.38048200054618,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":16,"used_mib":1818.0,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":24.594179349680957,"ai_fps":22.59465257328413,"preview_fps":19.795315086328575,"inference_ms":23.35748761055004,"frame_age_ms":8.793476999926497,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.796024921733338,"ai_fps":13.19687672421905,"preview_fps":11.797207980741272,"inference_ms":13.912677091039685,"frame_age_ms":34.72371399948315,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:20,553 INFO events.db: track_event_created
+2026-11-04 17:18:20,787 INFO events.db: track_event_created
+2026-11-04 17:18:21,469 INFO events.db: track_event_created
+2026-11-04 17:18:21,571 INFO events.db: track_event_created
+2026-11-04 17:18:21,718 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-168807742f54 path=video/CAM001/CAM001_20261104_114751_evt-168807742f54.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream1
+2026-11-04 17:18:23,925 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-4be0a0172d7c path=video/CAM001/CAM001_20261104_114751_evt-4be0a0172d7c.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream2
+2026-11-04 17:18:24,118 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-5ea31cb8eb7b url=rtsp://admin123:admin123@192.168.1.55/stream1 error=[in#0 @ 0x5cc11c9fdec0] Error opening input: Operation not permitted
+Error opening input file rtsp://admin123:admin123@192.168.1.55/stream1.
+Error opening input files: Operation not permitted
+; trying_reencode=true
+2026-11-04 17:18:24,289 INFO events.db: track_event_created
+2026-11-04 17:18:24,705 INFO events.db: track_event_created
+2026-11-04 17:18:25,437 INFO events.db: track_event_created
+2026-11-04 17:18:25,447 INFO runtime.streamcore.engine: metrics_report {"decode_fps":41.589154130841806,"ai_fps":34.790927013300355,"preview_fps":30.991917741733072,"inference_ms":4.357527153963019,"frame_age_ms":{"avg":31.253364224194858,"p95":115.38048200054618,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":16,"used_mib":1788.0,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":24.79353419338646,"ai_fps":22.5941077730054,"preview_fps":19.99478563982779,"inference_ms":25.96959568128331,"frame_age_ms":1.8712310011324007,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.795619937455342,"ai_fps":12.196819240294952,"preview_fps":10.997132101905285,"inference_ms":16.22965559017459,"frame_age_ms":45.62332200111996,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:30,448 INFO runtime.streamcore.engine: metrics_report {"decode_fps":40.79023305607542,"ai_fps":35.79142998547795,"preview_fps":31.392483283352167,"inference_ms":4.286187563924614,"frame_age_ms":{"avg":32.35973607353812,"p95":102.41548399972089,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":12,"used_mib":1896.0,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":23.994254738867898,"ai_fps":21.994733510628908,"preview_fps":19.795260159566016,"inference_ms":23.27960621828838,"frame_age_ms":37.92007400079456,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.795978317207528,"ai_fps":13.79669647484904,"preview_fps":11.59722312378615,"inference_ms":15.485368174083398,"frame_age_ms":88.08155999940936,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:30,481 INFO events.db: track_event_created
+2026-11-04 17:18:31,620 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-d6d10f47718a path=video/CAM001/CAM001_20261104_114751_evt-d6d10f47718a.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream1
+2026-11-04 17:18:32,023 INFO events.db: track_event_created
+2026-11-04 17:18:32,900 INFO events.db: track_event_created
+2026-11-04 17:18:34,682 INFO events.db: track_event_created
+2026-11-04 17:18:34,883 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-5ea31cb8eb7b path=video/CAM001/CAM001_20261104_114751_evt-5ea31cb8eb7b.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream2
+2026-11-04 17:18:35,048 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-e62d4d358006 url=rtsp://admin123:admin123@192.168.1.55/stream1 error=[in#0 @ 0x5bed2dd68ec0] Error opening input: Operation not permitted
+Error opening input file rtsp://admin123:admin123@192.168.1.55/stream1.
+Error opening input files: Operation not permitted
+; trying_reencode=true
+2026-11-04 17:18:35,450 INFO runtime.streamcore.engine: metrics_report {"decode_fps":40.98916230153196,"ai_fps":35.59058970572043,"preview_fps":31.591647042156342,"inference_ms":4.3089016559533775,"frame_age_ms":{"avg":31.05430008332001,"p95":102.41548399972089,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":13,"used_mib":1842.0,"total_mib":12227.0,"decoder_percent":2}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":24.393550247740972,"ai_fps":21.79423751642431,"preview_fps":18.39513625239483,"inference_ms":25.852845468111266,"frame_age_ms":9.85344999935478,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.59561205379099,"ai_fps":13.796352189296124,"preview_fps":13.19651078976151,"inference_ms":13.46630834795824,"frame_age_ms":6.009488999552559,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:35,575 INFO events.db: track_event_created
+2026-11-04 17:18:40,362 INFO events.db: track_event_created
+2026-11-04 17:18:40,451 INFO runtime.streamcore.engine: metrics_report {"decode_fps":40.38968061431197,"ai_fps":35.19100885207379,"preview_fps":31.991826229157994,"inference_ms":4.262125957964599,"frame_age_ms":{"avg":31.503703881610004,"p95":102.41548399972089,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":12,"used_mib":1912.375,"total_mib":12227.0,"decoder_percent":1}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM001":{"decode_fps":23.993869671868495,"ai_fps":21.19458487681717,"preview_fps":18.79519790963032,"inference_ms":24.239448801982125,"frame_age_ms":19.331512999997358,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"HEALTHY","decoder":"nvh264dec","decoder_type":"hardware"},"CAM002":{"decode_fps":16.39581094244347,"ai_fps":13.996423975256622,"preview_fps":13.196628319527672,"inference_ms":12.900715700041994,"frame_age_ms":33.52386700134957,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:41,638 INFO runtime.streamcore.engine: camera_unregistered
+2026-11-04 17:18:41,642 WARNING runtime.streamcore.preview.preview_worker: preview_encode_failed
+2026-11-04 17:18:41,806 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-53cd43eb3540 path=video/CAM001/CAM001_20261104_114751_evt-53cd43eb3540.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream1
+2026-11-04 17:18:45,453 INFO runtime.streamcore.engine: metrics_report {"decode_fps":16.595301448642534,"ai_fps":13.396207193482528,"preview_fps":16.795244839590033,"inference_ms":4.168480529948283,"frame_age_ms":{"avg":32.03096524051529,"p95":115.38048200054618,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":2,"used_mib":1836.0625,"total_mib":12227.0,"decoder_percent":0}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM002":{"decode_fps":16.595301448642534,"ai_fps":13.396207193482528,"preview_fps":11.796660065902524,"inference_ms":16.89408097008166,"frame_age_ms":0.3118999993603211,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:45,678 INFO events.clip_recorder: clip_recorded camera_id=CAM001 event_id=evt-e62d4d358006 path=video/CAM001/CAM001_20261104_114752_evt-e62d4d358006.mp4 mode=stream_copy url=rtsp://admin123:admin123@192.168.1.55/stream2
+2026-11-04 17:18:46,908 INFO events.db: track_event_created
+2026-11-04 17:18:50,454 INFO runtime.streamcore.engine: metrics_report {"decode_fps":16.595609787425225,"ai_fps":13.59640319933633,"preview_fps":10.797143717120026,"inference_ms":4.063491241951851,"frame_age_ms":{"avg":32.193134650015054,"p95":115.38048200054618,"p99":147.63251399926958},"gpu":[{"index":0,"name":"NVIDIA GeForce RTX 5070","utilization_percent":0,"used_mib":1536.0625,"total_mib":12227.0,"decoder_percent":0}],"gpu_status":null,"reconnect_total":0,"rtsp":{"CAM002":{"decode_fps":16.595609787425225,"ai_fps":13.59640319933633,"preview_fps":10.797143717120026,"inference_ms":12.803379102773333,"frame_age_ms":45.00451800049632,"reconnect_count":0,"last_error":null,"state":"CONNECTED","health":"DEGRADED","decoder":"nvh264dec","decoder_type":"hardware"}}}
+2026-11-04 17:18:50,476 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-57437bb7d365 url=rtsp://admin123:admin123@192.168.1.55/stream1 error=unknown; trying_reencode=true
+2026-11-04 17:18:50,477 INFO events.clip_recorder: clip_copy_attempt_failed camera_id=CAM001 event_id=evt-8e12c546938b url=rtsp://admin123:admin123@192.168.1.55/stream1 error=unknown; trying_reencode=true
+2026-11-04 17:18:51,842 INFO streamcore.backend.streams: stream_client_disconnected camera_id=CAM002
+2026-11-04 17:18:51,843 INFO streamcore.backend.streams: stream_closed camera_id=CAM002 inference=True
+2026-11-04 17:18:51,843 INFO streamcore.backend.streams: stream_state active_mjpeg_streams=3
+2026-11-04 17:18:51,843 INFO streamcore.backend.streams: stream_client_disconnected camera_id=CAM001
+2026-11-04 17:18:51,843 INFO streamcore.backend.streams: stream_closed camera_id=CAM001 inference=True
+2026-11-04 17:18:51,844 INFO streamcore.backend.streams: stream_state active_mjpeg_streams=2
+2026-11-04 17:18:51,844 INFO streamcore.backend.streams: stream_client_disconnected camera_id=CAM002
+2026-11-04 17:18:51,844 INFO streamcore.backend.streams: stream_closed camera_id=CAM002 inference=True
+2026-11-04 17:18:51,844 INFO streamcore.backend.streams: stream_state active_mjpeg_streams=1
+2026-11-04 17:18:51,844 INFO streamcore.backend.streams: stream_client_disconnected camera_id=CAM001
+2026-11-04 17:18:51,844 INFO streamcore.backend.streams: stream_closed camera_id=CAM001 inference=True
+2026-11-04 17:18:51,844 INFO streamcore.backend.streams: stream_state active_mjpeg_streams=0

@@ -188,3 +188,20 @@ class LocalJsonEventStore(EventStore):
             return ev
         except Exception:
             return None
+
+
+class DatabaseEventStore(LocalJsonEventStore):
+    """Bounded spatial-event cache persisted in the central inference-events table."""
+
+    def __init__(self, event_database: Any, *, max_active: int = 1000, max_recent: int = 5000) -> None:
+        self._event_database = event_database
+        # Reuse the concurrency-safe in-memory active/recent indexes, but never
+        # create or read the legacy JSONL journal.
+        super().__init__(storage_path="", max_active=max_active, max_recent=max_recent, enable_disk=False)
+
+    def save_event(self, event: SpatialEvent) -> None:
+        super().save_event(event)
+        try:
+            self._event_database.upsert_spatial_event(event)
+        except Exception as exc:
+            logger.error("event_database_write_failed", extra={"reason": str(exc), "event_id": event.event_id})
