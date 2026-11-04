@@ -18,6 +18,7 @@ PyYAML
 requests
 pandas
 matplotlib
+onvif-zeep
 
 # Web Server & REST Backend
 fastapi

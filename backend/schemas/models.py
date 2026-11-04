@@ -180,6 +180,23 @@ class CameraAnalyzeRequest(BaseModel):
     force_fresh: bool = False
 
 
+class NetworkDiscoveryStartRequest(BaseModel):
+    cidr: str = Field(..., min_length=3, max_length=43)
+    username: Optional[str] = Field(None, max_length=120)
+    password: Optional[str] = Field(None, max_length=512)
+
+
+class NetworkDiscoveryRegisterRequest(BaseModel):
+    camera_id: str = Field(..., min_length=1, max_length=120)
+    name: Optional[str] = Field(None, max_length=120)
+    rtsp_url: str = Field(..., min_length=8, max_length=2048)
+    codec: str = Field("h264", max_length=40)
+    decoder: str = Field("auto", max_length=80)
+    decoding_fps: Optional[float] = Field(None, gt=0)
+    area_id: Optional[str] = None
+    live_path: Optional[str] = Field(None, max_length=120)
+
+
 class ApplyCapabilitiesRequest(BaseModel):
     capabilities: list[str] = Field(default_factory=list)
     expected_version: Optional[int] = None

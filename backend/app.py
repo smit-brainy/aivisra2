@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from .routers import streams, telemetry, cameras, areas, spatial, search, auth
+from .routers import streams, telemetry, cameras, areas, spatial, search, auth, discovery
 from .dependencies import get_engine
 from .state_store import get_state_store
 
@@ -58,6 +58,7 @@ app.include_router(areas.router)
 app.include_router(spatial.router)
 app.include_router(search.router)
 app.include_router(auth.router)
+app.include_router(discovery.router)
 
 # Mount Frontend static files if compiled frontend dist exists
 frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
