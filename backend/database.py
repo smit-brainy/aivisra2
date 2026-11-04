@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS users (
         CHECK (role IN ('admin', 'operator', 'viewer')),
     is_active INTEGER NOT NULL DEFAULT 1
         CHECK (is_active IN (0, 1)),
+    approval_status TEXT NOT NULL DEFAULT 'accepted'
+        CHECK (approval_status IN ('pending', 'accepted', 'rejected')),
     last_login_at REAL,
     created_at REAL NOT NULL,
     updated_at REAL NOT NULL
@@ -190,6 +192,9 @@ def init_db(db_path: str | Path | None = None) -> Path:
     path = Path(db_path).expanduser().resolve() if db_path is not None else get_db_path()
     with connect(path) as conn:
         conn.executescript(_SCHEMA)
+        user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
+        if "approval_status" not in user_columns:
+            conn.execute("ALTER TABLE users ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'accepted'")
         # Older builds stored ``expires_at`` and ``revoked``. Rebuild only
         # this table so existing users and audit history remain untouched.
         columns = {row["name"] for row in conn.execute("PRAGMA table_info(sessions)")}

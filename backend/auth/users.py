@@ -26,6 +26,7 @@ PUBLIC_USER_FIELDS = (
     "display_name",
     "role",
     "is_active",
+    "approval_status",
     "last_login_at",
     "created_at",
     "updated_at",
@@ -84,6 +85,7 @@ class UserStore:
         display_name: str | None,
         role: str,
         is_active: bool,
+        approval_status: str = "accepted",
         user_id: str | None = None,
     ) -> sqlite3.Row:
         clean_username = _clean_username(username)
@@ -97,8 +99,8 @@ class UserStore:
             """
             INSERT INTO users
                 (user_id, username, display_name, password_hash, role,
-                 is_active, last_login_at, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)
+                 is_active, approval_status, last_login_at, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
             """,
             (
                 uid,
@@ -107,6 +109,7 @@ class UserStore:
                 hash_password(password),
                 role,
                 1 if is_active else 0,
+                approval_status,
                 now,
                 now,
             ),
@@ -121,6 +124,7 @@ class UserStore:
         display_name: str | None = None,
         role: str = DEFAULT_ROLE,
         is_active: bool = True,
+        approval_status: str = "accepted",
         user_id: str | None = None,
     ) -> dict[str, Any]:
         """Insert a user and return its public representation."""
@@ -136,6 +140,7 @@ class UserStore:
                     display_name=display_name,
                     role=role,
                     is_active=is_active,
+                    approval_status=approval_status,
                     user_id=user_id,
                 )
         except sqlite3.IntegrityError as exc:
@@ -220,6 +225,7 @@ class UserStore:
         display_name: str | None = None,
         role: str | None = None,
         is_active: bool | None = None,
+        approval_status: str | None = None,
     ) -> dict[str, Any]:
         """Apply a partial update. Raises ``KeyError`` when the user is missing."""
         fields: dict[str, Any] = {}
@@ -234,6 +240,10 @@ class UserStore:
             fields["role"] = _validate_role(role)
         if is_active is not None:
             fields["is_active"] = 1 if is_active else 0
+        if approval_status is not None:
+            if approval_status not in ("pending", "accepted", "rejected"):
+                raise ValueError("approval_status must be pending, accepted, or rejected")
+            fields["approval_status"] = approval_status
 
         if not fields:
             user = self.get_user(user_id)

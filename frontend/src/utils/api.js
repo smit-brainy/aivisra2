@@ -23,6 +23,8 @@ export function logout() { return authRequest('/api/auth/logout', { method: 'POS
 export function fetchUsers() { return authRequest('/api/auth/users'); }
 export function updateUser(userId, payload) { return authRequest(`/api/auth/users/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify(payload) }); }
 export function deleteUser(userId) { return authRequest(`/api/auth/users/${encodeURIComponent(userId)}`, { method: 'DELETE' }); }
+export function updateUserApproval(userId, payload) { return authRequest(`/api/auth/users/${encodeURIComponent(userId)}/approval`, { method: 'PATCH', body: JSON.stringify(payload) }); }
+export function updateUserPassword(userId, password) { return authRequest(`/api/auth/users/${encodeURIComponent(userId)}/password`, { method: 'PATCH', body: JSON.stringify({ password }) }); }
 
 export async function fetchStatus() {
   const res = await fetch(`${BASE_URL}/api/status`);

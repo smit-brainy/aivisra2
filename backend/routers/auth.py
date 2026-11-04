@@ -61,6 +61,10 @@ def _login(payload: AuthCredentials, request: Request, response: Response):
             "auth.login.failed", resource="auth/login", detail={"username": payload.username}, ip=_request_ip(request)
         )
         raise HTTPException(status_code=401, detail="Invalid username or password")
+    if user.get("approval_status") == "pending":
+        raise HTTPException(status_code=403, detail="Your account is awaiting administrator approval")
+    if user.get("approval_status") == "rejected":
+        raise HTTPException(status_code=403, detail="Your account request was rejected by an administrator")
     if not user["is_active"]:
         raise HTTPException(status_code=403, detail="User account is inactive")
 
@@ -86,12 +90,15 @@ def login(payload: AuthCredentials, request: Request, response: Response):
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(payload: SignupRequest, request: Request):
+    requested_role = payload.role if payload.role in ("operator", "viewer") else "operator"
     try:
         user = get_user_store().create_user(
             payload.username,
             payload.password,
             display_name=payload.display_name,
-            role=payload.role,
+            role=requested_role,
+            is_active=False,
+            approval_status="pending",
         )
     except ValueError as exc:
         code = 409 if "already exists" in str(exc) else 400
@@ -151,6 +158,55 @@ def update_user(user_id: str, payload: dict, request: Request):
     except Exception:
         pass
     return updated
+
+
+@router.patch("/users/{user_id}/approval")
+def update_user_approval(user_id: str, payload: dict, request: Request):
+    actor = _require_admin(request)
+    approval = payload.get("status")
+    if approval not in ("accepted", "rejected"):
+        raise HTTPException(status_code=400, detail="Approval status must be accepted or rejected")
+    users = get_user_store()
+    target = users.get_user(user_id)
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    role = payload.get("role") or target["role"]
+    if role == "user":
+        role = "viewer"
+    try:
+        updated = users.update_user(
+            user_id,
+            role=role,
+            is_active=approval == "accepted",
+            approval_status=approval,
+        )
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    get_audit_log().record(
+        f"user.{approval}", user_id=actor["user_id"], resource=f"users/{user_id}",
+        detail={"role": role}, ip=_request_ip(request),
+    )
+    return updated
+
+
+@router.patch("/users/{user_id}/password")
+def update_user_password(user_id: str, payload: dict, request: Request):
+    actor = _require_admin(request)
+    password = payload.get("password")
+    if not isinstance(password, str):
+        raise HTTPException(status_code=400, detail="Password is required")
+    users = get_user_store()
+    if users.get_user(user_id) is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        users.set_password(user_id, password)
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    get_audit_log().record(
+        "user.password_reset", user_id=actor["user_id"], resource=f"users/{user_id}",
+        ip=_request_ip(request),
+    )
+    return {"user_id": user_id, "password_updated": True}
 
 
 @router.delete("/users/{user_id}")

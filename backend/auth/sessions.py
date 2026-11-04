@@ -36,6 +36,7 @@ SELECT
     u.display_name,
     u.role,
     u.is_active,
+    u.approval_status,
     u.last_login_at,
     u.created_at  AS user_created_at,
     u.updated_at  AS user_updated_at
@@ -67,6 +68,7 @@ def _user_dict(row: sqlite3.Row) -> dict[str, Any]:
         "display_name": row["display_name"],
         "role": row["role"],
         "is_active": bool(row["is_active"]),
+        "approval_status": row["approval_status"],
         "last_login_at": row["last_login_at"],
         "created_at": row["user_created_at"],
         "updated_at": row["user_updated_at"],

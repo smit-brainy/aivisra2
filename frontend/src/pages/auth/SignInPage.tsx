@@ -25,7 +25,7 @@ export default function SignInPage({ onSignedIn }) {
     try {
       if (mode === 'signup') {
         await signup({ username: username.trim(), display_name: displayName.trim() || undefined, password, role });
-        notify('success', 'Account created. You can now sign in.', 'Signup complete');
+        notify('success', 'Your request was sent to an administrator. You can sign in after it is approved.', 'Request submitted');
         setMode('signin'); setPassword(''); setConfirm('');
       } else {
         const result = await login({ username: username.trim(), password });
@@ -45,11 +45,12 @@ export default function SignInPage({ onSignedIn }) {
     <main style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, overflow: 'auto' }}><form onSubmit={submit} style={{ width: '100%', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div><h1 style={{ margin: 0, color: 'var(--ink)', fontSize: 40, fontWeight: 500 }}>{mode === 'signin' ? 'Sign in' : 'Create account'}</h1><p style={{ color: 'var(--muted)', fontSize: 16 }}>{mode === 'signin' ? 'Use your account to continue.' : 'Create a local user account.'}</p></div>
       {mode === 'signup' && <label><span style={{ color: 'var(--ink)', display: 'block', marginBottom: 6 }}>Display name</span><input value={displayName} onChange={e => setDisplayName(e.target.value)} autoComplete="name" style={{ ...inputStyle, width: '100%' }} /></label>}
-      {mode === 'signup' && <label><span style={{ color: 'var(--ink)', display: 'block', marginBottom: 6 }}>Role</span><select value={role} onChange={e => setRole(e.target.value)} style={{ ...inputStyle, width: '100%' }}><option value="operator">Operator</option><option value="viewer">Viewer</option><option value="admin">Administrator</option></select></label>}
+      {mode === 'signup' && <label><span style={{ color: 'var(--ink)', display: 'block', marginBottom: 6 }}>Requested access</span><select value={role} onChange={e => setRole(e.target.value)} style={{ ...inputStyle, width: '100%' }}><option value="operator">Operator</option><option value="viewer">User</option></select><small style={{ display: 'block', marginTop: 6, color: 'var(--muted)' }}>An administrator will review and approve your request.</small></label>}
       <label><span style={{ color: 'var(--ink)', display: 'block', marginBottom: 6 }}>Username</span><input value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" style={{ ...inputStyle, width: '100%' }} /></label>
       <label><span style={{ color: 'var(--ink)', display: 'block', marginBottom: 6 }}>Password</span><span style={{ position: 'relative', display: 'block' }}><input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} style={{ ...inputStyle, width: '100%', paddingRight: 72 }} /><button type="button" onClick={() => setShow(!show)} style={{ position: 'absolute', right: 6, top: 6, height: 40, border: 0, background: 'transparent', color: 'var(--ink)' }}>{show ? 'Hide' : 'Show'}</button></span></label>
       {mode === 'signup' && <label><span style={{ color: 'var(--ink)', display: 'block', marginBottom: 6 }}>Confirm password</span><input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" style={{ ...inputStyle, width: '100%' }} /></label>}
       <button type="submit" disabled={busy} className="btn btn-primary" style={{ height: 48 }}>{busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}</button>
+      {mode === 'signin' && <button type="button" onClick={() => notify('info', 'Contact your administrator to reset your password.', 'Forgot password')} style={{ border: 0, background: 'transparent', color: 'var(--blue-deep)', cursor: 'pointer' }}>Forgot password?</button>}
       <button type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setPassword(''); setConfirm(''); }} style={{ border: 0, background: 'transparent', color: 'var(--blue-deep)', cursor: 'pointer' }}>{mode === 'signin' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}</button>
       <p style={{ margin: 0, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Forgot password is currently unavailable. Contact an administrator.</p>
     </form></main>
