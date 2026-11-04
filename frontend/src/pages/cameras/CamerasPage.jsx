@@ -5,8 +5,8 @@
  * runtime hover is handled by `useHoverProps` where inline styles conflict.
  */
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Pencil, Radio, Search, Trash2, X } from 'lucide-react';
-import { deleteCamera, fetchCamera, fetchCameras, fetchAreas, createArea, updateCameraMetadata, updateArea, deleteArea, registerCamera } from '../../utils/api';
+import { ArrowRight, Download, Pencil, Radio, Search, Trash2, Upload, X } from 'lucide-react';
+import { deleteCamera, fetchCamera, fetchCameras, fetchAreas, createArea, updateCameraMetadata, updateArea, deleteArea, registerCamera, importCameras } from '../../utils/api';
 import NotificationPopup from '../../components/NotificationPopup';
 
 function CameraPreview({ camera }) {
@@ -61,10 +61,11 @@ export default function CamerasPage({ openSearch, navTo }) {
   const [shown, setShown] = useState(40);
   const [loading, setLoading] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '', status: 'active' });
+  const [addForm, setAddForm] = useState({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '', area_id: '', status: 'active' });
   const [addError, setAddError] = useState('');
   const [addingCamera, setAddingCamera] = useState(false);
-  const [editForm, setEditForm] = useState({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '' });
+  const [importingCsv, setImportingCsv] = useState(false);
+  const [editForm, setEditForm] = useState({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '', area_id: '' });
   const [editError, setEditError] = useState('');
   const [editSelectedId, setEditSelectedId] = useState('');
   const [notification, setNotification] = useState(null);
@@ -85,7 +86,23 @@ export default function CamerasPage({ openSearch, navTo }) {
   }, []);
 
 
-  const refreshCameras = () => fetchCameras().then(setCameras).catch(() => {});
+  const refreshCameras = (expectedIds = []) => {
+    const wanted = new Set(expectedIds);
+    let attempts = 0;
+    const refresh = () => fetchCameras().then(data => {
+      setCameras(data);
+      attempts += 1;
+      // Camera rows are persisted before their stream workers finish attaching.
+      // Keep reconciling briefly so an import does not appear to require a
+      // backend restart just because the first list request was too early.
+      if (wanted.size && attempts < 30) {
+        window.setTimeout(refresh, 1000);
+      }
+    }).catch(() => {
+      if (wanted.size && attempts < 30) window.setTimeout(refresh, 1000);
+    });
+    refresh();
+  };
 
   const handleAddCamera = async (event) => {
     event.preventDefault();
@@ -94,11 +111,48 @@ export default function CamerasPage({ openSearch, navTo }) {
     try {
       await registerCamera({ ...addForm, decoding_fps: addForm.decoding_fps === '' ? null : Number(addForm.decoding_fps), rtsp_url: addForm.uri });
       setAddOpen(false);
-      setAddForm({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '', status: 'active' });
+      setAddForm({ camera_id: '', name: '', uri: '', codec: 'h264', decoder: 'auto', decoding_fps: '', area_id: '', status: 'active' });
       // Do not keep the form blocked while the heavier health/list request runs.
-      refreshCameras();
+      refreshCameras([addForm.camera_id]);
     } catch (error) { setAddError(error.message || 'Could not add camera.'); }
     finally { setAddingCamera(false); }
+  };
+
+  const handleImportCsv = async event => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setImportingCsv(true);
+    try {
+      const result = await importCameras(file);
+      const failed = result.results?.filter(item => item.status === 'failed') || [];
+      const importedIds = result.results?.filter(item => item.status === 'accepted').map(item => item.camera_id) || [];
+      setNotification({
+        type: failed.length ? 'warning' : 'success',
+        title: failed.length ? 'CSV import partially completed' : 'Cameras imported',
+        message: `${result.imported} camera${result.imported === 1 ? '' : 's'} accepted${failed.length ? `, ${failed.length} failed` : ''}.`,
+      });
+      setModalMode(null);
+      setAddOpen(false);
+      refreshCameras(importedIds);
+    } catch (error) {
+      setNotification({ type: 'error', title: 'CSV import failed', message: error.message || 'The CSV could not be imported.' });
+    } finally {
+      setImportingCsv(false);
+    }
+  };
+
+  const downloadCsvSkeleton = () => {
+    const csv = 'camera_number,camera_name,rtsp_url,codec,decoder,decoding_fps,area\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'cameras_template.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   // Sync browser back/forward with view preference
@@ -265,7 +319,7 @@ export default function CamerasPage({ openSearch, navTo }) {
     if (mode === 'edit') {
       const camera = cameras.find(item => item.camera_id === cameraId) || {};
       setEditError('');
-      setEditForm({ camera_id: camera.camera_id || cameraId, name: camera.display_name || camera.name || '', uri: camera.rtsp_url || camera.uri || '', codec: camera.codec || 'h264', decoder: camera.decoder || 'auto', decoding_fps: camera.decoding_fps ?? '' });
+      setEditForm({ camera_id: camera.camera_id || cameraId, name: camera.display_name || camera.name || '', uri: camera.rtsp_url || camera.uri || '', codec: camera.codec || 'h264', decoder: camera.decoder || 'auto', decoding_fps: camera.decoding_fps ?? '', area_id: camera.area_id || '' });
     }
   };
   const closeModal = () => setModalMode(null);
@@ -284,7 +338,7 @@ export default function CamerasPage({ openSearch, navTo }) {
     const nextId = editForm.camera_id.trim();
     if (!nextId || !editForm.name.trim() || !editForm.uri.trim()) { setEditError('Camera ID, name, and RTSP URL are required.'); return; }
     try {
-      await updateCameraMetadata(modalCameraId, { camera_id: nextId, name: editForm.name.trim(), uri: editForm.uri.trim(), codec: editForm.codec.trim(), decoder: editForm.decoder.trim(), decoding_fps: editForm.decoding_fps === '' ? null : Number(editForm.decoding_fps), display_name: editForm.name.trim() });
+      await updateCameraMetadata(modalCameraId, { camera_id: nextId, name: editForm.name.trim(), uri: editForm.uri.trim(), codec: editForm.codec.trim(), decoder: editForm.decoder.trim(), decoding_fps: editForm.decoding_fps === '' ? null : Number(editForm.decoding_fps), area_id: editForm.area_id || null, display_name: editForm.name.trim() });
       setModalMode(null);
       refreshCameras();
     } catch (error) { setEditError(error.message || 'Could not update camera.'); }
@@ -356,7 +410,8 @@ export default function CamerasPage({ openSearch, navTo }) {
             {[['camera_id', 'Camera number / ID', 'CAM001'], ['name', 'Camera name', 'Main gate'], ['uri', 'RTSP URL', 'rtsp://user:password@host/stream']].map(([key, label, placeholder]) => <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>{label}</span><input required value={addForm[key]} placeholder={placeholder} onChange={e => setAddForm({ ...addForm, [key]: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>)}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>Codec</span><input value={addForm.codec} onChange={e => setAddForm({ ...addForm, codec: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label><label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>Decoder</span><input value={addForm.decoder} onChange={e => setAddForm({ ...addForm, decoder: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label></div>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>Decoding FPS</span><input type="number" min="1" step="1" value={addForm.decoding_fps} onChange={e => setAddForm({ ...addForm, decoding_fps: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 6 }}><button type="button" disabled={addingCamera} onClick={() => setAddOpen(false)} style={{ border: 0, background: 'transparent', color: 'var(--ink)', cursor: addingCamera ? 'wait' : 'pointer' }}>Cancel</button><div style={{ display: 'flex', gap: 8 }}><button type="button" disabled={addingCamera} onClick={() => alert('CSV camera import is planned as an upcoming feature.')} style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Upload CSV (coming soon)</button><button type="submit" disabled={addingCamera} className="btn btn-primary">{addingCamera ? 'Adding camera…' : 'Add camera'}</button></div></div>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}><span>Area</span><select value={addForm.area_id} onChange={e => setAddForm({ ...addForm, area_id: e.target.value })} style={{ padding: 10, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }}><option value="">Unassigned</option>{areas.map(area => <option key={area.area_id} value={area.area_id}>{area.name}</option>)}</select></label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 6 }}><button type="button" disabled={addingCamera || importingCsv} onClick={() => setAddOpen(false)} style={{ border: 0, background: 'transparent', color: 'var(--ink)', cursor: addingCamera ? 'wait' : 'pointer' }}>Cancel</button><div style={{ display: 'flex', gap: 8 }}><button type="button" disabled={addingCamera || importingCsv} onClick={() => setModalMode('csv-import')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><Upload size={15} aria-hidden="true" />Import CSV</button><button type="submit" disabled={addingCamera || importingCsv} className="btn btn-primary">{addingCamera ? 'Adding camera…' : 'Add camera'}</button></div></div>
           </form>
         </div>
       )}
@@ -365,6 +420,15 @@ export default function CamerasPage({ openSearch, navTo }) {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '24px', width: 400, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto' }}>
             <button type="button" onClick={closeModal} aria-label="Close modal" style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, display: 'grid', placeItems: 'center', border: 0, background: 'transparent', cursor: 'pointer' }}><X size={17} aria-hidden="true" /></button>
+            {modalMode === 'csv-import' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <h3 style={{ margin: 0 }}>Import cameras from CSV</h3>
+                <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>Use the standard snake_case headers, fill in the cameras, then upload the completed file.</p>
+                <button type="button" onClick={downloadCsvSkeleton} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><Download size={16} aria-hidden="true" />Download skeleton CSV</button>
+                <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 12px', border: 0, borderRadius: 6, background: 'var(--blue-2)', color: 'var(--paper)', cursor: importingCsv ? 'wait' : 'pointer' }}><Upload size={16} aria-hidden="true" />{importingCsv ? 'Importing…' : 'Upload completed CSV'}<input type="file" accept=".csv,text/csv" disabled={importingCsv} onChange={handleImportCsv} style={{ display: 'none' }} /></label>
+                <button type="button" onClick={closeModal} disabled={importingCsv} style={{ alignSelf: 'flex-end', padding: '7px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button>
+              </div>
+            )}
             {modalMode === 'edit-picker' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <h3 style={{ margin: 0 }}>Edit camera</h3>
@@ -407,6 +471,7 @@ export default function CamerasPage({ openSearch, navTo }) {
                 {editError && <div role="alert" style={{ padding: 9, borderRadius: 6, background: 'var(--danger-tint)', color: 'var(--danger-deep)', fontSize: 13 }}>{editError}</div>}
                 {[['camera_id', 'Camera number / ID'], ['name', 'Camera name'], ['uri', 'RTSP URL'], ['codec', 'Codec'], ['decoder', 'Decoder']].map(([key, label]) => <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}><span>{label}</span><input required value={editForm[key]} onChange={e => setEditForm({ ...editForm, [key]: e.target.value })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }} /></label>)}
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}><span>Decoding FPS</span><input type="number" min="1" step="1" value={editForm.decoding_fps} onChange={e => setEditForm({ ...editForm, decoding_fps: e.target.value })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }} /></label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}><span>Area</span><select value={editForm.area_id} onChange={e => setEditForm({ ...editForm, area_id: e.target.value })} style={{ padding: 9, border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111' }}><option value="">Unassigned</option>{areas.map(area => <option key={area.area_id} value={area.area_id}>{area.name}</option>)}</select></label>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}><button type="button" onClick={closeModal} style={{ padding: '7px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button><button type="submit" className="btn btn-primary" style={{ padding: '7px 12px' }}>Save changes</button></div>
               </form>
             )}

@@ -130,6 +130,7 @@ class CameraRegisterRequest(BaseModel):
     decoding_fps: Optional[float] = None
     status: str = "active"
     camera_metadata: Optional[dict[str, Any]] = None
+    area_id: Optional[str] = None
     live_path: Optional[str] = None
 
 

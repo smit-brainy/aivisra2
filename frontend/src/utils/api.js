@@ -169,6 +169,18 @@ export async function registerCamera(payload) {
   }
 }
 
+export async function importCameras(file) {
+  const csv = await file.text();
+  const res = await fetch(`${BASE_URL}/api/cameras/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/csv; charset=utf-8' },
+    body: csv,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || `Camera CSV import HTTP ${res.status}`);
+  return body;
+}
+
 export async function deleteCamera(cameraId) {
   const res = await fetch(`${BASE_URL}/api/cameras/${encodeURIComponent(cameraId)}`, { method: 'DELETE' });
   const body = await res.json().catch(() => ({}));

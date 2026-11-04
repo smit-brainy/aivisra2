@@ -13,6 +13,8 @@ Serves:
 """
 
 import json
+import csv
+import io
 import logging
 import threading
 import time
@@ -114,6 +116,28 @@ def _camera_payload(camera: Any, meta: dict[str, Any], areas: dict[str, dict[str
 
 def _configured_cameras(engine: Any) -> list[Any]:
     return list(getattr(engine, "cameras", None) or [])
+
+
+def _resolve_area_id(area_value: str | None, *, create: bool = False) -> str | None:
+    """Resolve an area ID or name for UI and CSV imports."""
+    clean = (area_value or "").strip()
+    if not clean:
+        return None
+    store = get_state_store()
+    areas = store.list_areas()
+    for area in areas:
+        if area["area_id"] == clean or area["name"].casefold() == clean.casefold():
+            return area["area_id"]
+    if create:
+        return store.create_area(clean)["area_id"]
+    raise ValueError(f"Unknown area '{clean}'. Create it first or leave Area blank.")
+
+
+def _assign_camera_area(camera_id: str, area_id: str | None, display_name: str) -> None:
+    store = get_state_store()
+    store.ensure_camera(camera_id, display_name)
+    if area_id is not None:
+        store.update_camera(camera_id, {"area_id": area_id})
 
 
 @router.get("/api/capabilities")
@@ -303,6 +327,10 @@ def register_camera(payload: CameraRegisterRequest):
         )
     if urlsplit(rtsp_url).scheme not in ("rtsp", "rtsps", "file", "videotestsrc"):
         raise HTTPException(status_code=400, detail="RTSP URL must use rtsp:// or rtsps://")
+    try:
+        area_id = _resolve_area_id(payload.area_id, create=False)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:
         with connect() as conn:
@@ -324,11 +352,18 @@ def register_camera(payload: CameraRegisterRequest):
             raise HTTPException(status_code=409, detail=f"Camera ID '{camera_id}' already exists") from exc
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    try:
+        _assign_camera_area(camera_id, area_id, payload.name or camera_id)
+    except ValueError as exc:
+        with connect() as conn:
+            conn.execute("DELETE FROM cameras WHERE camera_id = ?", (camera_id,))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     def attach_stream() -> None:
         try:
             # Metadata creation and stream startup can both contend with event
             # writers; keep them off the HTTP request path.
-            get_state_store().ensure_camera(camera_id, payload.name or camera_id)
+            _assign_camera_area(camera_id, area_id, payload.name or camera_id)
             engine = get_engine()
             service = getattr(engine, "onboarding_service", None) if engine else None
             if service is None:
@@ -351,6 +386,84 @@ def register_camera(payload: CameraRegisterRequest):
 
     threading.Thread(target=attach_stream, name=f"camera-attach-{camera_id}", daemon=True).start()
     return {"camera_id": camera_id, "status": "connecting", "message": "Camera saved; connecting to stream."}
+
+
+@router.post("/api/cameras/import")
+async def import_cameras(request: Request):
+    """Import camera configurations from a CSV file.
+
+    Required columns: camera_number, camera_name, rtsp_url, codec, decoder,
+    decoding_fps, and area. Area may be an existing area ID/name; an unknown
+    non-empty area name is created automatically for convenience.
+    """
+    try:
+        raw_content = await request.body()
+        if len(raw_content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="CSV file is too large (maximum 10 MB)")
+        content = raw_content.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="CSV must be UTF-8 encoded") from exc
+
+    reader = csv.DictReader(io.StringIO(content))
+    if not reader.fieldnames:
+        raise HTTPException(status_code=400, detail="CSV has no header row")
+
+    def key(value: str) -> str:
+        return "".join(ch for ch in value.strip().casefold() if ch.isalnum())
+
+    aliases = {
+        "camera_number": {"cameranumber", "cameraid", "id", "number"},
+        "name": {"cameraname", "name", "displayname"},
+        "rtsp_url": {"rtspurl", "uri", "url"},
+        "codec": {"codec"},
+        "decoder": {"decoder"},
+        "decoding_fps": {"decodingfps", "fps"},
+        "area": {"area", "areaname", "areaid"},
+    }
+    header_map = {key(header): header for header in reader.fieldnames if header}
+    missing = [name for name, names in aliases.items() if not any(item in header_map for item in names)]
+    if missing:
+        labels = {"camera_number": "Camera Number", "name": "Camera Name", "rtsp_url": "RTSP URL"}
+        raise HTTPException(status_code=400, detail="Missing CSV columns: " + ", ".join(labels.get(item, item) for item in missing))
+
+    def value(row: dict[str, str], field: str) -> str:
+        for alias in aliases[field]:
+            header = header_map.get(alias)
+            if header is not None:
+                return (row.get(header) or "").strip()
+        return ""
+
+    results: list[dict[str, Any]] = []
+    for row_number, row in enumerate(reader, start=2):
+        camera_id = value(row, "camera_number")
+        name = value(row, "name")
+        uri = value(row, "rtsp_url")
+        try:
+            if not camera_id or not name or not uri:
+                raise ValueError("Camera Number, Camera Name, and RTSP URL are required")
+            raw_fps = value(row, "decoding_fps")
+            fps = float(raw_fps) if raw_fps else None
+            if fps is not None and fps <= 0:
+                raise ValueError("Decoding FPS must be greater than zero")
+            area_id = _resolve_area_id(value(row, "area"), create=True)
+            payload = CameraRegisterRequest(
+                camera_id=camera_id,
+                name=name,
+                rtsp_url=uri,
+                codec=value(row, "codec") or "h264",
+                decoder=value(row, "decoder") or "auto",
+                decoding_fps=fps,
+                area_id=area_id,
+            )
+            register_camera(payload)
+            results.append({"row": row_number, "camera_id": camera_id, "status": "accepted"})
+        except HTTPException as exc:
+            results.append({"row": row_number, "camera_id": camera_id or None, "status": "failed", "error": str(exc.detail)})
+        except Exception as exc:
+            results.append({"row": row_number, "camera_id": camera_id or None, "status": "failed", "error": str(exc)})
+
+    imported = sum(item["status"] == "accepted" for item in results)
+    return {"imported": imported, "failed": len(results) - imported, "results": results}
 
 
 @router.delete("/api/cameras/{camera_id}")
