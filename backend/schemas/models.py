@@ -14,6 +14,7 @@ class Area(DatabaseModel):
     area_id: str
     name: str
     sort_order: int = 0
+    color_key: str = "blue"
     created_at: float
     updated_at: float
 

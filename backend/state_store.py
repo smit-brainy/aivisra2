@@ -23,6 +23,7 @@ from .database import get_db_path, init_db, resolve_db_path
 
 CAMERA_KINDS = ("person", "vehicle", "both")
 CAMERA_LEVELS = ("low", "standard", "high", "maximum")
+AREA_COLOR_KEYS = ("red", "blue", "green", "purple", "orange", "yellow", "brown")
 
 __all__ = [
     "CAMERA_KINDS",
@@ -146,10 +147,11 @@ class StateStore:
         now = time.time()
         try:
             with self._lock, self._connect() as conn:
+                count = conn.execute("SELECT COUNT(*) AS count FROM areas").fetchone()["count"]
                 conn.execute(
-                    "INSERT INTO areas (area_id, name, sort_order, created_at, updated_at) "
-                    "VALUES (?, ?, ?, ?, ?)",
-                    (area_id, clean, int(sort_order), now, now),
+                    "INSERT INTO areas (area_id, name, sort_order, color_key, created_at, updated_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (area_id, clean, int(sort_order), AREA_COLOR_KEYS[count % len(AREA_COLOR_KEYS)], now, now),
                 )
                 row = conn.execute("SELECT * FROM areas WHERE area_id = ?", (area_id,)).fetchone()
         except sqlite3.IntegrityError as exc:

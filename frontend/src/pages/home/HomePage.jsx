@@ -14,6 +14,7 @@ import InetraStrip from '../../components/inetra/InetraStrip';
 import InetraEventCard from '../../components/inetra/InetraEventCard';
 import InetraMonthCalendar from '../../components/inetra/InetraMonthCalendar';
 import { fetchCameras, fetchEvent, fetchEvents, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
+import { areaColor } from '../../utils/areaColors';
 
 const STEPS = [
   ['Add your cameras', 'Opens Add cameras. Find them on this network, add them from the recorder, enter an address or upload a list.', 'Add cameras'],
@@ -87,9 +88,18 @@ export default function HomePage({ session, openSearch, navTo }) {
       };
     }),
   }));
-  const realGroups = dbCameras.length ? [{
-    name: 'All cameras', toneBg: 'var(--blue-tint)', toneInk: 'var(--blue-deep)', count: `${dbCameras.length} ${dbCameras.length === 1 ? 'camera' : 'cameras'}`,
-    rows: dbCameras.map(camera => {
+  const realGroups = dbCameras.length ? Object.values(dbCameras.reduce((groups, camera) => {
+    const area = camera.area;
+    const groupKey = area?.area_id || 'unassigned';
+    const tone = area ? areaColor(area) : { background: 'var(--paper-2)', color: 'var(--muted)' };
+    const group = groups[groupKey] || { name: area?.name || 'Unassigned', toneBg: tone.background, toneInk: tone.color, rows: [] };
+    group.rows.push(camera);
+    groups[groupKey] = group;
+    return groups;
+  }, {})).map(group => ({
+    ...group,
+    count: `${group.rows.length} ${group.rows.length === 1 ? 'camera' : 'cameras'}`,
+    rows: group.rows.map(camera => {
       const cameraEvents = dbEvents.filter(event => String(event.camera_id) === String(camera.camera_id));
       const eventTimes = cameraEvents.map(event => {
         const stamp = Date.parse(event.started_at_utc || '');
@@ -102,7 +112,7 @@ export default function HomePage({ session, openSearch, navTo }) {
       const name = camera.display_name || camera.name || camera.camera_id;
       return { num: camera.camera_id, name, times: eventTimes, cnt: eventTimes.length, offline: [], isOff: camera.status === 'offline', open: () => openSearch({ cams: [camera.camera_id], preset: 'today' }), pick: time => openSearch({ cams: [camera.camera_id], focusT: time }) };
     }),
-  }] : [];
+  })) : [];
   const groups = realGroups;
   const realTodayEvents = dbEvents.map((event, index) => {
     const stamp = Date.parse(event.started_at_utc || '');

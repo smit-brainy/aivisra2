@@ -93,7 +93,7 @@ export async function createArea(payload) {
 }
 
 export async function updateArea(areaId, payload) {
-  const res = await fetch(`${BASE_URL}/api/areas/${areaId}`, {
+  const res = await fetch(`${BASE_URL}/api/areas/${encodeURIComponent(areaId)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -103,9 +103,13 @@ export async function updateArea(areaId, payload) {
 }
 
 export async function deleteArea(areaId) {
-  const res = await fetch(`${BASE_URL}/api/areas/${areaId}`, { method: 'DELETE' });
+  const res = await fetch(`${BASE_URL}/api/areas/${encodeURIComponent(areaId)}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Delete Area HTTP ${res.status}`);
   return res.json();
+}
+
+export async function updateCameraArea(cameraId, areaId) {
+  return updateCameraMetadata(cameraId, { area_id: areaId || null });
 }
 
 export async function fetchDetections(cameraId) {

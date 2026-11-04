@@ -5,6 +5,7 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
+import { areaColor } from '../../utils/areaColors';
 
 function CameraRow({ camera, selected, toggle }) {
   const id = camera.camera_id || camera.id;
@@ -53,7 +54,7 @@ export default function InetraCameraPicker({
           </div>
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '6px 0 8px' }}>
             <button type="button" className="hvr-blue2" onClick={() => choose({ mode: 'all' })} style={{ width: '100%', height: 46, padding: '0 16px', background: value.mode === 'all' ? 'var(--blue-tint)' : 'transparent', textAlign: 'left' }}>Every camera <small style={{ float: 'right', color: 'var(--muted)' }}>{cameras.filter(c => c.online !== false).length} of {cameras.length} online</small></button>
-            {areas.map(area => { const rows = visible.filter(c => c.area_id === area.area_id); if (!rows.length) return null; return <div key={area.area_id}><div style={{ padding: '10px 16px 6px', borderTop: '1px solid var(--line-soft)', font: '500 11px/1 var(--font-mono)', textTransform: 'uppercase', color: 'var(--muted)' }}>{area.name}</div>{rows.map(camera => <CameraRow key={camera.camera_id || camera.id} camera={camera} selected={selected} toggle={toggle} />)}</div>; })}
+            {areas.map(area => { const rows = visible.filter(c => c.area_id === area.area_id); if (!rows.length) return null; return <div key={area.area_id}><div style={{ padding: '10px 16px 6px', borderTop: '1px solid var(--line-soft)' }}><span style={{ display: 'inline-block', padding: '3px 6px', borderRadius: 4, font: '500 11px/1 var(--font-mono)', textTransform: 'uppercase', ...areaColor(area) }}>{area.name}</span></div>{rows.map(camera => <CameraRow key={camera.camera_id || camera.id} camera={camera} selected={selected} toggle={toggle} />)}</div>; })}
             {(() => { const rows = visible.filter(c => !c.area_id || !areas.some(a => a.area_id === c.area_id)); return rows.length ? <div><div style={{ padding: '10px 16px 6px', borderTop: '1px solid var(--line-soft)', font: '500 11px/1 var(--font-mono)', textTransform: 'uppercase', color: 'var(--muted)' }}>Cameras</div>{rows.map(camera => <CameraRow key={camera.camera_id || camera.id} camera={camera} selected={selected} toggle={toggle} />)}</div> : null; })()}
           </div>
         </div>

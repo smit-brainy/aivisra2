@@ -88,7 +88,7 @@ def _camera_payload(camera: Any, meta: dict[str, Any], areas: dict[str, dict[str
         "name": display_name,
         "display_name": display_name,
         "area_id": area_id,
-        "area": {"area_id": area["area_id"], "name": area["name"]} if area else None,
+        "area": {"area_id": area["area_id"], "name": area["name"], "color_key": area.get("color_key", "blue")} if area else None,
         "kind": meta.get("kind") or "both",
         "level": meta.get("level") or "standard",
         "notes": meta.get("notes"),
@@ -264,55 +264,6 @@ def update_camera_metadata(camera_id: str, payload: CameraMetadataRequest):
         areas,
         _camera_health(engine).get(camera_id),
     )
-
-
-@router.get("/api/areas")
-def get_areas():
-    """List camera grouping areas with their camera counts."""
-    store = get_state_store()
-    counts: dict[str, int] = {}
-    for meta in store.list_cameras().values():
-        area_id = meta.get("area_id")
-        if area_id:
-            counts[area_id] = counts.get(area_id, 0) + 1
-    return [
-        {**area, "camera_count": counts.get(area["area_id"], 0)}
-        for area in store.list_areas()
-    ]
-
-
-@router.post("/api/areas", status_code=status.HTTP_201_CREATED)
-def create_area(payload: AreaCreateRequest):
-    """Create a camera grouping area."""
-    try:
-        return get_state_store().create_area(payload.name, payload.sort_order)
-    except ValueError as exc:
-        detail = str(exc)
-        code = 409 if "already exists" in detail else 400
-        raise HTTPException(status_code=code, detail=detail)
-
-
-@router.put("/api/areas/{area_id}")
-def update_area(area_id: str, payload: AreaUpdateRequest):
-    """Rename or reorder an area."""
-    try:
-        return get_state_store().update_area(
-            area_id, name=payload.name, sort_order=payload.sort_order
-        )
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Unknown area: {area_id}")
-    except ValueError as exc:
-        detail = str(exc)
-        code = 409 if "already exists" in detail else 400
-        raise HTTPException(status_code=code, detail=detail)
-
-
-@router.delete("/api/areas/{area_id}")
-def delete_area(area_id: str):
-    """Delete an area; cameras in it become unassigned."""
-    if not get_state_store().delete_area(area_id):
-        raise HTTPException(status_code=404, detail=f"Unknown area: {area_id}")
-    return {"area_id": area_id, "deleted": True}
 
 
 @router.post("/api/cameras", status_code=status.HTTP_201_CREATED)

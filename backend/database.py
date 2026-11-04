@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS areas (
     area_id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
+    color_key TEXT NOT NULL DEFAULT 'blue',
     created_at REAL NOT NULL,
     updated_at REAL NOT NULL
 );
@@ -192,6 +193,12 @@ def init_db(db_path: str | Path | None = None) -> Path:
     path = Path(db_path).expanduser().resolve() if db_path is not None else get_db_path()
     with connect(path) as conn:
         conn.executescript(_SCHEMA)
+        area_columns = {row["name"] for row in conn.execute("PRAGMA table_info(areas)")}
+        if "color_key" not in area_columns:
+            conn.execute("ALTER TABLE areas ADD COLUMN color_key TEXT NOT NULL DEFAULT 'blue'")
+            palette = ("red", "blue", "green", "purple", "orange", "yellow", "brown")
+            for index, row in enumerate(conn.execute("SELECT area_id FROM areas ORDER BY created_at ASC").fetchall()):
+                conn.execute("UPDATE areas SET color_key = ? WHERE area_id = ?", (palette[index % len(palette)], row["area_id"]))
         user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
         if "approval_status" not in user_columns:
             conn.execute("ALTER TABLE users ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'accepted'")

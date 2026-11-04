@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from .routers import streams, telemetry, cameras, spatial, search, auth
+from .routers import streams, telemetry, cameras, areas, spatial, search, auth
 from .dependencies import get_engine
 from .state_store import get_state_store
 
@@ -54,6 +54,7 @@ app.add_middleware(
 app.include_router(streams.router)
 app.include_router(telemetry.router)
 app.include_router(cameras.router)
+app.include_router(areas.router)
 app.include_router(spatial.router)
 app.include_router(search.router)
 app.include_router(auth.router)

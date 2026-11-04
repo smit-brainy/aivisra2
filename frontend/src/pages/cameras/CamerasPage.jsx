@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight, Download, Pencil, Radio, Search, Trash2, Upload, X } from 'lucide-react';
 import { deleteCamera, fetchCamera, fetchCameras, fetchAreas, createArea, updateCameraMetadata, updateArea, deleteArea, registerCamera, importCameras } from '../../utils/api';
 import NotificationPopup from '../../components/NotificationPopup';
+import { areaColor } from '../../utils/areaColors';
 
 function CameraPreview({ camera }) {
   const [retry, setRetry] = useState(0);
@@ -236,6 +237,7 @@ export default function CamerasPage({ openSearch, navTo }) {
         </select>
       </div>
       <button type="button" className="hvr-ink-border" onClick={() => { setSearchQuery(''); setAreaFilter('all'); setStatusFilter('all'); setShown(40); }} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14 }}>Show every camera</button>
+      <button type="button" className="hvr-ink-border" onClick={() => setEditArea('manage')} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)', fontSize: 14 }}>Manage areas</button>
       <button type="button" className="hvr-ink-border" onClick={() => { setEditSelectedId(cameras[0]?.camera_id || ''); setEditError(''); setModalMode('edit-picker'); }} style={{ padding: '6px 12px', minHeight: 34, borderRadius: 6, fontSize: 14, lineHeight: 1.2, display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--line)', background: 'var(--paper)', color: 'var(--ink)' }}><Pencil size={15} aria-hidden="true" />Edit camera</button>
       <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)} style={{ padding: '6px 12px', minHeight: 34, borderRadius: 6, fontSize: 14, lineHeight: 1.2, display: 'inline-flex', alignItems: 'center', gap: 6 }}>Add camera <ArrowRight size={16} aria-hidden="true" /></button>
       <button type="button" onClick={() => { setModalCameraId(cameras[0]?.camera_id || ''); setModalMode('remove-picker'); }} disabled={!cameras.length} style={{ padding: '6px 12px', minHeight: 34, borderRadius: 6, fontSize: 14, lineHeight: 1.2, display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--danger)', background: 'var(--paper)', color: 'var(--danger-deep)', opacity: cameras.length ? 1 : .55 }}><Trash2 size={15} aria-hidden="true" />Delete camera</button>
@@ -252,6 +254,7 @@ export default function CamerasPage({ openSearch, navTo }) {
         const displayName = String(meta.display_name || meta.name || cameraId);
         const status = String(meta.status || meta.state || 'unknown');
         const statusInk = status === 'online' ? 'var(--ink)' : 'var(--danger-deep)';
+        const cameraArea = meta.area || areas.find(area => area.area_id === meta.area_id);
 
         // useHoverProps returns: style (merged), onMouseEnter, onMouseLeave
         // We apply it to the row div so the .hvr-bone / .hvr-ink-border rules
@@ -261,7 +264,7 @@ export default function CamerasPage({ openSearch, navTo }) {
             <span style={{ fontSize: 13, color: status === 'online' ? 'var(--success)' : 'var(--danger)' }}>●</span>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <span style={{ fontSize: 15.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
-              <span style={{ fontSize: 13.5, color: statusInk }}>{status}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, color: statusInk }}>{status}{cameraArea && <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 11, ...areaColor(cameraArea) }}>{cameraArea.name}</span>}</span>
             </span>
             <span>{meta.events_count || 0} events today</span>
             <span style={{ textAlign: 'right', fontSize: 13 }}>
@@ -286,6 +289,7 @@ export default function CamerasPage({ openSearch, navTo }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(236px, 1fr))', gap: 14, padding: '4px 0 14px' }}>
       {visible.map(c => {
         const status = statusPresentation(c.status);
+        const cameraArea = c.area || areas.find(area => area.area_id === c.area_id);
         // useHoverProps for the .hvr-bone background hover
         return (
           <div key={c.camera_id} className="hvr-bone" style={{ border: '1px solid var(--line)', borderRadius: 14, background: 'var(--paper)', padding: '12px 14px', cursor: 'pointer', marginBottom: '4px' }}>
@@ -295,6 +299,7 @@ export default function CamerasPage({ openSearch, navTo }) {
               <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ fontSize: 15.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.display_name || c.camera_id}</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13.5, color: status.color }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: status.dot }} />{status.label}</span>
+                {cameraArea && <span style={{ alignSelf: 'flex-start', padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600, ...areaColor(cameraArea) }}>{cameraArea.name}</span>}
               </span>
             </div></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)' }}>
@@ -363,6 +368,16 @@ export default function CamerasPage({ openSearch, navTo }) {
       setNewAreaName('');
     } catch (e) { alert('Failed to create area: ' + e.message); }
   };
+  const handleCameraAreaChange = async (cameraId, areaId) => {
+    try {
+      await updateCameraMetadata(cameraId, { area_id: areaId || null });
+      setCameras(current => current.map(camera => camera.camera_id === cameraId ? { ...camera, area_id: areaId || null } : camera));
+      const refreshed = await fetchAreas();
+      setAreas(refreshed);
+    } catch (error) {
+      setNotification({ type: 'error', title: 'Area update failed', message: error.message || 'The camera area could not be updated.' });
+    }
+  };
 
   // ---- area rename/remove modals (simplified) ----
   const [areaEditing, setAreaEditing] = useState(null);
@@ -376,14 +391,18 @@ export default function CamerasPage({ openSearch, navTo }) {
       setAreaEditing(null);
     } catch (e) { alert('Failed to rename area: ' + e.message); }
   };
-  const handleAreaRemove = async () => {
-    if (!areaPayload.area_id) return;
-    if (window.confirm('Remove area ' + areaPayload.area_id + '?')) {
-      try {
-        await deleteArea(areaPayload.area_id);
-        setAreas(prev => prev.filter(a => a.area_id !== areaPayload.area_id));
-      } catch (e) { alert('Failed to delete area: ' + e.message); }
+  const handleAreaRemove = async (requestedAreaId = areaPayload.area_id) => {
+    if (!requestedAreaId) return;
+    const areaId = requestedAreaId;
+    try {
+      const result = await deleteArea(areaId);
+      const destination = result.transferred_to;
+      setCameras(current => current.map(camera => camera.area_id === areaId ? { ...camera, area_id: destination } : camera));
+      setAreas(await fetchAreas());
       setAreaEditing(null);
+      setNotification({ type: 'success', title: 'Area removed', message: `Cameras were transferred to ${destination || 'the fallback area'}.` });
+    } catch (error) {
+      setNotification({ type: 'error', title: 'Area removal failed', message: error.message || 'The area could not be removed.' });
     }
   };
 
@@ -424,8 +443,8 @@ export default function CamerasPage({ openSearch, navTo }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <h3 style={{ margin: 0 }}>Import cameras from CSV</h3>
                 <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>Use the standard snake_case headers, fill in the cameras, then upload the completed file.</p>
-                <button type="button" onClick={downloadCsvSkeleton} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><Download size={16} aria-hidden="true" />Download skeleton CSV</button>
-                <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 12px', border: 0, borderRadius: 6, background: 'var(--blue-2)', color: 'var(--paper)', cursor: importingCsv ? 'wait' : 'pointer' }}><Upload size={16} aria-hidden="true" />{importingCsv ? 'Importing…' : 'Upload completed CSV'}<input type="file" accept=".csv,text/csv" disabled={importingCsv} onChange={handleImportCsv} style={{ display: 'none' }} /></label>
+                <button type="button" onClick={downloadCsvSkeleton} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><Download size={16} aria-hidden="true" />Download CSV Template</button>
+                <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px 12px', border: 0, borderRadius: 6, background: 'var(--blue-2)', color: 'var(--paper)', cursor: importingCsv ? 'wait' : 'pointer' }}><Upload size={16} aria-hidden="true" />{importingCsv ? 'Importing…' : 'Upload CSV'}<input type="file" accept=".csv,text/csv" disabled={importingCsv} onChange={handleImportCsv} style={{ display: 'none' }} /></label>
                 <button type="button" onClick={closeModal} disabled={importingCsv} style={{ alignSelf: 'flex-end', padding: '7px 12px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button>
               </div>
             )}
@@ -492,27 +511,30 @@ export default function CamerasPage({ openSearch, navTo }) {
       {/* Add area modal */}
       {editArea && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '24px', width: 360, maxWidth: '90vw' }}>
-            <h3>Add area</h3>
-            <input
+          <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '24px', width: 560, maxWidth: '92vw', maxHeight: '80vh', overflow: 'auto' }}>
+            <h3 style={{ marginTop: 0 }}>Manage areas</h3>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 5, margin: '12px 0 16px', color: 'var(--ink)', fontSize: 13, fontWeight: 600 }}>Create a new area<input
               value={newAreaName}
               onChange={e => setNewAreaName(e.target.value)}
-              style={{ width: '100%', padding: '8px', margin: '8px 0', border: '1px solid var(--line)', borderRadius: 4 }}
-            />
+              placeholder="Area name"
+              aria-label="New area name"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '9px 10px', border: '1px solid var(--line)', borderRadius: 6, background: '#fff', color: '#111', fontWeight: 400 }}
+            /></label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '10px 0 16px' }}>
               {areas.map(area => (
-                <div key={area.area_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 0', borderTop: '1px solid var(--line-soft)' }}>
-                  <span>{area.name} <small style={{ color: 'var(--muted)' }}>({area.camera_count || 0})</small></span>
-                  <span style={{ display: 'flex', gap: 6 }}>
-                    <button type="button" className="hvr-ink-border" onClick={() => { setAreaPayload({ area_id: area.area_id, new_name: area.name }); setAreaEditing('rename'); }} style={{ padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 5, background: 'var(--paper)' }}>Rename</button>
-                    <button type="button" className="hvr-ink-border" onClick={() => { setAreaPayload({ area_id: area.area_id, new_name: '' }); setAreaEditing('remove'); }} style={{ padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 5, background: 'var(--paper)', color: 'var(--danger)' }}>Remove</button>
-                  </span>
+                <div key={area.area_id} style={{ padding: '10px 0', borderTop: '1px solid var(--line-soft)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}><strong style={{ color: 'var(--ink)' }}>{area.name} <span style={{ display: 'inline-block', marginLeft: 5, padding: '3px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600, ...areaColor(area) }}>{area.camera_count || 0} {(area.camera_count || 0) === 1 ? 'camera' : 'cameras'}</span></strong><span style={{ display: 'flex', gap: 6 }}>
+                    <button type="button" className="hvr-ink-border" onClick={() => { setAreaPayload({ area_id: area.area_id, new_name: area.name }); setAreaEditing('rename'); }} style={{ padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 5, background: '#fff', color: '#111', cursor: 'pointer' }}>Rename</button>
+                    <button type="button" className="hvr-ink-border" onClick={() => handleAreaRemove(area.area_id)} style={{ padding: '4px 8px', border: '1px solid var(--danger)', borderRadius: 5, background: 'var(--paper)', color: 'var(--danger-deep)', cursor: 'pointer' }}>Remove</button>
+                  </span></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>{cameras.filter(camera => camera.area_id === area.area_id).map(camera => <div key={camera.camera_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 8px', background: 'var(--bone)', borderRadius: 6 }}><span>{camera.display_name || camera.name || camera.camera_id} <small style={{ color: 'var(--muted)' }}>({camera.camera_id})</small></span><select value={camera.area_id || ''} onChange={event => handleCameraAreaChange(camera.camera_id, event.target.value)} style={{ padding: '5px 8px', border: '1px solid var(--line)', borderRadius: 5, background: '#fff', color: '#111' }}><option value="">Unassigned</option>{areas.map(option => <option key={option.area_id} value={option.area_id}>{option.name}</option>)}</select></div>)}</div>
                 </div>
               ))}
+              {cameras.filter(camera => !camera.area_id).length > 0 && <div style={{ padding: '10px 0', borderTop: '1px solid var(--line-soft)' }}><strong>Unassigned</strong>{cameras.filter(camera => !camera.area_id).map(camera => <div key={camera.camera_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 8px', marginTop: 6, background: 'var(--bone)', borderRadius: 6 }}><span>{camera.display_name || camera.name || camera.camera_id}</span><select value="" onChange={event => handleCameraAreaChange(camera.camera_id, event.target.value)} style={{ padding: '5px 8px', border: '1px solid var(--line)', borderRadius: 5, background: '#fff', color: '#111' }}><option value="">Choose area</option>{areas.map(option => <option key={option.area_id} value={option.area_id}>{option.name}</option>)}</select></div>)}</div>}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setEditArea(null)} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button>
-              <button onClick={handleAddArea} className="hvr-ink-border" style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--ink)', color: 'var(--paper)' }}>Create</button>
+              <button onClick={handleAddArea} className="hvr-ink-border" style={{ padding: '6px 12px', border: 0, borderRadius: 4, background: 'var(--blue)', color: 'var(--paper)' }}>Create area</button>
             </div>
           </div>
         </div>
@@ -533,7 +555,7 @@ export default function CamerasPage({ openSearch, navTo }) {
                 />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                   <button onClick={() => setAreaEditing(null)} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button>
-                  <button onClick={handleAreaRename} className="hvr-ink-border" style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--ink)', color: 'var(--paper)' }}>Rename</button>
+                  <button type="button" onClick={handleAreaRename} className="hvr-ink-border" style={{ padding: '6px 12px', border: 0, borderRadius: 4, background: 'var(--blue)', color: 'var(--paper)' }}>Rename</button>
                 </div>
               </div>
             )}
@@ -543,7 +565,7 @@ export default function CamerasPage({ openSearch, navTo }) {
                 <p>Remove area <strong>{areaPayload.area_id}</strong>?</p>
                 <div style={{ margin: '16px 0', display: 'flex', justifyContent: 'flex-end' }}>
                   <button onClick={() => setAreaEditing(null)} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--paper)', color: 'var(--ink)' }}>Cancel</button>
-                  <button onClick={handleAreaRemove} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: 4, background: 'var(--danger)', color: 'var(--paper)' }}>Remove</button>
+                  <button type="button" onClick={handleAreaRemove} style={{ padding: '6px 12px', border: 0, borderRadius: 4, background: 'var(--danger)', color: '#fff', cursor: 'pointer' }}>Remove</button>
                 </div>
               </div>
             )}

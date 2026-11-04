@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Minus, Plus, RefreshCw, Trash2, UserRoundPen } from 'lucide-react';
 import { deleteUser, fetchCameras, fetchStorageInfo, fetchSystemInfo, fetchUsers, updateCameraMetadata, updateStorage, updateUser, updateUserApproval, updateUserPassword } from '../../utils/api';
 import NotificationPopup from '../../components/NotificationPopup';
+import { areaColor } from '../../utils/areaColors';
 
 export default function SettingsSimple({ session }) {
   const [section, setSection] = useState('storage');
@@ -140,7 +141,7 @@ export default function SettingsSimple({ session }) {
       {section === 'capacity' && <section style={{ padding: 24, border: '1px solid var(--line)', borderRadius: 16 }}>
         <p style={{ marginTop: 0, color: 'var(--muted)' }}>Choose how often AI inference runs for each camera. Changes apply immediately without restarting the camera stream.</p>
         {capacityCameras.length === 0 ? <p style={{ color: 'var(--muted)' }}>No cameras are currently available.</p> : capacityCameras.map(camera => <div key={camera.camera_id} style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) minmax(280px, 2fr)', gap: 20, alignItems: 'center', padding: '18px 0', borderBottom: '1px solid var(--line-soft)' }}>
-          <div><strong>{camera.display_name || camera.name || camera.camera_id}</strong><div style={{ color: 'var(--muted)', font: '13px var(--font-mono)' }}>{camera.camera_id}</div></div>
+          <div><strong>{camera.display_name || camera.name || camera.camera_id}</strong><div style={{ color: 'var(--muted)', font: '13px var(--font-mono)' }}>{camera.camera_id}</div>{camera.area?.name && <span style={{ display: 'inline-block', marginTop: 6, padding: '4px 7px', borderRadius: 5, ...areaColor(camera.area), font: '500 11px var(--font-mono)' }}>{camera.area.name}</span>}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>{detailOptions.map(([value, label, fps]) => <button type="button" key={value} onClick={() => camera.level !== value && changeCameraDetail(camera.camera_id, value)} style={{ padding: '10px 8px', border: camera.level === value ? '2px solid var(--blue)' : '1px solid var(--line)', borderRadius: 8, background: camera.level === value ? 'var(--blue-tint)' : 'var(--paper)', color: 'var(--ink)', cursor: 'pointer' }}><span style={{ display: 'block', fontWeight: 600 }}>{label}</span><small style={{ color: 'var(--muted)' }}>{fps}</small></button>)}</div>
         </div>)}
       </section>}

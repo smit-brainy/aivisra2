@@ -28,7 +28,8 @@
  */
 import React, { useEffect, useRef } from 'react';
 import { invr, merged } from '../../prototype/api';
-import { fetchCameras, fetchEvent, fetchEvents, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
+import { fetchAreas, fetchCameras, fetchEvent, fetchEvents, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
+import { areaColor } from '../../utils/areaColors';
 
 export default function SearchPage({ openSearch, navTo }) {
   const I = invr();
@@ -49,6 +50,7 @@ export default function SearchPage({ openSearch, navTo }) {
   const [sLoading, setSLoading] = React.useState(false);
   const [sError, setSError] = React.useState(false);
   const [dbCameras, setDbCameras] = React.useState([]);
+  const [dbAreas, setDbAreas] = React.useState([]);
   const [dbEvents, setDbEvents] = React.useState([]);
   const [selectedEvent, setSelectedEvent] = React.useState(null);
   const evidenceRequestRef = useRef(0);
@@ -80,7 +82,7 @@ export default function SearchPage({ openSearch, navTo }) {
     evidenceRequestRef.current += 1;
     setSelectedEvent(null);
   };
-  const [dbFilters, setDbFilters] = React.useState({ start: '', end: '', camera_id: '', object_class: '' });
+  const [dbFilters, setDbFilters] = React.useState({ start: '', end: '', area_id: '', camera_id: '', object_class: '' });
   const detectingObjects = React.useMemo(
     () => [...new Set(dbEvents.map(event => event.object_class).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [dbEvents]
@@ -96,6 +98,7 @@ export default function SearchPage({ openSearch, navTo }) {
 
   useEffect(() => {
     fetchCameras().then(setDbCameras).catch(() => {});
+    fetchAreas().then(setDbAreas).catch(() => {});
   }, []);
   useEffect(() => {
     const params = { limit: '100', offset: '0' };
@@ -106,6 +109,8 @@ export default function SearchPage({ openSearch, navTo }) {
     setSLoading(true);
     fetchEvents(params).then(body => setDbEvents(body.events || [])).catch(() => setDbEvents([])).finally(() => setSLoading(false));
   }, [dbFilters]);
+  const areaCameras = dbFilters.area_id ? dbCameras.filter(camera => camera.area_id === dbFilters.area_id) : dbCameras;
+  const selectedArea = dbAreas.find(area => area.area_id === dbFilters.area_id);
   // Helper: format a seconds value into HH:MM or clock string
   const fmtTime = (s) => {
     const m = Math.floor(s / 60), r = s % 60;
@@ -138,7 +143,7 @@ export default function SearchPage({ openSearch, navTo }) {
   // data remains only as a visual fallback while the API is unavailable.
   if (dbEvents.length || dbCameras.length) {
     const cameraNames = new Map(dbCameras.map(c => [String(c.camera_id), c.display_name || c.name || c.camera_id]));
-    R.list = dbEvents.filter(matchesTypeFilter).map(event => ({
+    R.list = dbEvents.filter(matchesTypeFilter).filter(event => !dbFilters.area_id || dbCameras.find(camera => String(camera.camera_id) === String(event.camera_id))?.area_id === dbFilters.area_id).map(event => ({
       id: event.event_id,
       camNum: event.camera_id,
       camLabel: `${cameraNames.get(String(event.camera_id)) || event.camera_id} (${event.camera_id})`,
@@ -205,7 +210,8 @@ export default function SearchPage({ openSearch, navTo }) {
       <div style={{ display: 'flex', gap: 12, marginBottom: 2, alignItems: 'center', flexWrap: 'wrap', fontSize: 14 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Start time<input type={dbFilters.start ? 'datetime-local' : 'text'} placeholder="Start date and time" value={dbFilters.start} onFocus={e => { e.currentTarget.type = 'datetime-local'; }} onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }} onChange={e => setDbFilters(v => ({ ...v, start: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>End time<input type={dbFilters.end ? 'datetime-local' : 'text'} placeholder="End date and time" value={dbFilters.end} onFocus={e => { e.currentTarget.type = 'datetime-local'; }} onBlur={e => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }} onChange={e => setDbFilters(v => ({ ...v, end: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }} /></label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Camera<select value={dbFilters.camera_id} onChange={e => setDbFilters(v => ({ ...v, camera_id: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">All cameras</option>{dbCameras.map(c => <option key={c.camera_id} value={c.camera_id}>{c.display_name || c.name || c.camera_id}</option>)}</select></label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Area<select value={dbFilters.area_id} onChange={e => setDbFilters(v => ({ ...v, area_id: e.target.value, camera_id: '' }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">All areas</option>{dbAreas.map(area => <option key={area.area_id} value={area.area_id}>{area.name}</option>)}</select>{selectedArea && <span style={{ alignSelf: 'flex-start', padding: '3px 7px', borderRadius: 4, fontSize: 11, fontWeight: 600, ...areaColor(selectedArea) }}>{selectedArea.name}</span>}</label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Camera<select value={dbFilters.camera_id} onChange={e => setDbFilters(v => ({ ...v, camera_id: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">All cameras</option>{areaCameras.map(c => <option key={c.camera_id} value={c.camera_id}>{c.display_name || c.name || c.camera_id}</option>)}</select></label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--muted)', fontSize: 12 }}>Object<select value={dbFilters.object_class} onChange={e => setDbFilters(v => ({ ...v, object_class: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 6, background: 'var(--paper)', color: 'var(--ink)' }}><option value="">Currently detected objects</option>{detectingObjects.map(objectClass => <option key={objectClass} value={objectClass}>{objectClass}</option>)}</select></label>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>Type</span>
