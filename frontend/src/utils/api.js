@@ -19,6 +19,7 @@ async function authRequest(path, options = {}) {
 
 export function login(payload) { return authRequest('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }); }
 export function signup(payload) { return authRequest('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) }); }
+export function fetchAuthSetup() { return authRequest('/api/auth/setup'); }
 export function logout() { return authRequest('/api/auth/logout', { method: 'POST' }); }
 export function fetchUsers() { return authRequest('/api/auth/users'); }
 export function updateUser(userId, payload) { return authRequest(`/api/auth/users/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify(payload) }); }

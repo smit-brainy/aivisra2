@@ -90,9 +90,27 @@ def login(payload: AuthCredentials, request: Request, response: Response):
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(payload: SignupRequest, request: Request):
+    users = get_user_store()
+    # Bootstrap the very first account as the administrator. The atomic
+    # create_first_admin transaction also handles two simultaneous first
+    # signups safely; only the winner becomes the bootstrap admin.
+    if not users.has_any_users():
+        try:
+            user = users.create_first_admin(
+                payload.username, payload.password, display_name=payload.display_name
+            )
+            get_audit_log().record(
+                "auth.bootstrap_signup", user_id=user["user_id"], resource="auth/signup", ip=_request_ip(request)
+            )
+            return user
+        except ValueError as exc:
+            if "already" not in str(exc).lower() and "completed" not in str(exc).lower():
+                code = 409 if "username" in str(exc).lower() else 400
+                raise HTTPException(status_code=code, detail=str(exc)) from exc
+
     requested_role = payload.role if payload.role in ("operator", "viewer") else "operator"
     try:
-        user = get_user_store().create_user(
+        user = users.create_user(
             payload.username,
             payload.password,
             display_name=payload.display_name,
