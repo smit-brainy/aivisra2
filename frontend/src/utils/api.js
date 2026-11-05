@@ -298,6 +298,13 @@ export async function fetchEvents(params = {}) {
   return res.json();
 }
 
+export async function fetchObjectCounts(date) {
+  const query = date ? `?date=${encodeURIComponent(date)}` : '';
+  const res = await fetch(`${BASE_URL}/api/object-counts${query}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Object counts HTTP ${res.status}`);
+  return res.json();
+}
+
 export async function fetchEvent(eventId) {
   const res = await fetch(`${BASE_URL}/api/events/${encodeURIComponent(eventId)}`);
   if (!res.ok) throw new Error(`Event HTTP ${res.status}`);

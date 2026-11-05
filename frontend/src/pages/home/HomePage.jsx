@@ -13,7 +13,7 @@ import { invr, merged } from '../../prototype/api';
 import InetraStrip from '../../components/inetra/InetraStrip';
 import InetraEventCard from '../../components/inetra/InetraEventCard';
 import InetraMonthCalendar from '../../components/inetra/InetraMonthCalendar';
-import { fetchCameras, fetchEvent, fetchEvents, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
+import { fetchCameras, fetchEvent, fetchEvents, fetchObjectCounts, getEventClipUrl, getSnapshotUrl } from '../../utils/api';
 import { areaColor } from '../../utils/areaColors';
 
 const STEPS = [
@@ -41,15 +41,25 @@ export default function HomePage({ session, openSearch, navTo }) {
   const [dbEvents, setDbEvents] = React.useState([]);
   const [dbLoaded, setDbLoaded] = React.useState(true);
   const [playingEvent, setPlayingEvent] = React.useState(null);
+  const [objectCounts, setObjectCounts] = React.useState({ totals: {}, cameras: [] });
+  const [yesterdayObjectCounts, setYesterdayObjectCounts] = React.useState({ totals: {}, cameras: [] });
 
   React.useEffect(() => {
     let disposed = false;
     const loadCameras = () => fetchCameras().then(value => { if (!disposed) setDbCameras(value || []); }).catch(error => { console.warn('[HomePage] camera list refresh failed', error); });
     const loadEvents = () => fetchEvents({ limit: '10000', offset: '0' }).then(value => { if (!disposed) setDbEvents(value.events || []); }).catch(error => { console.warn('[HomePage] event refresh failed', error); });
-    loadCameras(); loadEvents();
+    const loadCounts = () => {
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+      const yesterday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(Date.now() - 86400000));
+      Promise.all([fetchObjectCounts(today), fetchObjectCounts(yesterday)]).then(([current, previous]) => {
+        if (!disposed) { setObjectCounts(current || { totals: {}, cameras: [] }); setYesterdayObjectCounts(previous || { totals: {}, cameras: [] }); }
+      }).catch(error => console.warn('[HomePage] object count refresh failed', error));
+    };
+    loadCameras(); loadEvents(); loadCounts();
     const cameraTimer = window.setInterval(loadCameras, 60000);
     const eventTimer = window.setInterval(loadEvents, 120000);
-    return () => { disposed = true; window.clearInterval(cameraTimer); window.clearInterval(eventTimer); };
+    const countTimer = window.setInterval(loadCounts, 120000);
+    return () => { disposed = true; window.clearInterval(cameraTimer); window.clearInterval(eventTimer); window.clearInterval(countTimer); };
   }, []);
 
   React.useEffect(() => {
@@ -130,7 +140,6 @@ export default function HomePage({ session, openSearch, navTo }) {
     times = {};
     todayEv.forEach(event => { (times[event.cam] ||= []).push(event.t); });
   }
-  const people = todayEv.filter(e => e.type === 'person').length;
   const last = todayEv[todayEv.length - 1];
   const nf = now / DAY;
 
@@ -150,8 +159,16 @@ export default function HomePage({ session, openSearch, navTo }) {
     };
   });
 
-  const yEv = scen.noCams ? [] : I.day(-1).filter(e => e.t <= now - DAY && e.t >= since - DAY);
-  const yP = yEv.filter(e => e.type === 'person').length, yV = yEv.length - yP;
+  const countTotals = objectCounts.totals || {};
+  const previousTotals = yesterdayObjectCounts.totals || {};
+  const vehicleClasses = ['bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat'];
+  const sumClasses = (totals, classes) => classes.reduce((sum, name) => sum + Number(totals[name] || 0), 0);
+  const people = Number(countTotals.person || 0);
+  const previousPeople = Number(previousTotals.person || 0);
+  const vehicleCount = sumClasses(countTotals, vehicleClasses);
+  const previousVehicleCount = sumClasses(previousTotals, vehicleClasses);
+  const committedActivityTotal = Object.values(countTotals).reduce((sum, value) => sum + Number(value || 0), 0);
+  const cameraObjectCounts = new Map((objectCounts.cameras || []).map(camera => [String(camera.camera_id), Number(camera.total || 0)]));
   const cmpY = (x, y) => x === y ? 'Same as this time yesterday' : `${Math.abs(x - y)} ${x > y ? 'more' : 'fewer'} than this time yesterday`;
   const seg = on => ({ bg: on ? 'var(--blue-tint)' : 'transparent', ink: on ? 'var(--blue-deep)' : 'var(--muted)', ring: on ? '0 0 0 1px var(--blue)' : 'none', weight: on ? 600 : 400 });
   const days = [['today', 'Today'], ['yesterday', 'Yesterday'], ['date', 'Pick a date']].map(([k, l]) =>
@@ -222,16 +239,16 @@ export default function HomePage({ session, openSearch, navTo }) {
               <div aria-hidden="true" style={{ display: 'flex', alignItems: 'flex-end', gap: 2, width: '100%', height: 34 }}>
                 {I.hourBars(todayEv, 'person', 'var(--sky)', now).map((b, i) => <span key={i} style={{ flex: 1, height: b.h, borderRadius: 1, background: b.c }} />)}
               </div>
-              <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>{cmpY(people, yP)}</span>
+              <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>{cmpY(people, previousPeople)}</span>
               <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', fontSize: 14, color: 'var(--muted)' }}><span>{`Since ${I.clock(since)}`}</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--blue-deep)', fontWeight: 600, whiteSpace: 'nowrap' }}>Open in Search <OpenSearchIcon /></span></span>
             </button>
             <button onClick={() => openSearch({ preset: 'today', types: { person: false, vehicle: true, other: false } })} className="hvr-stat" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, padding: '20px 22px', textAlign: 'left', background: 'var(--bone)', border: '1px solid var(--line)', borderRadius: 14, cursor: 'pointer' }}>
               <span style={{ alignSelf: 'flex-start', padding: '5px 8px', borderRadius: 4, background: 'var(--honey-tint)', font: '500 11px/1 var(--font-mono)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--honey-deep)' }}>Vehicles seen</span>
-              <span style={{ color: 'var(--ink)', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 60, lineHeight: 0.95, letterSpacing: '-0.02em' }}>0</span>
+              <span style={{ color: 'var(--ink)', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 60, lineHeight: 0.95, letterSpacing: '-0.02em' }}>{vehicleCount}</span>
               <div aria-hidden="true" style={{ display: 'flex', alignItems: 'flex-end', gap: 2, width: '100%', height: 34 }}>
                 {I.hourBars([], 'vehicle', 'var(--honey)', now).map((b, i) => <span key={i} style={{ flex: 1, height: b.h, borderRadius: 1, background: b.c }} />)}
               </div>
-              <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>No vehicle events recorded</span>
+              <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>{vehicleCount ? cmpY(vehicleCount, previousVehicleCount) : 'No vehicle events recorded'}</span>
               <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', fontSize: 14, color: 'var(--muted)' }}><span>{`Since ${I.clock(since)}`}</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--blue-deep)', fontWeight: 600, whiteSpace: 'nowrap' }}>Open in Search <OpenSearchIcon /></span></span>
             </button>
             <button onClick={() => navTo('cameras', { offlineFirst: offCams.length > 0 })} className="hvr-stat" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, padding: '20px 22px', textAlign: 'left', background: 'var(--bone)', color: 'var(--ink)', border: '1px solid var(--line)', borderRadius: 14, cursor: 'pointer' }}>
@@ -273,7 +290,7 @@ export default function HomePage({ session, openSearch, navTo }) {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px 16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 260, flex: 1 }}>
                   <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12, fontSize: 17, fontWeight: 500, letterSpacing: '-0.01em' }}>
-                    Activity by camera <span style={{ padding: '4px 7px', borderRadius: 4, background: 'var(--blue-tint)', color: 'var(--blue-deep)', font: '500 10px/1 var(--font-mono)', letterSpacing: '.05em' }}>Total activity: {todayEv.length}</span>
+                    Activity by camera <span style={{ padding: '4px 7px', borderRadius: 4, background: 'var(--blue-tint)', color: 'var(--blue-deep)', font: '500 10px/1 var(--font-mono)', letterSpacing: '.05em' }}>Total activity: {committedActivityTotal}</span>
                     {scen.since != null && dOff === 0 && <span style={{ padding: '4px 7px', borderRadius: 4, background: 'var(--paper-2)', font: '500 11px/1 var(--font-mono)', letterSpacing: '.04em', color: 'var(--ink)' }}>{'Watching since ' + I.clock(scen.since)}</span>}
                   </h2>
                   <span style={{ fontSize: 13.5, color: 'var(--muted)', textWrap: 'pretty' }}>Each mark is a moment people or vehicles appeared, and darker marks are busier. Click one to open it in Search.</span>
@@ -321,7 +338,7 @@ export default function HomePage({ session, openSearch, navTo }) {
                           {r.isOff && <span style={{ flexShrink: 0, padding: '3px 5px', borderRadius: 4, background: 'var(--danger-tint)', color: 'var(--danger-deep)', font: '500 10px/1 var(--font-mono)', letterSpacing: '.06em', textTransform: 'uppercase' }}>Offline</span>}
                         </button>
                         <InetraStrip times={r.times} start={dStart} end={dStart + DAY} now={dOff === 0 ? now : null} bin={300} offline={r.offline} height={18} axis={false} onPick={r.pick} />
-                        <span style={{ textAlign: 'right', font: '500 13px/1 var(--font-mono)' }}>{r.cnt}</span>
+                        <span style={{ textAlign: 'right', font: '500 13px/1 var(--font-mono)' }}>{cameraObjectCounts.get(String(r.num)) ?? 0}</span>
                       </div>
                     ))}
                   </React.Fragment>

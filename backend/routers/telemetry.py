@@ -128,6 +128,15 @@ def get_system_status():
     return status
 
 
+@router.get("/api/object-counts")
+def get_object_counts(date: str | None = None):
+    engine = get_engine()
+    event_db = getattr(engine, "event_db", None) if engine else None
+    if event_db is None:
+        return {"date": date, "classes": [], "totals": {}, "cameras": [], "updated_at": None}
+    return event_db.query_object_counts(date)
+
+
 @router.get("/api/tracks/{camera_id}")
 def get_camera_tracks(camera_id: str):
     """Retrieve active object tracks and trajectories for a specific camera."""

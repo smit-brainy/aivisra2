@@ -14,6 +14,20 @@ from ..config import EventsConfig
 
 logger = logging.getLogger("events.db")
 
+COCO_CLASSES = (
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
+    "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog",
+    "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
+    "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite",
+    "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle",
+    "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich",
+    "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote",
+    "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book",
+    "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush",
+)
+COCO_CLASS_SET = frozenset(COCO_CLASSES)
+
 
 @dataclass(slots=True)
 class TrackEvent:
@@ -132,7 +146,13 @@ class EventDatabase:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self._local = threading.local()
+        self._count_memory: dict[tuple[str, str, str], int] = {}
+        self._count_cameras: set[str] = set()
+        self._count_stop = threading.Event()
         self._init_db()
+        self._load_current_counts()
+        self._count_thread = threading.Thread(target=self._count_flush_loop, name="object-count-flush", daemon=True)
+        self._count_thread.start()
 
     def _init_db(self) -> None:
         with self._connect() as conn:
@@ -219,6 +239,17 @@ class EventDatabase:
                 CREATE INDEX IF NOT EXISTS idx_type
                 ON inference_events(event_type)
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS object_counts (
+                    count_date TEXT NOT NULL,
+                    camera_id TEXT NOT NULL,
+                    object_class TEXT NOT NULL,
+                    object_count INTEGER NOT NULL DEFAULT 0,
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY (count_date, camera_id, object_class)
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_object_counts_date ON object_counts(count_date, camera_id)")
             conn.commit()
         self._migrate_legacy_events()
         logger.info("event_db_initialized", extra={"path": str(self.db_path)})
@@ -332,6 +363,98 @@ class EventDatabase:
                 conn.commit()
         logger.info("track_event_created", extra={"event_id": event_id, "track_id": track_id, "camera_id": camera_id})
         return event_id
+
+    def _count_date(self, timestamp: float | None = None) -> str:
+        offset = float(getattr(self.config, "ist_offset_hours", 5.5))
+        return datetime.fromtimestamp(timestamp or time.time(), tz=timezone.utc).replace(
+            tzinfo=timezone.utc
+        ).astimezone(timezone.utc).strftime("%Y-%m-%d") if offset == 0 else datetime.fromtimestamp(
+            (timestamp or time.time()) + offset * 3600, tz=timezone.utc
+        ).strftime("%Y-%m-%d")
+
+    def register_count_camera(self, camera_id: str) -> None:
+        if camera_id:
+            with self._lock:
+                self._count_cameras.add(str(camera_id))
+
+    def record_object_seen(self, camera_id: str, object_class: str, timestamp: float | None = None) -> None:
+        object_class = str(object_class or "").strip().lower()
+        if not camera_id or object_class not in COCO_CLASS_SET:
+            return
+        with self._lock:
+            camera_id = str(camera_id)
+            self._count_cameras.add(camera_id)
+            key = (self._count_date(timestamp), camera_id, object_class)
+            self._count_memory[key] = self._count_memory.get(key, 0) + 1
+
+    def _load_current_counts(self) -> None:
+        today = self._count_date()
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(
+                "SELECT count_date, camera_id, object_class, object_count FROM object_counts WHERE count_date = ?",
+                (today,),
+            ).fetchall()
+            for row in rows:
+                self._count_cameras.add(str(row["camera_id"]))
+                self._count_memory[(row["count_date"], row["camera_id"], row["object_class"])] = int(row["object_count"])
+
+    def flush_object_counts(self) -> int:
+        with self._lock:
+            snapshot = dict(self._count_memory)
+            cameras = set(self._count_cameras)
+        dates = {key[0] for key in snapshot} or {self._count_date()}
+        if not cameras:
+            return 0
+        now = time.time()
+        rows = [
+            (date, camera_id, object_class, snapshot.get((date, camera_id, object_class), 0), now)
+            for date in dates for camera_id in cameras for object_class in COCO_CLASSES
+        ]
+        with self._lock, self._connect() as conn:
+            conn.executemany(
+                """INSERT INTO object_counts(count_date, camera_id, object_class, object_count, updated_at)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(count_date, camera_id, object_class) DO UPDATE SET
+                     object_count = excluded.object_count, updated_at = excluded.updated_at""",
+                rows,
+            )
+            conn.commit()
+        return len(rows)
+
+    def _count_flush_loop(self) -> None:
+        while not self._count_stop.wait(120):
+            try:
+                self.flush_object_counts()
+            except Exception:
+                logger.exception("object_count_flush_failed")
+
+    def query_object_counts(self, count_date: str | None = None) -> dict[str, Any]:
+        date = count_date or self._count_date()
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(
+                "SELECT count_date, camera_id, object_class, object_count, updated_at FROM object_counts WHERE count_date = ?",
+                (date,),
+            ).fetchall()
+        totals = {name: 0 for name in COCO_CLASSES}
+        cameras: dict[str, dict[str, int]] = {}
+        updated_at = None
+        for row in rows:
+            cls = row["object_class"]
+            count = int(row["object_count"])
+            if cls in totals:
+                totals[cls] += count
+            cameras.setdefault(row["camera_id"], {name: 0 for name in COCO_CLASSES})[cls] = count
+            updated_at = max(updated_at or 0, float(row["updated_at"]))
+        return {
+            "date": date,
+            "classes": list(COCO_CLASSES),
+            "totals": totals,
+            "cameras": [
+                {"camera_id": camera_id, "counts": counts, "total": sum(counts.values())}
+                for camera_id, counts in cameras.items()
+            ],
+            "updated_at": updated_at,
+        }
 
     def upsert_spatial_event(self, event: Any) -> str:
         """Persist zone, line, dwell, and occupancy events in inference_events."""
@@ -634,6 +757,8 @@ class EventDatabase:
 
     def close_all_connections(self) -> None:
         """Close all thread-local connections. Call on shutdown."""
+        self.flush_object_counts()
+        self._count_stop.set()
         if hasattr(self._local, "conn") and self._local.conn is not None:
             try:
                 self._local.conn.close()

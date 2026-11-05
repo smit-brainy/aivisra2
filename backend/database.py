@@ -143,6 +143,17 @@ CREATE INDEX IF NOT EXISTS idx_inference_active
     ON inference_events(camera_id) WHERE ended_at_utc IS NULL;
 CREATE INDEX IF NOT EXISTS idx_inference_type
     ON inference_events(event_type);
+
+CREATE TABLE IF NOT EXISTS object_counts (
+    count_date TEXT NOT NULL,
+    camera_id TEXT NOT NULL,
+    object_class TEXT NOT NULL,
+    object_count INTEGER NOT NULL DEFAULT 0,
+    updated_at REAL NOT NULL,
+    PRIMARY KEY (count_date, camera_id, object_class)
+);
+CREATE INDEX IF NOT EXISTS idx_object_counts_date
+    ON object_counts(count_date, camera_id);
 """
 
 _db_path_lock = threading.Lock()

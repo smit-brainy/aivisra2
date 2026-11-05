@@ -132,6 +132,8 @@ class StreamCore:
         # The central database is also used for spatial (zone/line/dwell)
         # events, regardless of whether clip capture is enabled.
         self.event_db = EventDatabase(self.config.events)
+        for camera in self.cameras:
+            self.event_db.register_count_camera(camera.id)
         if getattr(self.config, "events", None) and self.config.events.enabled:
             camera_urls = {c.id: c.uri for c in self.cameras}
             camera_live_paths = {c.id: getattr(c, "live_path", c.id.lower()) for c in self.cameras}
@@ -592,6 +594,7 @@ class StreamCore:
             object_class=object_class,
             snapshot_path=snapshot_rel_path,
         )
+        self.event_db.record_object_seen(camera_id, object_class, timestamp=ts)
 
         # Trigger clip recording asynchronously
         if self.clip_recorder is not None and getattr(self.config.events, "record_on_track_confirmed", True):
